@@ -24,14 +24,12 @@ def version():
 
 @app.route('/api/v1/upload', methods = ["POST"])
 def upload_image():
-
+    required_params = set(["uploaded_by", "timestamp", "other", "photo", "tags"])
     data = json.loads(request.data)
+    if required_params != set(data.keys()):
+        return jsonify({"status": "failed", "message": "Invalid input body. Expected keys :{0}".format(required_params)}), 400
+
     doc_id = get_random_string()
-
-    if not data.get("uploaded_by") or not data.get("timestamp"):
-        return jsonify({"status": "failed", "message": "Missing parameters"}), 400
-
-    # TODO: Save the document in db
     imageMetadataDao.save(doc_id, data)
     return jsonify({"status": "success"}), 200
 
