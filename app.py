@@ -28,7 +28,7 @@ def upload_image():
     data = json.loads(request.data)
     doc_id = get_random_string()
 
-    if not data.get("uploader") or not data.get("upload_time"):
+    if not data.get("uploaded_by") or not data.get("timestamp"):
         return jsonify({"status": "failed", "message": "Missing parameters"}), 400
 
     # TODO: Save the document in db
