@@ -10,13 +10,12 @@ config.read('properties.ini')
 
 app = Flask(__name__)
 
-# ImageMetadataDao.set_config(user=config['couchdb']['user'],password=config['couchdb']['password'],
-#                             db_host=config['couchdb']['db_host'],db_name='test')
 user = config['couchdb']['user']
 password = config['couchdb']['password']
 db_host = config['couchdb']['db_host']
+metadata_db = config['couchdb']['metadata_db']
 imageMetadataDao = ImageMetadataDao()
-imageMetadataDao.set_config(user, password, db_host, 'test')
+imageMetadataDao.set_config(user, password, db_host, metadata_db)
 
 @app.route('/version')
 def version():
