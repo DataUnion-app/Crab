@@ -26,7 +26,7 @@ Please follow the installation guide [here](https://docs.couchdb.org/en/stable/i
         
 3. Install dependencies
 
-    `pip install requirements.txt`
+    `pip install -r requirements.txt`
     
 4. Copy `sample.ini` and create `properties.ini` file.
 
