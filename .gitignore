@@ -138,3 +138,5 @@ dmypy.json
 cython_debug/
 properties.ini
 .idea/
+data/*
+!data/.gitkeep
