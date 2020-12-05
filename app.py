@@ -92,5 +92,16 @@ def upload_file():
 		resp = jsonify({'message' : 'Allowed file types are {0}'.format(ALLOWED_EXTENSIONS)})
 		return resp,400
 
+@app.route('/api/v1/metadata', methods=["GET"])
+def get_metadata_by_eth_address():
+	args = request.args
+	if "eth_address" in args:
+		eth_Address = args["eth_address"]
+		result = imageMetadataDao.get_metadata_by_eth_address(eth_Address)
+		return result, 200
+	else:
+		resp = jsonify({'message': 'Missing query paramerter: `eth_address`'})
+		return resp, 400
+
 if __name__ == '__main__':
     app.run(port=config['application']['port'])
