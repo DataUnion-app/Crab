@@ -11,13 +11,19 @@ Please follow the installation guide [here](https://docs.couchdb.org/en/stable/i
 1. Install `Python 3.9.0`
 2. Optional - 
 
-    a. Create a virtual env
+    a. Navigate to the directory where Crab is cloned.
     
+        `cd *address of this repo on your PC*`
+    
+    b. Create a virtual env
+        
         `python3 -m venv env`
-    b. Start a virtual env:
+        
+    c. Start a virtual env:
 
         Linux : `source env/bin/activate`
         Windows: `.\env\Scripts\activate`
+        
 3. Install dependencies
 
     `pip install requirements.txt`
