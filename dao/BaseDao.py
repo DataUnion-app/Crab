@@ -1,4 +1,6 @@
 import abc
+import requests
+import json
 
 
 class BaseDao(metaclass=abc.ABCMeta):
@@ -14,15 +16,28 @@ class BaseDao(metaclass=abc.ABCMeta):
         self.db_host = db_host
         self.db_name = db_name
 
-    @abc.abstractmethod
-    def save(self, data):
-        pass
+    def save(self, doc_id, data):
 
-    @abc.abstractmethod
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user,self.password,self.db_host,
+                                                  self.db_name,doc_id)
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.request("PUT", url, headers=headers, data=json.dumps(data))
+        return json.loads(response.text)
+
     def getAll(self):
-        pass
+        query = {"selector": {"_id": {"$gt": None}}}
+        headers = {'Content-Type': 'application/json'}
+        url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
 
-    # @abc.abstractmethod
+        response = requests.request("POST", url, headers=headers, data=json.dumps(query))
+
+        data = json.loads(response.text)["docs"]
+        return {"result": data}
+
+# @abc.abstractmethod
     # def delete(self, id):
     #     pass
     #
