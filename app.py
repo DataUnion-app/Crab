@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 import json
 import configparser
 from werkzeug.utils import secure_filename
@@ -101,6 +101,26 @@ def get_metadata_by_eth_address():
 		return result, 200
 	else:
 		resp = jsonify({'message': 'Missing query paramerter: `eth_address`'})
+		return resp, 400
+
+@app.route('/api/v1/get_image', methods=["GET"])
+def get_image():
+	args = request.args
+	if "id" in args:
+		doc_id = args["id"]
+		result = imageMetadataDao.get_doc_by_id(doc_id)
+		if len(result["result"]) != 1:
+			resp = jsonify({'message': 'Data not found'})
+			return resp, 400
+
+		file_name = result["result"][0]["filename"]
+		file_path = os.path.join(app.config['UPLOAD_FOLDER'],
+								 result["result"][0]["uploaded_by"],
+								 result["result"][0]["filename"])
+		return send_file(file_path)
+
+	else:
+		resp = jsonify({'message': 'Missing query paramerter: `id`'})
 		return resp, 400
 
 if __name__ == '__main__':

@@ -37,15 +37,13 @@ class BaseDao(metaclass=abc.ABCMeta):
         data = json.loads(response.text)["docs"]
         return {"result": data}
 
-# @abc.abstractmethod
-    # def delete(self, id):
-    #     pass
-    #
-    # @abc.abstractmethod
-    # def update(self, id):
-    #     pass
-    #
-    # @abc.abstractmethod
-    # def get(self, id):
-    #     pass
-    #
+    def get_doc_by_id(self, id):
+        query = {"selector": {"_id": id}}
+        return self.query_data(query)
+
+    def query_data(self, selector):
+        headers = {'Content-Type': 'application/json'}
+        url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
+        response = requests.request("POST", url, headers=headers, data=json.dumps(selector))
+        data = json.loads(response.text)["docs"]
+        return {"result": data}
