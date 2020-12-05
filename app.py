@@ -12,17 +12,18 @@ app = Flask(__name__)
 
 # ImageMetadataDao.set_config(user=config['couchdb']['user'],password=config['couchdb']['password'],
 #                             db_host=config['couchdb']['db_host'],db_name='test')
-user=config['couchdb']['user']
-password=config['couchdb']['password']
-db_host=config['couchdb']['db_host']
+user = config['couchdb']['user']
+password = config['couchdb']['password']
+db_host = config['couchdb']['db_host']
 imageMetadataDao = ImageMetadataDao()
-imageMetadataDao.set_config(user,password,db_host,'test')
+imageMetadataDao.set_config(user, password, db_host, 'test')
 
 @app.route('/version')
 def version():
     return "Version: {0}".format(config['application']['version'])
 
-@app.route('/api/v1/upload', methods = ["POST"])
+
+@app.route('/api/v1/upload', methods=["POST"])
 def upload_image():
     required_params = set(["uploaded_by", "timestamp", "other", "photo", "tags"])
     data = json.loads(request.data)
@@ -33,7 +34,8 @@ def upload_image():
     imageMetadataDao.save(doc_id, data)
     return jsonify({"status": "success"}), 200
 
-@app.route('/api/v1/all-metadata', methods = ["GET"])
+
+@app.route('/api/v1/all-metadata', methods=["GET"])
 def get_all_image_metadata():
     result = imageMetadataDao.getAll()
     return  result

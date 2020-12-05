@@ -14,7 +14,6 @@ class BaseDao(metaclass=abc.ABCMeta):
         self.db_host = db_host
         self.db_name = db_name
 
-
     @abc.abstractmethod
     def save(self, data):
         pass
