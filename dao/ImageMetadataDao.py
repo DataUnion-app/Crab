@@ -1,6 +1,7 @@
 import requests
 from .BaseDao import BaseDao
 import json
+from datetime import datetime
 
 
 class ImageMetadataDao(BaseDao):
@@ -18,3 +19,13 @@ class ImageMetadataDao(BaseDao):
     def get_all_eth_addresses(self):
         # TODO
         pass
+
+    def add_metadata_for_image(self, photo_id, tags, other):
+        document = self.get_doc_by_id(photo_id)
+        document["updated_at"] = datetime.timestamp(datetime.now())
+        document["tags"] = tags
+        document["other"] = other
+        document["status"] = "metadata_added"
+        document["status_description"] = "Image verified. Metadata saved"
+        result = self.update_doc(photo_id, document)
+        return result

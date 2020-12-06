@@ -4,7 +4,6 @@ import json
 
 
 class BaseDao(metaclass=abc.ABCMeta):
-
     user = None
     password = None
     db_host = None
@@ -17,9 +16,8 @@ class BaseDao(metaclass=abc.ABCMeta):
         self.db_name = db_name
 
     def save(self, doc_id, data):
-
-        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user,self.password,self.db_host,
-                                                  self.db_name,doc_id)
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host,
+                                                  self.db_name, doc_id)
         headers = {
             'Content-Type': 'application/json'
         }
@@ -38,8 +36,11 @@ class BaseDao(metaclass=abc.ABCMeta):
         return {"result": data}
 
     def get_doc_by_id(self, id):
-        query = {"selector": {"_id": id}}
-        return self.query_data(query)
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, id)
+        headers = {'Accept': 'application/json'}
+        response = requests.request("GET", url, headers=headers)
+        data = json.loads(response.text)
+        return data
 
     def query_data(self, selector):
         headers = {'Content-Type': 'application/json'}
@@ -47,3 +48,6 @@ class BaseDao(metaclass=abc.ABCMeta):
         response = requests.request("POST", url, headers=headers, data=json.dumps(selector))
         data = json.loads(response.text)["docs"]
         return {"result": data}
+
+    def update_doc(self, doc_id, data):
+        return self.save(doc_id, data)
