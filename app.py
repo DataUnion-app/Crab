@@ -7,6 +7,7 @@ from datetime import datetime
 from models import NewImageMetadata
 from dao.ImageMetadataDao import ImageMetadataDao
 from utils.get_random_string import get_random_string
+from authentication_routes import authentication_routes
 
 config = configparser.ConfigParser()
 config.read('properties.ini')
@@ -15,6 +16,7 @@ ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 UPLOAD_FOLDER = 'data'
 
 app = Flask(__name__)
+app.register_blueprint(authentication_routes)
 app.secret_key = "secret key"
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -51,7 +53,7 @@ def upload_metadata():
 
 @app.route('/api/v1/all-metadata', methods=["GET"])
 def get_all_image_metadata():
-    result = imageMetadataDao.getAll()
+    result = imageMetadataDao.get_all_verified_metadata()
     return result
 
 
