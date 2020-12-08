@@ -57,10 +57,12 @@ class BaseDao(metaclass=abc.ABCMeta):
         payload = {}
         headers = {}
         response = requests.request("DELETE", url, headers=headers, data=payload)
-        print(response)
 
     def create_db(self):
         url = "http://{0}:{1}@{2}/{3}".format(self.user, self.password, self.db_host, self.db_name)
         payload = {}
         headers = {}
         response = requests.request("PUT", url, headers=headers, data=payload)
+        if response.status_code == 201:
+            return True
+        return False

@@ -11,6 +11,10 @@ from metadata_routes import metadata_routes
 from config import config
 from dao.sessions_dao import SessionsDao
 
+
+if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
+
+
 app = Flask(__name__)
 
 app.register_blueprint(authentication_routes)

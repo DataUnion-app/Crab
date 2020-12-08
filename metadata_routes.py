@@ -10,6 +10,8 @@ from dao.ImageMetadataDao import ImageMetadataDao
 from utils.get_random_string import get_random_string
 from werkzeug.utils import secure_filename
 
+if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
+
 user = config['couchdb']['user']
 password = config['couchdb']['password']
 db_host = config['couchdb']['db_host']
