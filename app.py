@@ -7,6 +7,7 @@ from datetime import datetime
 from models import NewImageMetadata
 from dao.ImageMetadataDao import ImageMetadataDao
 from utils.get_random_string import get_random_string
+from security.hashing import hash_image
 
 config = configparser.ConfigParser()
 config.read('properties.ini')
@@ -44,7 +45,6 @@ def upload_metadata():
         return jsonify(
             {"status": "failed", "message": "Invalid input body. Expected keys :{0}".format(required_params)}), 400
 
-
     imageMetadataDao.add_metadata_for_image(data["photo_id"], data["tags"], data["other"])
     return jsonify({"status": "success"}), 200
 
@@ -73,10 +73,14 @@ def upload_file():
         resp = jsonify({'message': 'No file selected for uploading'})
         return resp, 400
     if file and allowed_file(file.filename):
-        doc_id = get_random_string()
+        # Compute image hash value
+        hash_value = hash_image(file)
+
+        # Check if it exists in the database already
+        imageMetadataDao.contains(hash_value)
 
         # Save file
-        filename = secure_filename(doc_id + '-' + file.filename)
+        filename = secure_filename(hash_value + '-' + file.filename)
         dir_path = os.path.join(app.config['UPLOAD_FOLDER'], data["uploaded_by"])
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
@@ -88,11 +92,12 @@ def upload_file():
         data_to_save["status"] = "new"
         data_to_save["status_description"] = "Image not verified"
         data_to_save["uploaded_at"] =  datetime.timestamp(datetime.now())
+        data_to_save["hash_value"] = hash_value
 
         # Save metadata
-        doc_id = imageMetadataDao.save(doc_id, data_to_save)["id"]
+        hash_value = imageMetadataDao.save(hash_value, data_to_save)["id"]
 
-        resp = jsonify({'message': 'File successfully uploaded', "id": doc_id})
+        resp = jsonify({'message': 'File successfully uploaded', "id": hash_value})
         return resp, 200
 
     else:
