@@ -38,8 +38,8 @@ def register():
     return jsonify({"status": "success", "nonce": nonce}), 200
 
 
-@authentication_routes.route("/verify-signature", methods=['POST'])
-def verify():
+@authentication_routes.route("/login", methods=['POST'])
+def login():
     data = json.loads(request.data)
     public_address = data.get("public_address")
     signature = data.get("signature")
@@ -56,6 +56,7 @@ def verify():
 
         access_token = create_access_token(identity=public_address)
         refresh_token = create_refresh_token(identity=public_address)
+        user_dao.update_nonce(public_address)
         return jsonify({
             'status': 'success',
             'message': 'Public address [{}] registered'.format(public_address),

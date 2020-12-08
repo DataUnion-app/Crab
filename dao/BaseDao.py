@@ -51,3 +51,16 @@ class BaseDao(metaclass=abc.ABCMeta):
 
     def update_doc(self, doc_id, data):
         return self.save(doc_id, data)
+
+    def delete_db(self):
+        url = "http://{0}:{1}@{2}/{3}".format(self.user, self.password, self.db_host, self.db_name)
+        payload = {}
+        headers = {}
+        response = requests.request("DELETE", url, headers=headers, data=payload)
+        print(response)
+
+    def create_db(self):
+        url = "http://{0}:{1}@{2}/{3}".format(self.user, self.password, self.db_host, self.db_name)
+        payload = {}
+        headers = {}
+        response = requests.request("PUT", url, headers=headers, data=payload)
