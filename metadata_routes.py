@@ -1,10 +1,14 @@
 from flask import Blueprint, render_template, session, abort, request, jsonify
 import json
+import os
+from datetime import datetime
 from dao.users_dao import UsersDao
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
 from config import config
 from dao.ImageMetadataDao import ImageMetadataDao
+from utils.get_random_string import get_random_string
+from werkzeug.utils import secure_filename
 
 user = config['couchdb']['user']
 password = config['couchdb']['password']
@@ -110,7 +114,7 @@ def get_image():
     if "id" in args:
         doc_id = args["id"]
         result = imageMetadataDao.get_doc_by_id(doc_id)
-        if len(result["result"]) != 1:
+        if not result.get("error") and len(result["result"]) != 1:
             resp = jsonify({'message': 'Data not found'})
             return resp, 400
 

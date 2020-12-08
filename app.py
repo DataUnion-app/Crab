@@ -1,13 +1,11 @@
 from flask import Flask, jsonify, request, send_file
 import json
-from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
 from models import NewImageMetadata
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
 from flask_jwt_extended import JWTManager
-from utils.get_random_string import get_random_string
 from authentication_routes import authentication_routes
 from metadata_routes import metadata_routes
 from config import config
