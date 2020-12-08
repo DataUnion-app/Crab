@@ -2,6 +2,7 @@ import requests
 from .BaseDao import BaseDao
 import json
 from datetime import datetime
+from models.ImageStatus import ImageStatus
 
 
 class ImageMetadataDao(BaseDao):
@@ -29,3 +30,16 @@ class ImageMetadataDao(BaseDao):
         document["status_description"] = "Image verified. Metadata saved"
         result = self.update_doc(photo_id, document)
         return result
+
+    def get_by_status(self, status: ImageStatus):
+        query = {"selector": {"_id": {"$gt": None}, "status": status},
+                 "fields": ["filename", "other", "tags", "_id", "_rev"]}
+        url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
+        headers = {'Content-Type': 'application/json'}
+
+        response = requests.request("POST", url, headers=headers, data=json.dumps(query))
+        data = json.loads(response.text)["docs"]
+        return {"result": data}
+
+    def get_all_verified_metadata(self):
+        return self.get_by_status(ImageStatus.VERIFIED)
