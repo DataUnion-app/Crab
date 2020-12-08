@@ -42,4 +42,4 @@ class ImageMetadataDao(BaseDao):
         return {"result": data}
 
     def get_all_verified_metadata(self):
-        return self.get_by_status(ImageStatus.VERIFIED)
+        return self.get_by_status("metadata_added")

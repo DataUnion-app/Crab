@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, session, abort, request, jsonify
 import json
 from dao.users_dao import UsersDao
+from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
+                                get_jwt_identity, get_raw_jwt)
 
 authentication_routes = Blueprint('authenticationRoutes', __name__)
 
@@ -33,7 +35,6 @@ def register():
         return jsonify({"status": "failed", "message": "already exists"}), 400
 
     nonce = user_dao.get_nonce_if_not_exists(public_address)
-
     return jsonify({"status": "success", "nonce": nonce}), 200
 
 
@@ -51,4 +52,15 @@ def verify():
     if not result:
         return jsonify({"message": "Signature invalid"}), 400
 
-    return jsonify({"message": "verified"}), 200
+    try:
+
+        access_token = create_access_token(identity=public_address)
+        refresh_token = create_refresh_token(identity=public_address)
+        return jsonify({
+            'status': 'success',
+            'message': 'Public address [{}] registered'.format(public_address),
+            'access_token': access_token,
+            'refresh_token': refresh_token
+        }), 200
+    except:
+        return {'message': 'Something went wrong'}, 500
