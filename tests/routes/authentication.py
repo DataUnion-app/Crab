@@ -3,21 +3,23 @@ from web3.auto import w3
 from eth_account import Account
 from eth_account.messages import defunct_hash_message, encode_defunct
 from dao.users_dao import UsersDao
+from dao.sessions_dao import SessionsDao
 import json
 import requests
+from tests.helper import Helper
 
 
 class TestUserAuthentication(unittest.TestCase):
 
-    # self.user = "admin"
-    # self.password = "admin"
-    # self.host = ""
-    # self.db = "users"
-
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         user_dao = UsersDao()
         user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
         user_dao.create_db()
+
+        sessions_dao = SessionsDao()
+        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
+        sessions_dao.create_db()
 
     def test_user_login(self):
         acct = Account.create('TEST')
@@ -48,14 +50,37 @@ class TestUserAuthentication(unittest.TestCase):
         login_response = requests.request("POST", url, headers=headers, data=payload)
         self.assertEqual(login_response.status_code, 200)
         login_response_data = json.loads(login_response.text)
-        print(login_response_data)
         self.assertTrue(login_response_data.get('access_token') is not None)
         self.assertTrue(login_response_data.get('refresh_token') is not None)
 
-    def tearDown(self):
+    def test_user_logout(self):
+        acct = Account.create('TEST')
+
+        token = Helper.login(acct.address, acct.key)
+        headers = {'Authorization': 'Bearer {0}'.format(token)}
+
+        url = "http://localhost:8080/check"
+        response = requests.request("GET", url, headers=headers, data=json.dumps({}))
+        self.assertEqual(response.status_code, 200)
+
+        # log out
+        url = "http://localhost:8080/logout"
+        logout_response = requests.request("POST", url, headers=headers, data=json.dumps({}))
+        self.assertEqual(logout_response.status_code, 200)
+
+        url = "http://localhost:8080/check"
+        response = requests.request("GET", url, headers=headers, data=json.dumps({}))
+        self.assertEqual(response.status_code, 401)
+
+    @classmethod
+    def tearDownClass(cls):
         user_dao = UsersDao()
         user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
         user_dao.delete_db()
+
+        sessions_dao = SessionsDao()
+        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
+        sessions_dao.create_db()
 
 
 if __name__ == '__main__':
