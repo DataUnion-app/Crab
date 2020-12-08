@@ -80,7 +80,7 @@ class TestUserAuthentication(unittest.TestCase):
 
         sessions_dao = SessionsDao()
         sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.create_db()
+        sessions_dao.delete_db()
 
 
 if __name__ == '__main__':
