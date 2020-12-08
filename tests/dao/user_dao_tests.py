@@ -7,6 +7,11 @@ from dao.users_dao import UsersDao
 
 class TestUserDao(unittest.TestCase):
 
+    def setUp(self):
+        user_dao = UsersDao()
+        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
+        user_dao.create_db()
+
     def test_get_nonce(self):
         user_dao = UsersDao()
         user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
@@ -27,6 +32,20 @@ class TestUserDao(unittest.TestCase):
         print("signed_message", signed_message)
         result = user_dao.verify_signature(acct.address, signed_message.signature)
         self.assertTrue(result)
+
+    def test_update_nonce(self):
+        user_dao = UsersDao()
+        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
+        acct = Account.create('TEST')
+        nonce1 = user_dao.get_nonce_if_not_exists(acct.address)
+        user_dao.update_nonce(acct.address)
+        nonce2 = user_dao.get_nonce(acct.address)
+        self.assertNotEqual(nonce1, nonce2)
+
+    def tearDown(self):
+        user_dao = UsersDao()
+        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
+        user_dao.delete_db()
 
 
 if __name__ == '__main__':
