@@ -1,6 +1,14 @@
 # Crab
 Backend for DataUnion.app
 
+# Build and run docker image
+
+1. Clone the repository.
+2. Copy `sample.ini` to `properties.ini`.
+3. Change the properties as needed.
+4. Build image: `docker build . -t crab`
+5. Run image: `docker run -p 8080:8080 -v data:/data crab`
+
 # Setup
 
 ## Couchdb installation

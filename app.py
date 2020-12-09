@@ -42,4 +42,4 @@ def version():
 
 
 if __name__ == '__main__':
-    app.run(port=config['application']['port'])
+    app.run(host='0.0.0.0', port=config['application']['port'])
