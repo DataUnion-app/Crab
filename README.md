@@ -17,17 +17,17 @@ Please follow the installation guide [here](https://docs.couchdb.org/en/stable/i
 
 ## Starting the backend
 1. Install `Python 3.9.0`
-2. Optional - 
+2. Navigate to the directory where Crab is cloned.
 
-    a. Navigate to the directory where Crab is cloned.
-    
         `cd *address of this repo on your PC*`
+        
+3. Optional - 
     
-    b. Create a virtual env
+    a. Create a virtual env
         
         `python3 -m venv env`
         
-    c. Start a virtual env:
+    b. Start a virtual env:
 
         Linux : `source env/bin/activate`
         Windows: `.\env\Scripts\activate`
