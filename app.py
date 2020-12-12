@@ -80,7 +80,7 @@ def upload_file():
         hash_value = hash_image(file)
 
         # Check if it exists in the database already
-        imageMetadataDao.contains(hash_value)
+        imageMetadataDao.get_doc_by_id(hash_value)
 
         # Save file
         filename = secure_filename(hash_value + '-' + file.filename)
