@@ -78,7 +78,7 @@ def upload_file():
         data = imageMetadataDao.get_doc_by_id(doc_id)
 
         # File does not exist yet
-        if !data:
+        if data['error'] == 'not_found' and data['reason'] == 'missing':
             # Save file
             filename = secure_filename(doc_id + '-' + file.filename)
             dir_path = os.path.join(config['application']['upload_folder'], data["uploaded_by"])
