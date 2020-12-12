@@ -60,3 +60,14 @@ class UsersDao(BaseDao):
                 return True
         except:
             return False
+
+    def update_nonce(self, public_address):
+        documents = self.get_by_public_address(public_address)["result"]
+        if len(documents) != 1:
+            return False
+
+        system_random = random.SystemRandom()
+        nonce = system_random.randint(100000000, 9999999999999)
+        documents[0]["nonce"] = nonce
+        self.update_doc(documents[0]["_id"], documents[0])
+        return True

@@ -1,6 +1,14 @@
 # Crab
 Backend for DataUnion.app
 
+# Build and run docker image
+
+1. Clone the repository.
+2. Copy `sample.ini` to `properties.ini`.
+3. Change the properties as needed.
+4. Build image: `docker build . -t crab`
+5. Run image: `docker run -p 8080:8080 -v data:/data crab`
+
 # Setup
 
 ## Couchdb installation
@@ -9,17 +17,17 @@ Please follow the installation guide [here](https://docs.couchdb.org/en/stable/i
 
 ## Starting the backend
 1. Install `Python 3.9.0`
-2. Optional - 
+2. Navigate to the directory where Crab is cloned.
 
-    a. Navigate to the directory where Crab is cloned.
-    
         `cd *address of this repo on your PC*`
+        
+3. Optional - 
     
-    b. Create a virtual env
+    a. Create a virtual env
         
         `python3 -m venv env`
         
-    c. Start a virtual env:
+    b. Start a virtual env:
 
         Linux : `source env/bin/activate`
         Windows: `.\env\Scripts\activate`
