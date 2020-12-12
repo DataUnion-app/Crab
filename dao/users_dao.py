@@ -19,8 +19,10 @@ class UsersDao(BaseDao):
         data = self.query_data(selector)
 
         if len(data["result"]) == 1:
+            print("Nonce found [{0}] for address [{1}]".format(data["result"][0]["nonce"], public_address))
             return {"status": "exists", "nonce": data["result"][0]["nonce"]}
 
+        print("Nonce not found for address [{}]".format(public_address))
         return {"status": "not found"}
 
     def get_nonce_if_not_exists(self, public_address):
@@ -50,6 +52,7 @@ class UsersDao(BaseDao):
         data = self.query_data(selector)
 
         if len(data["result"]) != 1:
+            print("Address not [{}] found in [{}] db".format(public_address, self.db_name))
             return False
 
         nonce = data["result"][0]["nonce"]
@@ -58,8 +61,13 @@ class UsersDao(BaseDao):
             signer = w3.eth.account.recover_message(message, signature=signature)
             if public_address == signer:
                 return True
+            else:
+                print("Signature verification failed for [{}]. Signer not matched".format(public_address))
         except:
+            logging.info("Signature verification failed for [{}]".format(public_address))
             return False
+
+        return False
 
     def update_nonce(self, public_address):
         documents = self.get_by_public_address(public_address)["result"]

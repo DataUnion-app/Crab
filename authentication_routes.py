@@ -59,6 +59,7 @@ def login():
         resp = jsonify({'status': 'failed', 'message': 'Missing parameters in body `public_address` or `signature`'})
         return resp, 400
 
+    print("Verifying signature for [{}]".format(public_address))
     result = user_dao.verify_signature(public_address, signature)
     if not result:
         return jsonify({"message": "Signature invalid"}), 400
