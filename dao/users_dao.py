@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 import random
 from web3.auto import w3
+import logging
 from eth_account.messages import defunct_hash_message, encode_defunct
 from utils.get_random_string import get_random_string
 
@@ -19,7 +20,7 @@ class UsersDao(BaseDao):
         data = self.query_data(selector)
 
         if len(data["result"]) == 1:
-            print("Nonce found [{0}] for address [{1}]".format(data["result"][0]["nonce"], public_address))
+            logging.info("Nonce found [{0}] for address [{1}]".format(data["result"][0]["nonce"], public_address))
             return {"status": "exists", "nonce": data["result"][0]["nonce"]}
 
         print("Nonce not found for address [{}]".format(public_address))
@@ -52,7 +53,7 @@ class UsersDao(BaseDao):
         data = self.query_data(selector)
 
         if len(data["result"]) != 1:
-            print("Address not [{}] found in [{}] db".format(public_address, self.db_name))
+            logging.info("Address not [{}] found in [{}] db".format(public_address, self.db_name))
             return False
 
         nonce = data["result"][0]["nonce"]
@@ -62,7 +63,7 @@ class UsersDao(BaseDao):
             if public_address == signer:
                 return True
             else:
-                print("Signature verification failed for [{}]. Signer not matched".format(public_address))
+                logging.info("Signature verification failed for [{}]. Signer not matched".format(public_address))
         except:
             logging.info("Signature verification failed for [{}]".format(public_address))
             return False

@@ -140,3 +140,6 @@ properties.ini
 .idea/
 data/*
 !data/.gitkeep
+
+logs/*
+!logs/.gitkeep
