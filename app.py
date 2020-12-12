@@ -6,14 +6,18 @@ from models import NewImageMetadata
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
 from flask_jwt_extended import JWTManager
+import logging
 from authentication_routes import authentication_routes, sessions_dao
 from metadata_routes import metadata_routes
 from config import config
 from dao.sessions_dao import SessionsDao
 
-
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
+logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
+                    filename='logs/{}'.format(config["logging"]["file_name"]),
+                    encoding='utf-8',
+                    level=config["logging"].getint('level'))
 
 app = Flask(__name__)
 

@@ -1,21 +1,31 @@
 # Crab
 Backend for DataUnion.app
 
-# Build and run docker image
+# Setup
 
+## Build and run using docker image
+
+### Start coudchdb instance
+
+1. Run the command:
+
+`docker run --name crab-couchdb -v ~/couchdb/data:/opt/couchdb/data -e COUCHDB_USER=<username> -e COUCHDB_PASSWORD=<password> -d couchdb:3`
+2. Create databases: `users`, `sessions`, `metadata` and update the `properties.ini` file accordingly which will be used to build the docker container below.
+
+### Build the docker container for backend
 1. Clone the repository.
 2. Copy `sample.ini` to `properties.ini`.
 3. Change the properties as needed.
 4. Build image: `docker build . -t crab`
 5. Run image: `docker run -p 8080:8080 -v data:/data crab`
 
-# Setup
+## Local setup for development
 
-## Couchdb installation
+### Couchdb installation
 
 Please follow the installation guide [here](https://docs.couchdb.org/en/stable/install/index.html).
 
-## Starting the backend
+### Starting the backend
 1. Install `Python 3.9.0`
 2. Navigate to the directory where Crab is cloned.
 
