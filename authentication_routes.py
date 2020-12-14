@@ -30,7 +30,6 @@ def get_nonce():
         return resp, 400
 
     nonce = user_dao.get_nonce(args["public_address"])
-
     return jsonify(nonce), 200
 
 

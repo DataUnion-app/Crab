@@ -72,6 +72,14 @@ class TestUserAuthentication(unittest.TestCase):
         response = requests.request("GET", url, headers=headers, data=json.dumps({}))
         self.assertEqual(response.status_code, 401)
 
+    def test_get_nonce(self):
+        acct = Account.create('TEST')
+        url = "http://localhost:8080/get-nonce?public_address={}".format(acct.address)
+        response = requests.request("GET", url, headers={}, data=json.dumps({}))
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.text)
+        self.assertEqual(data, {"status": "not found"})
+
     @classmethod
     def tearDownClass(cls):
         user_dao = UsersDao()
