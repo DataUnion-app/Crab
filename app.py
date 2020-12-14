@@ -16,7 +16,6 @@ if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                     filename='logs/{}'.format(config["logging"]["file_name"]),
-                    encoding='utf-8',
                     level=config["logging"].getint('level'))
 
 app = Flask(__name__)
