@@ -80,6 +80,26 @@ class TestUserAuthentication(unittest.TestCase):
         data = json.loads(response.text)
         self.assertEqual(data, {"status": "not found"})
 
+    def test_get_nonce_of_registered_user(self):
+        acct = Account.create('TEST')
+
+        # Generate nonce
+        url = "http://localhost:8080/register"
+        payload = json.dumps({"public_address": acct.address})
+        headers = {'Content-Type': 'application/json'}
+        response = requests.request("POST", url, headers=headers, data=payload)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.text)
+        self.assertTrue(data["status"])
+        self.assertTrue(data["nonce"] is not None)
+
+        url = "http://localhost:8080/get-nonce?public_address={}".format(acct.address)
+        response = requests.request("GET", url, headers={}, data=json.dumps({}))
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.text)
+        self.assertEqual(data["status"], "exists")
+        self.assertTrue(isinstance(data["nonce"], int))
+
     @classmethod
     def tearDownClass(cls):
         user_dao = UsersDao()
