@@ -7,7 +7,7 @@ RUN apk add gcc libc-dev linux-headers
 WORKDIR /home/appuser/app
 ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0
-COPY requirements.txt requirements.txt
+COPY requirements/prod_linux.txt requirements.txt
 RUN pip install -r requirements.txt
 EXPOSE 8080
 COPY . .

@@ -43,9 +43,10 @@ Please follow the installation guide [here](https://docs.couchdb.org/en/stable/i
         Windows: `.\env\Scripts\activate`
         
 3. Install dependencies
-
-    `pip install -r requirements.txt`
+    Windows: `pip install -r requirements/dev_windows.txt`
+    Linux: `pip install -r requirements/prod_linux.txt`
     
+
 4. Copy `sample.ini` and create `properties.ini` file.
 
 5. Start the server `python app.py`
