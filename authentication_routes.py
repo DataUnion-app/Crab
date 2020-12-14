@@ -3,6 +3,7 @@ import json
 from dao.users_dao import UsersDao
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
+import logging
 from config import config
 from dao.sessions_dao import SessionsDao
 
@@ -29,7 +30,6 @@ def get_nonce():
         return resp, 400
 
     nonce = user_dao.get_nonce(args["public_address"])
-
     return jsonify(nonce), 200
 
 
@@ -59,6 +59,7 @@ def login():
         resp = jsonify({'status': 'failed', 'message': 'Missing parameters in body `public_address` or `signature`'})
         return resp, 400
 
+    logging.info("Verifying signature for [{}]".format(public_address))
     result = user_dao.verify_signature(public_address, signature)
     if not result:
         return jsonify({"message": "Signature invalid"}), 400
