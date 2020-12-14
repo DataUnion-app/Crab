@@ -1,6 +1,7 @@
 import abc
 import requests
 import json
+import logging
 
 
 class BaseDao(metaclass=abc.ABCMeta):
@@ -53,12 +54,14 @@ class BaseDao(metaclass=abc.ABCMeta):
         return self.save(doc_id, data)
 
     def delete_db(self):
+        logging.debug("Deleting db [{}]".format(self.db_name))
         url = "http://{0}:{1}@{2}/{3}".format(self.user, self.password, self.db_host, self.db_name)
         payload = {}
         headers = {}
         response = requests.request("DELETE", url, headers=headers, data=payload)
 
     def create_db(self):
+        logging.debug("Creating db [{}]".format(self.db_name))
         url = "http://{0}:{1}@{2}/{3}".format(self.user, self.password, self.db_host, self.db_name)
         payload = {}
         headers = {}

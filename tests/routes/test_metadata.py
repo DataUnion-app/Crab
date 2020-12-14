@@ -21,33 +21,39 @@ class TestMetadata(unittest.TestCase):
                                      'data')
         super(TestMetadata, self).__init__(*args, **kwargs)
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
+        self.clear_data_directory()
         user_dao = UsersDao()
         user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
+        user_dao.delete_db()
         user_dao.create_db()
 
         sessions_dao = SessionsDao()
         sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
+        sessions_dao.delete_db()
         sessions_dao.create_db()
 
-    @classmethod
-    def tearDownClass(cls):
+        image_metadata_dao = ImageMetadataDao()
+        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
+        image_metadata_dao.delete_db()
+        image_metadata_dao.create_db()
+
+    def tearDown(self):
+        self.clear_data_directory()
         user_dao = UsersDao()
         user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
         user_dao.delete_db()
+        user_dao.create_db()
 
         sessions_dao = SessionsDao()
         sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
         sessions_dao.delete_db()
+        sessions_dao.create_db()
 
-    def setUp(self):
-        pass
-        self.clear_data_directory()
-
-    def tearDown(self):
-        self.clear_data_directory()
-        pass
+        image_metadata_dao = ImageMetadataDao()
+        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
+        image_metadata_dao.delete_db()
+        image_metadata_dao.create_db()
 
     def test_add_image(self):
         acct = Account.create('TEST')
@@ -70,6 +76,40 @@ class TestMetadata(unittest.TestCase):
         image_id = data["id"]
         self.assertTrue(image_id is not None)
 
+    def test_add_image_twice(self):
+        acct = Account.create('TEST')
+        token = Helper.login(acct.address, acct.key)
+        headers = {'Authorization': 'Bearer {0}'.format(token)}
+
+        api_url = self.url + "/api/v1/upload-file"
+
+        payload = {'uploaded_by': acct.address}
+        image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample.png')
+
+        with open(image_path, 'rb') as img:
+            files = [
+                ('file',
+                 ('sample.png', open(image_path, 'rb'), 'image/png'))
+            ]
+
+            response = requests.request("POST", api_url, headers=headers, data=payload, files=files)
+            self.assertTrue(response.status_code, 200)
+            data = json.loads(response.text)
+            image_id = data["id"]
+            self.assertTrue(image_id is not None)
+
+        image_path2 = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample2.png')
+        with open(image_path2, 'rb') as img2:
+            files2 = [
+                ('file',
+                 ('sample2.png', open(image_path2, 'rb'), 'image/png'))
+            ]
+
+            response = requests.request("POST", api_url, headers=headers, data=payload, files=files2)
+            self.assertTrue(response.status_code, 400)
+            data = json.loads(response.text)
+            self.assertEqual(data, {"message": "The uploaded file already exists in the dataset."})
+
     def test_metadata_to_image(self):
         acct = Account.create('TEST')
         token = Helper.login(acct.address, acct.key)
@@ -78,16 +118,18 @@ class TestMetadata(unittest.TestCase):
         api_url = self.url + "/api/v1/upload-file"
         payload = {'uploaded_by': acct.address}
         image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample.png')
-        files = [
-            ('file',
-             ('sample.png', open(image_path, 'rb'), 'image/png'))
-        ]
 
-        response = requests.request("POST", api_url, headers=headers, data=payload, files=files)
-        self.assertTrue(response.status_code, 200)
-        data = json.loads(response.text)
-        image_id = data["id"]
-        self.assertTrue(image_id is not None)
+        with open(image_path, 'rb') as img:
+            files = [
+                ('file',
+                 ('sample.png', img, 'image/png'))
+            ]
+
+            response = requests.request("POST", api_url, headers=headers, data=payload, files=files)
+            self.assertTrue(response.status_code, 200)
+            data = json.loads(response.text)
+            image_id = data["id"]
+            self.assertTrue(image_id is not None)
 
         api_url = self.url + "/api/v1/upload"
         data = {"photo_id": image_id, "timestamp": "", "other": {}, "tags": ["t1", "t2"]}

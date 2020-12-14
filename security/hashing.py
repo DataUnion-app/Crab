@@ -4,13 +4,15 @@
 from PIL import Image
 import imagehash
 
+
 def hash_image(image):
-	image_loaded = None
-	try:
-		image_loaded = Image.open(image)
-	except:
-		print('Could not open image: ', image)
-	return imagehash.average_hash(image_loaded)
+    image_loaded = None
+    try:
+        image_loaded = Image.open(image)
+    except:
+        print('Could not open image: ', image)
+    return imagehash.average_hash(image_loaded)
+
 
 if __name__ == '__main__':
     test_image = './images/mancat.jpeg'
