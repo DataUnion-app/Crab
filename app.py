@@ -45,5 +45,10 @@ def version():
     return "Version: {0}".format(config['application']['version'])
 
 
+@app.route('/', methods=["GET"])
+def api():
+    return send_file(os.path.join('public', 'api.html'))
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=config['application']['port'])
