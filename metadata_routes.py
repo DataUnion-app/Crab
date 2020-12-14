@@ -78,7 +78,7 @@ def upload_file():
         data = imageMetadataDao.get_doc_by_id(doc_id)
 
         # File does not exist yet
-        if data['error'] == 'not_found' and data['reason'] == 'missing':
+        if data.get('error') == 'not_found' and (data.get('reason') == 'missing' or data.get('reason') == 'deleted'):
             # Save file
             filename = secure_filename(str(doc_id) + '-' + file.filename)
             dir_path = os.path.join(config['application']['upload_folder'], request_data["uploaded_by"])
@@ -87,8 +87,9 @@ def upload_file():
             file_path = os.path.join(dir_path, filename)
             file.save(file_path)
 
-            data_to_save = dict(data)
+            data_to_save = dict({})
             data_to_save["filename"] = filename
+            data_to_save["uploaded_by"] = request_data["uploaded_by"]
             data_to_save["status"] = "new"
             data_to_save["status_description"] = "Image not verified"
             data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
