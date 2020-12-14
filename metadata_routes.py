@@ -10,6 +10,8 @@ from dao.ImageMetadataDao import ImageMetadataDao
 from utils.get_random_string import get_random_string
 from werkzeug.utils import secure_filename
 
+from security.hashing import hash_image
+
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
 user = config['couchdb']['user']
@@ -69,28 +71,36 @@ def upload_file():
         resp = jsonify({'message': 'No file selected for uploading'})
         return resp, 400
     if file and allowed_file(file.filename):
-        doc_id = get_random_string()
+        # Compute image hash value
+        doc_id = hash_image(file)
 
-        # Save file
-        filename = secure_filename(doc_id + '-' + file.filename)
-        dir_path = os.path.join(config['application']['upload_folder'], data["uploaded_by"])
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-        file_path = os.path.join(dir_path, filename)
-        file.save(file_path)
+        # Check if it exists in the database already
+        data = imageMetadataDao.get_doc_by_id(doc_id)
 
-        data_to_save = dict(data)
-        data_to_save["filename"] = filename
-        data_to_save["status"] = "new"
-        data_to_save["status_description"] = "Image not verified"
-        data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
+        # File does not exist yet
+        if data['error'] == 'not_found' and data['reason'] == 'missing':
+            # Save file
+            filename = secure_filename(doc_id + '-' + file.filename)
+            dir_path = os.path.join(config['application']['upload_folder'], data["uploaded_by"])
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+            file_path = os.path.join(dir_path, filename)
+            file.save(file_path)
 
-        # Save metadata
-        doc_id = imageMetadataDao.save(doc_id, data_to_save)["id"]
+            data_to_save = dict(data)
+            data_to_save["filename"] = filename
+            data_to_save["status"] = "new"
+            data_to_save["status_description"] = "Image not verified"
+            data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
 
-        resp = jsonify({'message': 'File successfully uploaded', "id": doc_id})
-        return resp, 200
+            # Save metadata
+            doc_id = imageMetadataDao.save(hash_value, data_to_save)["id"]
 
+            resp = jsonify({'message': 'File successfully uploaded', "id": doc_id})
+            return resp, 200
+        else:
+            resp = jsonify({'message': 'The uploaded file already exists in the dataset.'})
+            return resp, 400
     else:
         resp = jsonify({'message': 'Allowed file types are {0}'.format(ALLOWED_EXTENSIONS)})
         return resp, 400
