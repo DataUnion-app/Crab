@@ -57,8 +57,8 @@ def get_all_image_metadata():
 def upload_file():
     # Validate if request is correct
     required_params = set(["uploaded_by"])
-    data = request.form
-    if required_params != set(data.keys()):
+    request_data = request.form
+    if required_params != set(request_data.keys()):
         return jsonify(
             {"status": "failed", "message": "Invalid input body. Expected keys :{0}".format(required_params)}), 400
 
@@ -80,8 +80,8 @@ def upload_file():
         # File does not exist yet
         if data['error'] == 'not_found' and data['reason'] == 'missing':
             # Save file
-            filename = secure_filename(doc_id + '-' + file.filename)
-            dir_path = os.path.join(config['application']['upload_folder'], data["uploaded_by"])
+            filename = secure_filename(str(doc_id) + '-' + file.filename)
+            dir_path = os.path.join(config['application']['upload_folder'], request_data["uploaded_by"])
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
             file_path = os.path.join(dir_path, filename)
@@ -94,7 +94,7 @@ def upload_file():
             data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
 
             # Save metadata
-            doc_id = imageMetadataDao.save(hash_value, data_to_save)["id"]
+            doc_id = imageMetadataDao.save(doc_id, data_to_save)["id"]
 
             resp = jsonify({'message': 'File successfully uploaded', "id": doc_id})
             return resp, 200
