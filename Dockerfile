@@ -11,7 +11,7 @@ RUN apt-get update \
   && pip3 --no-cache-dir install --upgrade pip \
   && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install vim -y && apt-get install les -y
+RUN apt-get update && apt-get install vim -y && apt-get install less -y
 
 WORKDIR /home/appuser/app
 ENV FLASK_APP=app.py
