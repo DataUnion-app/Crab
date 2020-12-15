@@ -1,17 +1,11 @@
-from flask import Flask, jsonify, request, send_file
-import json
+from flask import Flask, send_file
 import os
-from datetime import datetime
-from models import NewImageMetadata
-from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
-                                get_jwt_identity, get_raw_jwt)
 from flask_jwt_extended import JWTManager
 import logging
 from logging.handlers import TimedRotatingFileHandler
-from authentication_routes import authentication_routes, sessions_dao
-from metadata_routes import metadata_routes
+from routes.authentication_routes import authentication_routes, sessions_dao
+from routes.metadata_routes import metadata_routes
 from config import config
-from dao.sessions_dao import SessionsDao
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
