@@ -143,6 +143,17 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(result['tags'], ['t1', 't2'])
         self.assertEqual(result['other'], {})
 
+    def test_get_all_metadata(self):
+        acct = Account.create('TEST')
+        token = Helper.login(acct.address, acct.key)
+        headers = {'Authorization': 'Bearer {0}'.format(token)}
+
+        api_url = self.url + "/api/v1/all-metadata"
+        response = requests.request("GET", api_url, headers=headers, data=json.dumps({}))
+        data= json.loads(response.text)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data, {"result": []})
+
     def clear_data_directory(self):
         for filename in os.listdir(self.data_dir):
             file_path = os.path.join(self.data_dir, filename)

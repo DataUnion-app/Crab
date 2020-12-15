@@ -69,3 +69,11 @@ class BaseDao(metaclass=abc.ABCMeta):
         if response.status_code == 201:
             return True
         return False
+
+    def exists(self, doc_id):
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, doc_id)
+        headers = {'Accept': 'application/json'}
+        response = requests.request("GET", url, headers=headers)
+        if response.status_code == 200:
+            return True
+        return False
