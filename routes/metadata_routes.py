@@ -148,7 +148,6 @@ def get_image():
 
 
 @metadata_routes.route('/api/v1/stats', methods=["GET"])
-@jwt_required
 def get_stats():
 
     # TODO: Fetch data from database
