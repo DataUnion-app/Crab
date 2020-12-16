@@ -1,22 +1,18 @@
-from flask import Flask, jsonify, request, send_file
-import json
+from flask import Flask, send_file
 import os
-from datetime import datetime
-from models import NewImageMetadata
-from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
-                                get_jwt_identity, get_raw_jwt)
 from flask_jwt_extended import JWTManager
 import logging
-from authentication_routes import authentication_routes, sessions_dao
-from metadata_routes import metadata_routes
+from logging.handlers import TimedRotatingFileHandler
+from routes.authentication_routes import authentication_routes, sessions_dao
+from routes.metadata_routes import metadata_routes
 from config import config
-from dao.sessions_dao import SessionsDao
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
-logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                    filename='logs/{}'.format(config["logging"]["file_name"]),
-                    level=config["logging"].getint('level'))
+handler = TimedRotatingFileHandler(filename='logs/{}'.format(config["logging"]["file_name"]), when="D", interval=1)
+
+logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=config["logging"].getint('level'),
+                    handlers=[handler])
 
 app = Flask(__name__)
 

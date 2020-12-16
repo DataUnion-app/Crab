@@ -9,7 +9,7 @@ from config import config
 from dao.ImageMetadataDao import ImageMetadataDao
 from utils.get_random_string import get_random_string
 from werkzeug.utils import secure_filename
-
+import logging
 from security.hashing import hash_image
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
@@ -21,7 +21,7 @@ metadata_db = config['couchdb']['metadata_db']
 imageMetadataDao = ImageMetadataDao()
 imageMetadataDao.set_config(user, password, db_host, metadata_db)
 
-ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 metadata_routes = Blueprint('metadata_routes', __name__)
 
@@ -33,7 +33,7 @@ def allowed_file(filename):
 @metadata_routes.route('/api/v1/upload', methods=["POST"])
 @jwt_required
 def upload_metadata():
-    required_params = set(["timestamp", "other", "photo_id", "tags"])
+    required_params = {"timestamp", "other", "photo_id", "tags"}
     data = json.loads(request.data)
     if required_params != set(data.keys()):
         return jsonify(
@@ -56,7 +56,7 @@ def get_all_image_metadata():
 @jwt_required
 def upload_file():
     # Validate if request is correct
-    required_params = set(["uploaded_by"])
+    required_params = {"uploaded_by"}
     request_data = request.form
     if required_params != set(request_data.keys()):
         return jsonify(
@@ -72,15 +72,15 @@ def upload_file():
         return resp, 400
     if file and allowed_file(file.filename):
         # Compute image hash value
-        doc_id = hash_image(file)
+        doc_id = str(hash_image(file))
 
         # Check if it exists in the database already
-        data = imageMetadataDao.get_doc_by_id(doc_id)
+        image_exists = imageMetadataDao.exists(doc_id)
 
         # File does not exist yet
-        if data.get('error') == 'not_found' and (data.get('reason') == 'missing' or data.get('reason') == 'deleted'):
+        if not image_exists:
             # Save file
-            filename = secure_filename(str(doc_id) + '-' + file.filename)
+            filename = secure_filename(doc_id + '-' + file.filename)
             dir_path = os.path.join(config['application']['upload_folder'], request_data["uploaded_by"])
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
@@ -91,6 +91,7 @@ def upload_file():
             data_to_save["filename"] = filename
             data_to_save["uploaded_by"] = request_data["uploaded_by"]
             data_to_save["status"] = "new"
+            data_to_save["hash"] = doc_id
             data_to_save["status_description"] = "Image not verified"
             data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
 
@@ -100,9 +101,13 @@ def upload_file():
             resp = jsonify({'message': 'File successfully uploaded', "id": doc_id})
             return resp, 200
         else:
+            logging.debug(
+                "Not allowing address [{}] to upload image [{}].".format(request_data["uploaded_by"], doc_id))
             resp = jsonify({'message': 'The uploaded file already exists in the dataset.'})
             return resp, 400
     else:
+        logging.debug(
+            "Not allowing address [{}] to upload file as type not supported.".format(request_data["uploaded_by"]))
         resp = jsonify({'message': 'Allowed file types are {0}'.format(ALLOWED_EXTENSIONS)})
         return resp, 400
 
@@ -112,11 +117,11 @@ def upload_file():
 def get_metadata_by_eth_address():
     args = request.args
     if "eth_address" in args:
-        eth_Address = args["eth_address"]
-        result = imageMetadataDao.get_metadata_by_eth_address(eth_Address)
+        eth_address = args["eth_address"]
+        result = imageMetadataDao.get_metadata_by_eth_address(eth_address)
         return result, 200
     else:
-        resp = jsonify({'message': 'Missing query paramerter: `eth_address`'})
+        resp = jsonify({'message': 'Missing query parameter: `eth_address`'})
         return resp, 400
 
 
@@ -134,18 +139,17 @@ def get_image():
         file_name = result["result"][0]["filename"]
         file_path = os.path.join(app.config['UPLOAD_FOLDER'],
                                  result["result"][0]["uploaded_by"],
-                                 result["result"][0]["filename"])
+                                 file_name)
         return send_file(file_path)
 
     else:
-        resp = jsonify({'message': 'Missing query paramerter: `id`'})
+        resp = jsonify({'message': 'Missing query parameter: `id`'})
         return resp, 400
 
 
 @metadata_routes.route('/api/v1/stats', methods=["GET"])
 @jwt_required
 def get_stats():
-    args = request.args
 
     # TODO: Fetch data from database
     result = {
