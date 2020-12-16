@@ -5,6 +5,7 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 from routes.authentication_routes import authentication_routes, sessions_dao
 from routes.metadata_routes import metadata_routes
+from routes.staticdata import staticdata_routes
 from config import config
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
@@ -18,6 +19,7 @@ app = Flask(__name__)
 
 app.register_blueprint(authentication_routes)
 app.register_blueprint(metadata_routes)
+app.register_blueprint(staticdata_routes)
 
 app.secret_key = config['application']['secret_key']
 app.config['UPLOAD_FOLDER'] = config['application']['upload_folder']
