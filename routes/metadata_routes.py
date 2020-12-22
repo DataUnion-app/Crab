@@ -149,20 +149,16 @@ def get_image():
 
 @metadata_routes.route('/api/v1/stats', methods=["GET"])
 def get_stats():
-
     # TODO: Fetch data from database
     result = {
         "initial_images": 100,
         "data": [
-            {"time": 1606923074, "num_images": 5, "tags": [{"dog": 5}, {"outside": 3}, {"daylight": 2}]},
-            {"time": 1606923075, "num_images": 2, "tags": [{"dog": 2}, {"outside": 1}]},
-            {"time": 1606923076, "num_images": 10, "tags": [{"dog": 8}, {"outside": 3}, {"daylight": 7},
-                                                            {"horse": 2}]},
-            {"time": 1606923077, "num_images": 3, "tags": [{"dog": 1}, {"outside": 3}, {"daylight": 3},
-                                                           {"horse": 2}]},
-            {"time": 1606923078, "num_images": 1, "tags": [{"dog": 1}, {"daylight": 1}]},
-            {"time": 1606923079, "num_images": 12, "tags": [{"dog": 8}, {"outside": 12}, {"daylight": 12},
-                                                            {"horse": 4}]}
+            {"time": 1606923074, "num_images": 5, "dog": 5, "outside": 3, "daylight": 2},
+            {"time": 1606923075, "num_images": 2, "dog": 2, "outside": 1},
+            {"time": 1606923076, "num_images": 10, "dog": 8, "outside": 3, "daylight": 7, "horse": 2},
+            {"time": 1606923077, "num_images": 3, "dog": 1, "outside": 3, "daylight": 3, "horse": 2},
+            {"time": 1606923078, "num_images": 1, "dog": 1, "daylight": 1},
+            {"time": 1606923079, "num_images": 12, "dog": 8, "outside": 12, "daylight": 12, "horse": 4}
         ]
     }
     response = jsonify(result)
