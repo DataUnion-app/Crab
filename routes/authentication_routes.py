@@ -59,6 +59,10 @@ def login():
         resp = jsonify({'status': 'failed', 'message': 'Missing parameters in body `public_address` or `signature`'})
         return resp, 400
 
+    if user_dao.is_access_blocked(public_address):
+        resp = jsonify({'status': 'failed', 'message': 'Access is blocked'})
+        return resp, 400
+
     logging.info("Verifying signature for [{}]".format(public_address))
     result = user_dao.verify_signature(public_address, signature)
     if not result:
@@ -82,9 +86,14 @@ def login():
 @authentication_routes.route('/refresh', methods=['POST'])
 @jwt_refresh_token_required
 def refresh():
-    current_user = get_jwt_identity()
+    public_address = get_jwt_identity()
+
+    if user_dao.is_access_blocked(public_address):
+        resp = jsonify({'status': 'failed', 'message': 'Access is blocked'})
+        return resp, 400
+    access_token = create_access_token(identity=public_address)
     result = {
-        'access_token': create_access_token(identity=current_user)
+        'access_token': access_token
     }
     return jsonify(result), 200
 
