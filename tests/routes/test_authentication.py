@@ -27,17 +27,10 @@ class TestUserAuthentication(unittest.TestCase):
         sessions_dao.create_db()
 
     def test_user_login(self):
-        acct = Account.create('TEST')
+        acct = Account.create()
 
         # Generate nonce
-        api_url = self.url + "/register"
-        payload = json.dumps({"public_address": acct.address})
-        headers = {'Content-Type': 'application/json'}
-        response = requests.request("POST", api_url, headers=headers, data=payload)
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.text)
-        self.assertTrue(data["status"])
-        self.assertTrue(data["nonce"] is not None)
+        data = Helper.register(acct.address)
 
         # Sign message
         nonce = data["nonce"]
@@ -59,7 +52,7 @@ class TestUserAuthentication(unittest.TestCase):
         self.assertTrue(login_response_data.get('refresh_token') is not None)
 
     def test_blocked_user_login(self):
-        acct = Account.create('TEST')
+        acct = Account.create()
 
         Helper.login(acct.address, acct.key)
 
@@ -102,7 +95,7 @@ class TestUserAuthentication(unittest.TestCase):
         self.assertIsNotNone(login_response_data2.get('refresh_token'))
 
     def test_user_logout(self):
-        acct = Account.create('TEST')
+        acct = Account.create()
 
         token = Helper.login(acct.address, acct.key)
         headers = {'Authorization': 'Bearer {0}'.format(token)}
@@ -121,7 +114,7 @@ class TestUserAuthentication(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_get_nonce(self):
-        acct = Account.create('TEST')
+        acct = Account.create()
         api_url = self.url + "/get-nonce?public_address={}".format(acct.address)
         response = requests.request("GET", api_url, headers={}, data=json.dumps({}))
         self.assertEqual(response.status_code, 200)
@@ -129,37 +122,30 @@ class TestUserAuthentication(unittest.TestCase):
         self.assertEqual(data, {"status": "not found"})
 
     def test_get_nonce_of_registered_user(self):
-        acct = Account.create('TEST')
+        acct = Account.create()
 
         # Generate nonce
-        url = "http://localhost:8080/register"
+        api_url = self.url + "/register"
         payload = json.dumps({"public_address": acct.address})
         headers = {'Content-Type': 'application/json'}
-        response = requests.request("POST", url, headers=headers, data=payload)
+        response = requests.request("POST", api_url, headers=headers, data=payload)
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.text)
         self.assertTrue(data["status"])
         self.assertTrue(data["nonce"] is not None)
 
-        url = "http://localhost:8080/get-nonce?public_address={}".format(acct.address)
-        response = requests.request("GET", url, headers={}, data=json.dumps({}))
+        api_url = self.url + "/get-nonce?public_address={}".format(acct.address)
+        response = requests.request("GET", api_url, headers={}, data=json.dumps({}))
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.text)
         self.assertEqual(data["status"], "exists")
         self.assertTrue(isinstance(data["nonce"], int))
 
     def test_refresh_token(self):
-        acct = Account.create('TEST')
+        acct = Account.create()
 
         # Generate nonce
-        url = "http://localhost:8080/register"
-        payload = json.dumps({"public_address": acct.address})
-        headers = {'Content-Type': 'application/json'}
-        response = requests.request("POST", url, headers=headers, data=payload)
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.text)
-        self.assertTrue(data["status"])
-        self.assertTrue(data["nonce"] is not None)
+        data = Helper.register(acct.address)
 
         # Sign message
         nonce = data["nonce"]
@@ -170,21 +156,21 @@ class TestUserAuthentication(unittest.TestCase):
 
         # Generate jwt token
 
-        url = "http://localhost:8080/login"
+        api_url = self.url + "/login"
         payload = json.dumps({"public_address": acct.address, "signature": signature.hex()})
         headers = {'Content-Type': 'application/json'}
 
-        login_response = requests.request("POST", url, headers=headers, data=payload)
+        login_response = requests.request("POST", api_url, headers=headers, data=payload)
         self.assertEqual(login_response.status_code, 200)
         login_response_data = json.loads(login_response.text)
         refresh_token = login_response_data.get('refresh_token')
 
         self.assertTrue(refresh_token is not None)
 
-        url = "http://localhost:8080/refresh"
+        api_url = self.url + "/refresh"
         headers = {'Authorization': 'Bearer {0}'.format(refresh_token)}
 
-        refresh_response = requests.request("POST", url, headers=headers, data=json.dumps({}))
+        refresh_response = requests.request("POST", api_url, headers=headers, data=json.dumps({}))
         self.assertEqual(refresh_response.status_code, 200)
         refresh_response_data = json.loads(refresh_response.text)
 
@@ -193,9 +179,51 @@ class TestUserAuthentication(unittest.TestCase):
 
         headers = {'Authorization': 'Bearer {0}'.format(new_access_token)}
 
-        url = "http://localhost:8080/check"
-        response = requests.request("GET", url, headers=headers, data=json.dumps({}))
+        api_url = self.url + "/check"
+        response = requests.request("GET", api_url, headers=headers, data=json.dumps({}))
         self.assertEqual(response.status_code, 200)
+
+    def test_revoke_refresh_token(self):
+        acct = Account.create()
+
+        # Generate nonce
+        data = Helper.register(acct.address)
+
+        # Sign message
+        nonce = data["nonce"]
+        private_key = acct.key
+        message = encode_defunct(text=str(nonce))
+        signed_message = w3.eth.account.sign_message(message, private_key=private_key)
+        signature = signed_message.signature
+
+        # Generate jwt token
+
+        api_url = self.url + "/login"
+        payload = json.dumps({"public_address": acct.address, "signature": signature.hex()})
+        headers = {'Content-Type': 'application/json'}
+
+        login_response = requests.request("POST", api_url, headers=headers, data=payload)
+        self.assertEqual(login_response.status_code, 200)
+        login_response_data = json.loads(login_response.text)
+        refresh_token = login_response_data.get('refresh_token')
+
+        self.assertTrue(refresh_token is not None)
+
+        headers = {'Authorization': 'Bearer {0}'.format(refresh_token)}
+
+        api_url = self.url + "/revoke-refresh-token"
+        response = requests.request("POST", api_url, headers=headers, data=json.dumps({}))
+        self.assertEqual(response.status_code, 200)
+        revoke_data = json.loads(response.text)
+        self.assertEqual(revoke_data, {'message': 'Refresh token has been revoked'})
+
+        api_url = self.url + "/refresh"
+        headers = {'Authorization': 'Bearer {0}'.format(refresh_token)}
+
+        refresh_response = requests.request("POST", api_url, headers=headers, data=json.dumps({}))
+        self.assertEqual(refresh_response.status_code, 401)
+        refresh_response_data = json.loads(refresh_response.text)
+        self.assertEqual(refresh_response_data, {'msg': 'Token has been revoked'})
 
     @classmethod
     def tearDownClass(cls):

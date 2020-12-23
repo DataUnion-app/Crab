@@ -98,6 +98,13 @@ def refresh():
     return jsonify(result), 200
 
 
+@authentication_routes.route("/revoke-refresh-token", methods=['POST'])
+@jwt_refresh_token_required
+def revoke_refresh_token():
+    jti = get_raw_jwt()['jti']
+    sessions_dao.add_to_blacklist(jti)
+    return jsonify({'message': 'Refresh token has been revoked'}), 200
+
 @authentication_routes.route("/logout", methods=['POST'])
 @jwt_required
 def logout():
