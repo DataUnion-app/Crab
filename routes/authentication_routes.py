@@ -79,34 +79,14 @@ def login():
         return {'message': 'Something went wrong'}, 500
 
 
-@authentication_routes.route("/refresh", methods=['POST'])
+@authentication_routes.route('/refresh', methods=['POST'])
 @jwt_refresh_token_required
 def refresh():
-    data = json.loads(request.data)
-    public_address = data.get("public_address")
-    signature = data.get("signature")
-
-    if not public_address or not signature:
-        resp = jsonify({'status': 'failed', 'message': 'Missing parameters in body `public_address` or `signature`'})
-        return resp, 400
-
-    result = user_dao.verify_signature(public_address, signature)
-    if not result:
-        return jsonify({"message": "Signature invalid"}), 400
-
-    try:
-
-        access_token = create_access_token(identity=public_address)
-        refresh_token = create_refresh_token(identity=public_address)
-        user_dao.update_nonce(public_address)
-        return jsonify({
-            'status': 'success',
-            'message': 'Public address [{}] registered'.format(public_address),
-            'access_token': access_token,
-            'refresh_token': refresh_token
-        }), 200
-    except:
-        return {'message': 'Something went wrong'}, 500
+    current_user = get_jwt_identity()
+    result = {
+        'access_token': create_access_token(identity=current_user)
+    }
+    return jsonify(result), 200
 
 
 @authentication_routes.route("/logout", methods=['POST'])
