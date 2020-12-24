@@ -42,7 +42,7 @@ class UsersDao(BaseDao):
         document["public_address"] = public_address
         document["nonce"] = nonce
         document["status"] = "new"
-        document["is_blocked"] = False
+        document["is_access_blocked"] = False
 
         self.save(doc_id, document)
         return nonce
@@ -80,3 +80,27 @@ class UsersDao(BaseDao):
         documents[0]["nonce"] = nonce
         self.update_doc(documents[0]["_id"], documents[0])
         return True
+
+    def is_access_blocked(self, public_address):
+        documents = self.get_by_public_address(public_address)["result"]
+        if len(documents) != 1:
+            return False
+        return documents[0]["is_access_blocked"]
+
+    def block_access(self, public_address):
+        documents = self.get_by_public_address(public_address)["result"]
+        if len(documents) != 1:
+            return
+
+        documents[0]["is_access_blocked"] = True
+        documents[0]["updated_at"] = datetime.timestamp(datetime.now())
+        self.update_doc(documents[0]["_id"], documents[0])
+
+    def unblock_access(self, public_address):
+        documents = self.get_by_public_address(public_address)["result"]
+        if len(documents) != 1:
+            return
+
+        documents[0]["is_access_blocked"] = False
+        documents[0]["updated_at"] = datetime.timestamp(datetime.now())
+        self.update_doc(documents[0]["_id"], documents[0])

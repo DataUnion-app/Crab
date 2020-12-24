@@ -59,6 +59,10 @@ def login():
         resp = jsonify({'status': 'failed', 'message': 'Missing parameters in body `public_address` or `signature`'})
         return resp, 400
 
+    if user_dao.is_access_blocked(public_address):
+        resp = jsonify({'status': 'failed', 'message': 'Access is blocked'})
+        return resp, 400
+
     logging.info("Verifying signature for [{}]".format(public_address))
     result = user_dao.verify_signature(public_address, signature)
     if not result:
@@ -79,35 +83,27 @@ def login():
         return {'message': 'Something went wrong'}, 500
 
 
-@authentication_routes.route("/refresh", methods=['POST'])
+@authentication_routes.route('/refresh', methods=['POST'])
 @jwt_refresh_token_required
 def refresh():
-    data = json.loads(request.data)
-    public_address = data.get("public_address")
-    signature = data.get("signature")
+    public_address = get_jwt_identity()
 
-    if not public_address or not signature:
-        resp = jsonify({'status': 'failed', 'message': 'Missing parameters in body `public_address` or `signature`'})
+    if user_dao.is_access_blocked(public_address):
+        resp = jsonify({'status': 'failed', 'message': 'Access is blocked'})
         return resp, 400
+    access_token = create_access_token(identity=public_address)
+    result = {
+        'access_token': access_token
+    }
+    return jsonify(result), 200
 
-    result = user_dao.verify_signature(public_address, signature)
-    if not result:
-        return jsonify({"message": "Signature invalid"}), 400
 
-    try:
-
-        access_token = create_access_token(identity=public_address)
-        refresh_token = create_refresh_token(identity=public_address)
-        user_dao.update_nonce(public_address)
-        return jsonify({
-            'status': 'success',
-            'message': 'Public address [{}] registered'.format(public_address),
-            'access_token': access_token,
-            'refresh_token': refresh_token
-        }), 200
-    except:
-        return {'message': 'Something went wrong'}, 500
-
+@authentication_routes.route("/revoke-refresh-token", methods=['POST'])
+@jwt_refresh_token_required
+def revoke_refresh_token():
+    jti = get_raw_jwt()['jti']
+    sessions_dao.add_to_blacklist(jti)
+    return jsonify({'message': 'Refresh token has been revoked'}), 200
 
 @authentication_routes.route("/logout", methods=['POST'])
 @jwt_required

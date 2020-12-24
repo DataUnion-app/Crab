@@ -26,7 +26,7 @@ app.config['UPLOAD_FOLDER'] = config['application']['upload_folder']
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['JWT_SECRET_KEY'] = config['application']['jwt_secret_string']
 app.config['JWT_BLACKLIST_ENABLED'] = True
-app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access']
+app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
 
 jwt = JWTManager(app)
 

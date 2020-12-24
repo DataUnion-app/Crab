@@ -42,6 +42,22 @@ class TestUserDao(unittest.TestCase):
         nonce2 = user_dao.get_nonce(acct.address)
         self.assertNotEqual(nonce1, nonce2)
 
+    def test_block_user(self):
+        user_dao = UsersDao()
+        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
+        acct = Account.create('TEST')
+        nonce1 = user_dao.get_nonce_if_not_exists(acct.address)
+        is_blocked = user_dao.is_access_blocked(acct.address)
+        self.assertFalse(is_blocked)
+
+        user_dao.block_access(acct.address)
+        is_blocked = user_dao.is_access_blocked(acct.address)
+        self.assertTrue(is_blocked)
+
+        user_dao.unblock_access(acct.address)
+        is_blocked = user_dao.is_access_blocked(acct.address)
+        self.assertFalse(is_blocked)
+
     def tearDown(self):
         user_dao = UsersDao()
         user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
