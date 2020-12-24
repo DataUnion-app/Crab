@@ -35,19 +35,19 @@ def allowed_file(filename):
 def upload_metadata():
     required_params = {"timestamp", "other", "photo_id", "tags"}
     data = json.loads(request.data)
+    public_address = get_jwt_identity()
+
     if required_params != set(data.keys()):
         return jsonify(
             {"status": "failed", "message": "Invalid input body. Expected keys :{0}".format(required_params)}), 400
 
-    imageMetadataDao.add_metadata_for_image(data["photo_id"], data["tags"], data["other"])
+    imageMetadataDao.add_metadata_for_image(public_address, data["photo_id"], data["tags"], data["other"])
     return jsonify({"status": "success"}), 200
 
 
 @metadata_routes.route('/api/v1/all-metadata', methods=["GET"])
 @jwt_required
 def get_all_image_metadata():
-    current_user = get_jwt_identity()
-    print("Public_address", current_user)
     result = imageMetadataDao.get_all_verified_metadata()
     return result
 

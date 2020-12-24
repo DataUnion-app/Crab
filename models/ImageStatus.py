@@ -5,8 +5,9 @@ class ImageStatus(Enum):
     NEW = 1,
     VERIFIED = 2,
     UNVERIFIED = 3,
-    TAGGING = 4,
-    READY_TO_PUBLISH = 4,
-    PUBLISHED = 5,
-    UNPUBLISHED = 6,
-    MISSING_FILE = 7
+    AVAILABLE_FOR_TAGGING = 4,
+    READY_TO_PUBLISH = 5,
+    PUBLISHED = 6,
+    UNPUBLISHED = 7,
+    MISSING_FILE = 8,
+    REPORTED_AS_INAPPROPRIATE = 9
