@@ -7,8 +7,10 @@ from models.ImageStatus import ImageStatus
 
 class ImageMetadataDao(BaseDao):
 
-    def get_metadata_by_eth_address(self, eth_address):
+    def get_metadata_by_eth_address(self, eth_address, status=None):
         query = {"selector": {"_id": {"$gt": None}, "uploaded_by": eth_address}}
+        if status:
+            query = {"selector": {"_id": {"$gt": None}, "uploaded_by": eth_address, "status": status}}
         headers = {'Content-Type': 'application/json'}
         url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
 

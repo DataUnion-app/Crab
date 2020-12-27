@@ -6,13 +6,15 @@ from eth_account.messages import defunct_hash_message, encode_defunct
 
 class Helper:
 
+    URL = "http://localhost:8080"
+
     @staticmethod
     def login(address, key):
         # Generate nonce
-        url = "http://localhost:8080/register"
+        api_url = Helper.URL + "/register"
         payload = json.dumps({"public_address": address})
         headers = {'Content-Type': 'application/json'}
-        response = requests.request("POST", url, headers=headers, data=payload)
+        response = requests.request("POST", api_url, headers=headers, data=payload)
         data = json.loads(response.text)
 
         # Sign message
@@ -23,20 +25,20 @@ class Helper:
         signature = signed_message.signature
 
         # Generate jwt token
-        url = "http://localhost:8080/login"
+        api_url = Helper.URL + "/login"
         payload = json.dumps({"public_address": address, "signature": signature.hex()})
         headers = {'Content-Type': 'application/json'}
 
-        login_response = requests.request("POST", url, headers=headers, data=payload)
+        login_response = requests.request("POST", api_url, headers=headers, data=payload)
         login_response_data = json.loads(login_response.text)
         return login_response_data.get('access_token')
 
     @staticmethod
     def register(address):
         # Generate nonce
-        url = "http://localhost:8080/register"
+        api_url = Helper.URL + "/register"
         payload = json.dumps({"public_address": address})
         headers = {'Content-Type': 'application/json'}
-        response = requests.request("POST", url, headers=headers, data=payload)
+        response = requests.request("POST", api_url, headers=headers, data=payload)
         data = json.loads(response.text)
         return data
