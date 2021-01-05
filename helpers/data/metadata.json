@@ -1,0 +1,44 @@
+{
+  "images": [
+    {
+      "name": "img1.PNG",
+      "tags": [
+        "abstract",
+        "gray",
+        "screenshot"
+      ],
+      "other": {}
+    },
+    {
+      "name": "img2.PNG",
+      "tags": [
+        "sky",
+        "night"
+      ],
+      "other": {}
+    },
+    {
+      "name": "img3.PNG",
+      "tags": [
+        "leaves",
+        "green"
+      ],
+      "other": {}
+    },
+    {
+      "name": "img4.PNG",
+      "tags": [
+        "tree"
+      ],
+      "other": {}
+    },
+    {
+      "name": "img5.PNG",
+      "tags": [
+        "cat",
+        "fur"
+      ],
+      "other": {}
+    }
+  ]
+}
