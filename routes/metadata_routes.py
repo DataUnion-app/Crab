@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, session, abort, request, jsonify
 import json
 import os
+import zipfile
 from datetime import datetime
 from dao.users_dao import UsersDao
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
@@ -11,6 +12,7 @@ from utils.get_random_string import get_random_string
 from werkzeug.utils import secure_filename
 import logging
 from security.hashing import hash_image
+from models.ImageStatus import ImageStatus
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -92,7 +94,8 @@ def upload_file():
             data_to_save["uploaded_by"] = request_data["uploaded_by"]
             data_to_save["status"] = "new"
             data_to_save["hash"] = doc_id
-            data_to_save["status_description"] = "Image not verified"
+            data_to_save["type"] = "single_upload"
+            data_to_save["status_description"] = Im
             data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
 
             # Save metadata
@@ -109,6 +112,104 @@ def upload_file():
         logging.debug(
             "Not allowing address [{}] to upload file as type not supported.".format(request_data["uploaded_by"]))
         resp = jsonify({'message': 'Allowed file types are {0}'.format(ALLOWED_EXTENSIONS)})
+        return resp, 400
+
+
+@metadata_routes.route('/api/v1/bulk/upload-zip', methods=['POST'])
+@jwt_required
+def upload_zip_file():
+    # Validate if request is correct
+    required_params = {"uploaded_by"}
+    request_data = request.form
+    if required_params != set(request_data.keys()):
+        return jsonify(
+            {"status": "failed", "message": "Invalid input body. Expected keys :{0}".format(required_params)}), 400
+
+    if 'file' not in request.files:
+        resp = jsonify({'message': 'No file part in the request'})
+        resp.status_code = 400
+        return resp
+    file = request.files['file']
+    if file.filename == '':
+        resp = jsonify({'message': 'No file selected for uploading'})
+        return resp, 400
+    if file and '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in ['zip', 'ZIP']:
+        bulk_upload_doc_id = get_random_string()
+
+        zip_filename = secure_filename(file.filename)
+        dir_path = os.path.join(config['application']['upload_folder'], request_data["uploaded_by"], 'temp',
+                                bulk_upload_doc_id)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        file_path = os.path.join(dir_path, zip_filename)
+        file.save(file_path)
+
+        data_to_save = dict({})
+        data_to_save["filename"] = zip_filename
+        data_to_save["doc_id"] = bulk_upload_doc_id
+        data_to_save["uploaded_by"] = request_data["uploaded_by"]
+        data_to_save["type"] = "bulk_upload"
+        data_to_save["status"] = "new"
+        data_to_save["status_description"] = "Zip not verified"
+        data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
+
+        # Save metadata
+        bulk_upload_doc_id = imageMetadataDao.save(bulk_upload_doc_id, data_to_save)["id"]
+
+        with zipfile.ZipFile(file_path, 'r') as zip_ref:
+            zip_ref.extractall(dir_path)
+
+        file_list = [file for file in os.listdir(dir_path) if allowed_file(file)]
+
+        bulk_upload_result = []
+        for file_name in file_list:
+
+            result = dict({'file_name': file_name})
+
+            f_path = os.path.join(dir_path, file_name)
+            doc_id = str(hash_image(f_path))
+
+            # Check if it exists in the database already
+            image_exists = imageMetadataDao.exists(doc_id)
+
+            # File does not exist yet
+            if not image_exists:
+                # Save file
+                data_to_save = dict({})
+                data_to_save["filename"] = file_name
+                data_to_save["uploaded_by"] = request_data["uploaded_by"]
+                data_to_save["status"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
+                data_to_save["hash"] = bulk_upload_doc_id
+                data_to_save["type"] = "bulk_upload"
+                data_to_save["bulk_upload_id"] = "bulk_upload"
+                data_to_save["status_description"] = "Image not verified"
+                data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
+
+                os.rename(os.path.join(dir_path, file_name),
+                          os.path.join(config['application']['upload_folder'], request_data["uploaded_by"],
+                                       doc_id + '-' + file_name))
+
+                # Save metadata
+                doc_id = imageMetadataDao.save(doc_id, data_to_save)["id"]
+                result['success'] = True
+                result['doc_id'] = doc_id
+
+            else:
+                result['success'] = False
+                result['message'] = 'already_exists'
+                logging.debug(
+                    "Not allowing address [{}] to upload image [{}].".format(request_data["uploaded_by"],
+                                                                             doc_id))
+
+            bulk_upload_result.append(result)
+
+        resp = jsonify(
+            {'message': 'File successfully uploaded', "id": bulk_upload_doc_id, 'result': bulk_upload_result})
+        return resp, 200
+    else:
+        logging.debug(
+            "Not allowing address [{}] to upload image.".format(request_data["uploaded_by"]))
+        resp = jsonify({'message': 'Zip upload failed'})
         return resp, 400
 
 
