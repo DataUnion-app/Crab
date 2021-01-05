@@ -254,12 +254,22 @@ def get_stats():
     result = {
         "initial_images": 100,
         "data": [
-            {"time": 1606923074, "num_images": 5, "dog": 5, "outside": 3, "daylight": 2},
-            {"time": 1606923075, "num_images": 2, "dog": 2, "outside": 1},
-            {"time": 1606923076, "num_images": 10, "dog": 8, "outside": 3, "daylight": 7, "horse": 2},
-            {"time": 1606923077, "num_images": 3, "dog": 1, "outside": 3, "daylight": 3, "horse": 2},
-            {"time": 1606923078, "num_images": 1, "dog": 1, "daylight": 1},
-            {"time": 1606923079, "num_images": 12, "dog": 8, "outside": 12, "daylight": 12, "horse": 4}
+            {"time": 1606923074, "num_images": 5,
+             "tags": [{"name": "dog", "value": "5"}, {"name": "outside", "value": 3},
+                      {"name": "daylight", "value": 2}]},
+            {"time": 1606923075, "num_images": 2,
+             "tags": [{"name": "dog", "value": 2}, {"name": "outside", "value": 1}]},
+            {"time": 1606923076, "num_images": 10,
+             "tags": [{"name": "dog", "value": 8}, {"name": "outside", "value": 3}, {"name": "daylight", "value": 7},
+                      {"name": "horse", "value": 2}]},
+            {"time": 1606923077, "num_images": 3,
+             "tags": [{"name": "dog", "value": 1}, {"name": "outside", "value": 3}, {"name": "daylight", "value": 3},
+                      {"name": "horse", "value": 2}]},
+            {"time": 1606923078, "num_images": 1,
+             "tags": [{"name": "dog", "value": 1}, {"name": "daylight", "value": 1}]},
+            {"time": 1606923079, "num_images": 12,
+             "tags": [{"name": "dog", "value": 8}, {"name": "outside", "value": 12}, {"name": "daylight", "value": 12},
+                      {"name": "horse", "value": 4}]}
         ]
     }
     response = jsonify(result)
