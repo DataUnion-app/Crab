@@ -21,7 +21,7 @@ metadata_db = config['couchdb']['metadata_db']
 imageMetadataDao = ImageMetadataDao()
 imageMetadataDao.set_config(user, password, db_host, metadata_db)
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'PNG', 'JPG', 'JPEG', 'GIF'}
 
 metadata_routes = Blueprint('metadata_routes', __name__)
 
@@ -118,7 +118,7 @@ def get_metadata_by_eth_address():
     args = request.args
     if "eth_address" in args:
         eth_address = args["eth_address"]
-        result = imageMetadataDao.get_metadata_by_eth_address(eth_address)
+        result = imageMetadataDao.get_metadata_by_eth_address(eth_address=eth_address, status=args.get("eth_address"))
         return result, 200
     else:
         resp = jsonify({'message': 'Missing query parameter: `eth_address`'})

@@ -51,6 +51,15 @@ Please follow the installation guide [here](https://docs.couchdb.org/en/stable/i
 
 5. Start the server `python app.py`
 
+# Helper scripts
+
+### Obtain access token
+`python -m helpers.login [--login or --register]`
+
+### Load dummy data
+
+`python helpers.load_dummy_data`
+
 # Supported api
 
 | Method | Endpoint             | Example Usage                                                                                                                                                                                                                                     |
