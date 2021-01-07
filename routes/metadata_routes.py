@@ -95,7 +95,7 @@ def upload_file():
             data_to_save["status"] = "new"
             data_to_save["hash"] = doc_id
             data_to_save["type"] = "single_upload"
-            data_to_save["status_description"] = Im
+            data_to_save["status_description"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
             data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
 
             # Save metadata
