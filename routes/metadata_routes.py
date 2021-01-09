@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, session, abort, request, jsonify
 import json
 import os
 import zipfile
+import pandas as pd
 from datetime import datetime
 from dao.users_dao import UsersDao
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
@@ -94,7 +95,7 @@ def upload_file():
             data_to_save["uploaded_by"] = request_data["uploaded_by"]
             data_to_save["status"] = "new"
             data_to_save["hash"] = doc_id
-            data_to_save["type"] = "single_upload"
+            data_to_save["type"] = "image"
             data_to_save["status_description"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
             data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
 
@@ -180,8 +181,8 @@ def upload_zip_file():
                 data_to_save["uploaded_by"] = request_data["uploaded_by"]
                 data_to_save["status"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
                 data_to_save["hash"] = bulk_upload_doc_id
-                data_to_save["type"] = "bulk_upload"
-                data_to_save["bulk_upload_id"] = "bulk_upload"
+                data_to_save["type"] = "image"
+                data_to_save["bulk_upload_id"] = bulk_upload_doc_id
                 data_to_save["status_description"] = "Image not verified"
                 data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
 
@@ -250,27 +251,48 @@ def get_image():
 
 @metadata_routes.route('/api/v1/stats', methods=["GET"])
 def get_stats():
-    # TODO: Fetch data from database
-    result = {
-        "initial_images": 100,
-        "data": [
-            {"time": 1606923074, "num_images": 5,
-             "tags": [{"name": "dog", "value": "5"}, {"name": "outside", "value": 3},
-                      {"name": "daylight", "value": 2}]},
-            {"time": 1606923075, "num_images": 2,
-             "tags": [{"name": "dog", "value": 2}, {"name": "outside", "value": 1}]},
-            {"time": 1606923076, "num_images": 10,
-             "tags": [{"name": "dog", "value": 8}, {"name": "outside", "value": 3}, {"name": "daylight", "value": 7},
-                      {"name": "horse", "value": 2}]},
-            {"time": 1606923077, "num_images": 3,
-             "tags": [{"name": "dog", "value": 1}, {"name": "outside", "value": 3}, {"name": "daylight", "value": 3},
-                      {"name": "horse", "value": 2}]},
-            {"time": 1606923078, "num_images": 1,
-             "tags": [{"name": "dog", "value": 1}, {"name": "daylight", "value": 1}]},
-            {"time": 1606923079, "num_images": 12,
-             "tags": [{"name": "dog", "value": 8}, {"name": "outside", "value": 12}, {"name": "daylight", "value": 12},
-                      {"name": "horse", "value": 4}]}
-        ]
-    }
+
+    all_data = imageMetadataDao.getAll()['result']
+    all_data = [row for row in all_data if row.get('type') == "image" and
+                row.get('status') in [ImageStatus.AVAILABLE_FOR_TAGGING.name, ImageStatus.VERIFIED.name]]
+
+    data = dict({})
+    for row in all_data:
+        data[row['_id']] = {'time': datetime.fromtimestamp(row['uploaded_at']).strftime('%Y-%m-%d %H:%M:%S'),
+                            'tags': []}
+        tags_set = set()
+        tag_data = row.get('tag_data')
+        if tag_data:
+            for tags in tag_data:
+                for tag in tags['tags']:
+                    tags_set.add(tag)
+            data[row['_id']]['tags'] = tags_set
+    d = pd.DataFrame.from_dict(data, orient='index')
+    d['time'] = pd.to_datetime(d['time'])
+    groups = d.groupby(pd.Grouper(key='time', freq='D'))
+    total_summary = []
+    for key, group in groups:
+        summary = dict({})
+        summary['time'] = key.timestamp()
+        summary['num_images'] = 0
+        summary['tags'] = []
+        for row_index, row in group.iterrows():
+            summary['num_images'] = summary['num_images'] + 1
+            for tag in row['tags']:
+                present = False
+                for index, s in enumerate(summary['tags']):
+                    if s.get('name') == tag:
+                        present = True
+                        summary['tags'][index]['value'] = summary['tags'][index]['value'] + 1
+                if not present:
+                    value = {"name": tag, "value": 1}
+                    summary['tags'].append(value)
+        total_summary.append(summary)
+
+    result = dict({
+        "initial_images": len(all_data),
+        "data": total_summary
+    })
+
     response = jsonify(result)
     return response, 200
