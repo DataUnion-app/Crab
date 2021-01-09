@@ -33,6 +33,7 @@ mccabe==0.6.1
 multiaddr==0.0.9
 netaddr==0.8.0
 numpy==1.19.3
+pandas==1.2.0
 parsimonious==0.8.1
 Pillow==8.0.1
 protobuf==3.14.0
@@ -41,6 +42,8 @@ PyJWT==1.7.1
 pylint==2.6.0
 pypiwin32==223
 pyrsistent==0.17.3
+python-dateutil==2.8.1
+pytz==2020.5
 PyWavelets==1.1.1
 pywin32==300
 requests==2.25.0
