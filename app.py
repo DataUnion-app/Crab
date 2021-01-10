@@ -1,6 +1,7 @@
 from flask import Flask, send_file
 import os
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from routes.authentication_routes import authentication_routes, sessions_dao
@@ -16,6 +17,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=config
                     handlers=[handler])
 
 app = Flask(__name__)
+CORS(app)
 
 app.register_blueprint(authentication_routes)
 app.register_blueprint(metadata_routes)
