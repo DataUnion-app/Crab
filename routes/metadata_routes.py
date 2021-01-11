@@ -257,6 +257,15 @@ def get_stats():
                 row.get('status') in [ImageStatus.AVAILABLE_FOR_TAGGING.name, ImageStatus.VERIFIED.name]]
 
     data = dict({})
+
+    if len(all_data) == 0:
+        result = dict({
+            "initial_images": 0,
+            "data": []
+        })
+        response = jsonify(result)
+        return response, 200
+
     for row in all_data:
         data[row['_id']] = {'time': datetime.fromtimestamp(row['uploaded_at']).strftime('%Y-%m-%d %H:%M:%S'),
                             'tags': []}
