@@ -18,9 +18,10 @@ class DummyDataLoader:
                                           'data',
                                           'metadata.json')
 
-    def load_data(self):
-        acct = Account.create()
-        login = Login()
+    def load_data(self, token=None):
+        if not token:
+            acct = Account.create()
+            login = Login()
         token = login.register_and_login(acct.address, acct.key)
         headers = {'Authorization': 'Bearer {0}'.format(token)}
         with open(self.metadata_file) as metadata_file:
@@ -51,7 +52,8 @@ class DummyDataLoader:
                         image_id = data["id"]
 
                         api_url = self.url + "/api/v1/upload"
-                        data = {"photo_id": image_id, "timestamp": "", "other": metadata["other"], "tags": metadata["tags"]}
+                        data = {"photo_id": image_id, "timestamp": "", "other": metadata["other"],
+                                "tags": metadata["tags"]}
                         response = requests.request("POST", api_url, headers=headers, data=json.dumps(data))
                         print("Image [{}] metadata upload response: [{}]".format(file_name, response.text.rstrip()))
 

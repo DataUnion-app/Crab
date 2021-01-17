@@ -7,17 +7,63 @@ from models.ImageStatus import ImageStatus
 
 class ImageMetadataDao(BaseDao):
 
-    def get_metadata_by_eth_address(self, eth_address, status=None):
-        query = {"selector": {"_id": {"$gt": None}, "uploaded_by": eth_address}}
+    def get_images_by_eth_address(self, eth_address, page=1, status=None):
+        query = {
+            "sort": [
+                {
+                    "_id": "asc"
+                }
+            ],
+            "limit": self.page_size,
+            "skip": (page - 1) * self.page_size,
+            "selector": {
+                "_id": {
+                    "$gt": None
+                },
+                "uploaded_by": eth_address
+            }
+        }
         if status:
-            query = {"selector": {"_id": {"$gt": None}, "uploaded_by": eth_address, "status": status}}
+            query["selector"]["status"] = status
         headers = {'Content-Type': 'application/json'}
         url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
 
         response = requests.request("POST", url, headers=headers, data=json.dumps(query))
 
         data = json.loads(response.text)["docs"]
-        return {"result": data}
+        return {"result": data, "page": page, "page_size": self.page_size}
+
+    def get_metadata_by_address(self, address, page=1):
+        query = {
+            "sort": [
+                {
+                    "_id": "asc"
+                }
+            ],
+            "limit": self.page_size,
+            "skip": (page - 1) * self.page_size,
+            "selector": {
+                "_id": {
+                    "$gt": None
+                },
+                "tag_data": {
+                    "$elemMatch": {
+                        "uploaded_by": address
+                    }
+                }
+            },
+            "fields": [
+                "_id",
+                "tag_data"
+            ]
+        }
+        headers = {'Content-Type': 'application/json'}
+        url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
+
+        response = requests.request("POST", url, headers=headers, data=json.dumps(query))
+
+        data = json.loads(response.text)["docs"]
+        return {"result": data, "page": page, "page_size": self.page_size}
 
     def get_all_eth_addresses(self):
         # TODO
@@ -66,5 +112,12 @@ class ImageMetadataDao(BaseDao):
         data = json.loads(response.text)["docs"]
         return {"result": data}
 
-    def get_all_verified_metadata(self):
-        return self.get_by_status(ImageStatus.AVAILABLE_FOR_TAGGING.name)
+    def get_userdata(self, address):
+        query = {"selector": {"_id": {"$gt": None}},
+                 "fields": ["tags", "_id"]}
+        url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
+        headers = {'Content-Type': 'application/json'}
+
+        response = requests.request("POST", url, headers=headers, data=json.dumps(query))
+        data = json.loads(response.text)["docs"]
+        return {"result": data}

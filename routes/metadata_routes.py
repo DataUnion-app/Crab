@@ -48,13 +48,6 @@ def upload_metadata():
     return jsonify({"status": "success"}), 200
 
 
-@metadata_routes.route('/api/v1/all-metadata', methods=["GET"])
-@jwt_required
-def get_all_image_metadata():
-    result = imageMetadataDao.get_all_verified_metadata()
-    return result
-
-
 @metadata_routes.route('/api/v1/upload-file', methods=['POST'])
 @jwt_required
 def upload_file():
@@ -214,20 +207,56 @@ def upload_zip_file():
         return resp, 400
 
 
-@metadata_routes.route('/api/v1/metadata', methods=["GET"])
+@metadata_routes.route('/api/v1/my-metadata', methods=["GET"])
+@jwt_required
+def get_userdata():
+    """
+    This api is used to get all the image ids and tags for the user. A user can access only his own data.
+
+    Args:
+        page (optional): Default: 1 - 100, page no. 2 -> 101 - 200
+
+    Returns:
+        Returns the object containing list of image ids and tags for the image that user has added.
+        e.g.
+        {page: 1, data: [{ photo_id: "", tags :["xyz","abc"]}]}
+
+    Raises:
+        None.
+    """
+    args = request.args
+    page = 1
+    if "page" in args:
+        page = int(args["page"])
+
+    public_address = get_jwt_identity()
+
+    result = imageMetadataDao.get_metadata_by_address(public_address, page)
+    return result
+
+
+@metadata_routes.route('/api/v1/my-images', methods=["GET"])
 @jwt_required
 def get_metadata_by_eth_address():
     args = request.args
-    if "eth_address" in args:
-        eth_address = args["eth_address"]
-        result = imageMetadataDao.get_metadata_by_eth_address(eth_address=eth_address, status=args.get("eth_address"))
-        return result, 200
-    else:
-        resp = jsonify({'message': 'Missing query parameter: `eth_address`'})
-        return resp, 400
+    page = 1
+    if "page" in args:
+        page = int(args["page"])
+
+    public_address = get_jwt_identity()
+    result = imageMetadataDao.get_images_by_eth_address(eth_address=public_address, page=page)
+    return result, 200
 
 
-@metadata_routes.route('/api/v1/get_image', methods=["GET"])
+@metadata_routes.route('/api/v1/report-images', methods=["POST"])
+@jwt_required
+def report_images():
+    # [{"photo_id": "", reason: ""}]
+    # TODO
+    pass
+
+
+@metadata_routes.route('/api/v1/get-image-by-id', methods=["GET"])
 @jwt_required
 def get_image():
     args = request.args
@@ -251,7 +280,6 @@ def get_image():
 
 @metadata_routes.route('/api/v1/stats', methods=["GET"])
 def get_stats():
-
     all_data = imageMetadataDao.getAll()['result']
     all_data = [row for row in all_data if row.get('type') == "image" and
                 row.get('status') in [ImageStatus.AVAILABLE_FOR_TAGGING.name, ImageStatus.VERIFIED.name]]
