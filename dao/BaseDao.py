@@ -10,6 +10,9 @@ class BaseDao(metaclass=abc.ABCMeta):
     db_host = None
     db_name = None
 
+    def __init__(self):
+        self.page_size = 100
+
     def set_config(self, user, password, db_host, db_name):
         self.user = user
         self.password = password
