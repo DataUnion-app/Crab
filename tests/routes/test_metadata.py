@@ -16,7 +16,9 @@ class TestMetadata(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         self.url = 'http://localhost:8080'
-        self.db_host = ''
+        self.db_host = '127.0.0.1:5984'
+        self.db_user = 'admin'
+        self.password = 'admin'
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
                                      'data')
         super(TestMetadata, self).__init__(*args, **kwargs)
@@ -166,11 +168,35 @@ class TestMetadata(unittest.TestCase):
         token = Helper.login(acct.address, acct.key)
         headers = {'Authorization': 'Bearer {0}'.format(token)}
 
-        api_url = self.url + "/api/v1/all-metadata"
+        api_url = self.url + "/api/v1/my-metadata"
         response = requests.request("GET", api_url, headers=headers, data=json.dumps({}))
         data = json.loads(response.text)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(data, {"result": []})
+        self.assertEqual(data, {"result": [], "page": 1, "page_size": 100})
+
+        api_url = self.url + "/api/v1/my-metadata?page=3"
+        response = requests.request("GET", api_url, headers=headers, data=json.dumps({}))
+        data = json.loads(response.text)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data, {"result": [], "page": 3, "page_size": 100})
+
+    def test_get_my_images(self):
+
+        acct = Account.create()
+        token = Helper.login(acct.address, acct.key)
+        headers = {'Authorization': 'Bearer {0}'.format(token)}
+
+        api_url = self.url + "/api/v1/my-images"
+        response = requests.request("GET", api_url, headers=headers, data=json.dumps({}))
+        data = json.loads(response.text)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data, {"result": [], "page": 1, "page_size": 100})
+
+        api_url = self.url + "/api/v1/my-images?page=30"
+        response = requests.request("GET", api_url, headers=headers, data=json.dumps({}))
+        data = json.loads(response.text)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data, {"result": [], "page": 30, "page_size": 100})
 
     def clear_data_directory(self):
         for filename in os.listdir(self.data_dir):
