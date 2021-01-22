@@ -121,3 +121,22 @@ class ImageMetadataDao(BaseDao):
         response = requests.request("POST", url, headers=headers, data=json.dumps(query))
         data = json.loads(response.text)["docs"]
         return {"result": data}
+
+    def marked_as_reported(self, address, photos):
+
+        doc_ids = [photo["photo_id"] for photo in photos]
+
+        query = {"selector": {"_id": {"$in": doc_ids}}}
+        url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
+        headers = {'Content-Type': 'application/json'}
+
+        response = requests.request("POST", url, headers=headers, data=json.dumps(query))
+        data = json.loads(response.text)["docs"]
+        for document in data:
+            reports = document.get("reports")
+            if not reports:
+                document["reports"] = [{"reported_by": address}]
+            elif len([report for report in reports if report["reported_by"] == address]) == 0:
+                document["reports"].append({"reported_by": address})
+
+            self.update_doc(document["_id"], document)

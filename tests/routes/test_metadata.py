@@ -10,6 +10,7 @@ import os
 import shutil
 import requests
 from tests.helper import Helper
+from models.ImageStatus import ImageStatus
 
 
 class TestMetadata(unittest.TestCase):
@@ -21,6 +22,8 @@ class TestMetadata(unittest.TestCase):
         self.password = 'admin'
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
                                      'data')
+        self.image_metadata_dao = ImageMetadataDao()
+        self.image_metadata_dao.set_config(self.db_user, self.password, self.db_host, "metadata")
         super(TestMetadata, self).__init__(*args, **kwargs)
 
     def setUp(self):
@@ -198,6 +201,30 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(data, {"result": [], "page": 30, "page_size": 100})
 
+    def test_mark_as_reported(self):
+        acct = Account.create()
+        token = Helper.login(acct.address, acct.key)
+        self.upload_zip(acct, token, 'data.zip')
+
+        headers = {'Authorization': 'Bearer {0}'.format(token)}
+        api_url = self.url + "/api/v1/report-images"
+        data = {}
+        response = requests.request("POST", api_url, headers=headers, data=json.dumps(data))
+
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(
+            {"message": "Invalid input body. Expected keys :{\'photos\'}", "status": "failed"},
+            json.loads(response.text))
+
+        acct = Account.create()
+        token = Helper.login(acct.address, acct.key)
+        headers = {'Authorization': 'Bearer {0}'.format(token)}
+        images = self.image_metadata_dao.get_by_status(ImageStatus.AVAILABLE_FOR_TAGGING.name)
+        data = {"photos": [{"photo_id": image["_id"]} for image in images["result"]]}
+        response = requests.request("POST", api_url, headers=headers, data=json.dumps(data))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual({"status": "success"}, json.loads(response.text))
+
     def clear_data_directory(self):
         for filename in os.listdir(self.data_dir):
             file_path = os.path.join(self.data_dir, filename)
@@ -211,6 +238,27 @@ class TestMetadata(unittest.TestCase):
             except Exception as e:
                 print('Failed to delete %s. Reason: %s' % (file_path, e))
 
+    def upload_zip(self, account=None, token=None, filename='data.zip'):
+        if not account or not token:
+            account = Account.create()
+            token = Helper.login(account.address, account.key)
+        headers = {'Authorization': 'Bearer {0}'.format(token)}
 
-if __name__ == '__main__':
-    unittest.main()
+        api_url = self.url + "/api/v1/bulk/upload-zip"
+
+        payload = {'uploaded_by': account.address}
+        zip_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', filename)
+        with open(zip_path, 'rb') as zip_file:
+            files = [
+                ('file',
+                 (filename, zip_file, 'application/zip'))
+            ]
+
+            response = requests.request("POST", api_url, headers=headers, data=payload, files=files)
+            self.assertTrue(response.status_code, 200)
+            data = json.loads(response.text)
+            image_id = data["id"]
+            self.assertTrue(image_id is not None)
+
+    if __name__ == '__main__':
+        unittest.main()
