@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, abort, request, jsonify
+from flask import Blueprint, render_template, session, abort, request, jsonify, send_file
 import json
 import os
 import zipfile
@@ -292,16 +292,19 @@ def get_image():
     if "id" in args:
         doc_id = args["id"]
         result = imageMetadataDao.get_doc_by_id(doc_id)
-        if not result.get("error") and len(result["result"]) != 1:
-            resp = jsonify({'message': 'Data not found'})
+        if result.get("error"):
+            resp = jsonify({'status': 'failed', 'error': result.get('error')})
             return resp, 400
 
-        file_name = result["result"][0]["filename"]
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'],
-                                 result["result"][0]["uploaded_by"],
+        file_name = result["filename"]
+        file_path = os.path.join(config['application']['upload_folder'],
+                                 result["uploaded_by"],
                                  file_name)
-        return send_file(file_path)
 
+        if os.path.isfile(file_path):
+            return send_file(file_path)
+        else:
+            return jsonify({'status': 'failed', 'error': 'missing_file'}), 400
     else:
         resp = jsonify({'message': 'Missing query parameter: `id`'})
         return resp, 400
