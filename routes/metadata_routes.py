@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, abort, request, jsonify
+from flask import Blueprint, render_template, session, abort, request, jsonify, send_file
 import json
 import os
 import zipfile
@@ -219,7 +219,7 @@ def get_userdata():
     Returns:
         Returns the object containing list of image ids and tags for the image that user has added.
         e.g.
-        {page: 1, data: [{ photo_id: "", tags :["xyz","abc"]}]}
+        {page: 1, result: [{ photo_id: "", tags :["xyz","abc"]}], page_size: 100}
 
     Raises:
         None.
@@ -238,6 +238,20 @@ def get_userdata():
 @metadata_routes.route('/api/v1/my-images', methods=["GET"])
 @jwt_required
 def get_metadata_by_eth_address():
+    """
+        This api is used to get all the image ids uploaded by a user. A user can access only his own images.
+
+        Args:
+            page (optional): Default: 1 - 100, page no. 2 -> 101 - 200
+
+        Returns:
+            Returns the object containing list of image ids and tags for the image that user has added.
+            e.g.
+            {page: 1, result: [{ photo_id: "", tags :["xyz","abc"]}], page_size: 100}
+
+        Raises:
+            None.
+    """
     args = request.args
     page = 1
     if "page" in args:
@@ -251,9 +265,24 @@ def get_metadata_by_eth_address():
 @metadata_routes.route('/api/v1/report-images', methods=["POST"])
 @jwt_required
 def report_images():
-    # [{"photo_id": "", reason: ""}]
-    # TODO
-    pass
+    required_params = {"photos"}
+    try:
+        data = json.loads(request.data)
+        public_address = get_jwt_identity()
+
+        if required_params != set(data.keys()):
+            return jsonify(
+                {"status": "failed", "message": "Invalid input body. Expected keys :{0}".format(required_params)}), 400
+        if not isinstance(data["photos"], list):
+            return jsonify(
+                {"status": "failed", "message": "Invalid input body. Expected `photos` to be a list"}), 400
+
+        imageMetadataDao.marked_as_reported(public_address, data["photos"])
+        return jsonify({"status": "success"}), 200
+
+    except ValueError as e:
+        return jsonify(
+            {"status": "failed", "message": "Invalid input body."}), 400
 
 
 @metadata_routes.route('/api/v1/get-image-by-id', methods=["GET"])
@@ -263,16 +292,19 @@ def get_image():
     if "id" in args:
         doc_id = args["id"]
         result = imageMetadataDao.get_doc_by_id(doc_id)
-        if not result.get("error") and len(result["result"]) != 1:
-            resp = jsonify({'message': 'Data not found'})
+        if result.get("error"):
+            resp = jsonify({'status': 'failed', 'error': result.get('error')})
             return resp, 400
 
-        file_name = result["result"][0]["filename"]
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'],
-                                 result["result"][0]["uploaded_by"],
+        file_name = result["filename"]
+        file_path = os.path.join(config['application']['upload_folder'],
+                                 result["uploaded_by"],
                                  file_name)
-        return send_file(file_path)
 
+        if os.path.isfile(file_path):
+            return send_file(file_path)
+        else:
+            return jsonify({'status': 'failed', 'error': 'missing_file'}), 400
     else:
         resp = jsonify({'message': 'Missing query parameter: `id`'})
         return resp, 400
