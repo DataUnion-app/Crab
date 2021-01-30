@@ -258,7 +258,8 @@ def get_metadata_by_eth_address():
         page = int(args["page"])
 
     public_address = get_jwt_identity()
-    result = imageMetadataDao.get_images_by_eth_address(eth_address=public_address, page=page)
+    fields = ["filename", "hash", "type", "uploaded_at"]
+    result = imageMetadataDao.get_images_by_eth_address(eth_address=public_address, page=page, fields=fields)
     return result, 200
 
 

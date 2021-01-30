@@ -7,7 +7,7 @@ from models.ImageStatus import ImageStatus
 
 class ImageMetadataDao(BaseDao):
 
-    def get_images_by_eth_address(self, eth_address, page=1, status=None):
+    def get_images_by_eth_address(self, eth_address, page=1, status=None, fields=None):
         query = {
             "sort": [
                 {
@@ -21,7 +21,8 @@ class ImageMetadataDao(BaseDao):
                     "$gt": None
                 },
                 "uploaded_by": eth_address
-            }
+            },
+            "fields": fields
         }
         if status:
             query["selector"]["status"] = status
