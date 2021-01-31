@@ -50,8 +50,13 @@ class BaseDao(metaclass=abc.ABCMeta):
         headers = {'Content-Type': 'application/json'}
         url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
         response = requests.request("POST", url, headers=headers, data=json.dumps(selector))
-        data = json.loads(response.text)["docs"]
-        return {"result": data}
+        if response.status_code != 200:
+            logging.info("Failed to query data from db [{}]. Reason [{}]".format(self.db_name, response.text.rstrip()))
+        try:
+            data = json.loads(response.text).get("docs")
+            return {"result": data}
+        except ValueError:
+            return {"result": {}}
 
     def update_doc(self, doc_id, data):
         return self.save(doc_id, data)

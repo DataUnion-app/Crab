@@ -67,8 +67,16 @@ def upload_file():
         resp = jsonify({'message': 'No file selected for uploading'})
         return resp, 400
     if file and allowed_file(file.filename):
+
+        dir_path = os.path.join(config['application']['upload_folder'], request_data["uploaded_by"], 'temp')
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(dir_path, filename)
+        file.save(file_path)
+
         # Compute image hash value
-        doc_id = str(hash_image(file))
+        doc_id = str(hash_image(file_path))
 
         # Check if it exists in the database already
         image_exists = imageMetadataDao.exists(doc_id)
@@ -76,19 +84,16 @@ def upload_file():
         # File does not exist yet
         if not image_exists:
             # Save file
-            filename = secure_filename(doc_id + '-' + file.filename)
-            dir_path = os.path.join(config['application']['upload_folder'], request_data["uploaded_by"])
-            if not os.path.exists(dir_path):
-                os.makedirs(dir_path)
-            file_path = os.path.join(dir_path, filename)
-            file.save(file_path)
-
+            os.rename(file_path,
+                      os.path.join(config['application']['upload_folder'], request_data["uploaded_by"],
+                                   doc_id + '-' + filename))
             data_to_save = dict({})
-            data_to_save["filename"] = filename
+            data_to_save["filename"] = doc_id + '-' + filename
             data_to_save["uploaded_by"] = request_data["uploaded_by"]
             data_to_save["status"] = "new"
             data_to_save["hash"] = doc_id
             data_to_save["type"] = "image"
+            data_to_save["extension"] = filename.split('.')[-1]
             data_to_save["status_description"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
             data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
 
@@ -98,6 +103,7 @@ def upload_file():
             resp = jsonify({'message': 'File successfully uploaded', "id": doc_id})
             return resp, 200
         else:
+            os.remove(file_path)
             logging.debug(
                 "Not allowing address [{}] to upload image [{}].".format(request_data["uploaded_by"], doc_id))
             resp = jsonify({'message': 'The uploaded file already exists in the dataset.'})
