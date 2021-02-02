@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 import logging
 from security.hashing import hash_image
 from models.ImageStatus import ImageStatus
+import shutil
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -133,16 +134,18 @@ def upload_zip_file():
     if file.filename == '':
         resp = jsonify({'message': 'No file selected for uploading'})
         return resp, 400
+
+    response = None
     if file and '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in ['zip', 'ZIP']:
         bulk_upload_doc_id = get_random_string()
 
         zip_filename = secure_filename(file.filename)
-        dir_path = os.path.join(config['application']['upload_folder'], request_data["uploaded_by"], 'temp',
-                                bulk_upload_doc_id)
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-        file_path = os.path.join(dir_path, zip_filename)
-        file.save(file_path)
+        zip_dir_path = os.path.join(config['application']['upload_folder'], request_data["uploaded_by"], 'temp',
+                                    bulk_upload_doc_id)
+        if not os.path.exists(zip_dir_path):
+            os.makedirs(zip_dir_path)
+        zip_file_path = os.path.join(zip_dir_path, zip_filename)
+        file.save(zip_file_path)
 
         data_to_save = dict({})
         data_to_save["filename"] = zip_filename
@@ -156,17 +159,17 @@ def upload_zip_file():
         # Save metadata
         bulk_upload_doc_id = imageMetadataDao.save(bulk_upload_doc_id, data_to_save)["id"]
 
-        with zipfile.ZipFile(file_path, 'r') as zip_ref:
-            zip_ref.extractall(dir_path)
+        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            zip_ref.extractall(zip_dir_path)
 
-        file_list = [file for file in os.listdir(dir_path) if allowed_file(file)]
+        file_list = [file for file in os.listdir(zip_dir_path) if allowed_file(file)]
 
         bulk_upload_result = []
         for file_name in file_list:
 
             result = dict({'file_name': file_name})
 
-            f_path = os.path.join(dir_path, file_name)
+            f_path = os.path.join(zip_dir_path, file_name)
             doc_id = str(hash_image(f_path))
 
             # Check if it exists in the database already
@@ -185,7 +188,7 @@ def upload_zip_file():
                 data_to_save["status_description"] = "Image not verified"
                 data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
 
-                os.rename(os.path.join(dir_path, file_name),
+                os.rename(os.path.join(zip_dir_path, file_name),
                           os.path.join(config['application']['upload_folder'], request_data["uploaded_by"],
                                        doc_id + '-' + file_name))
 
@@ -203,14 +206,15 @@ def upload_zip_file():
 
             bulk_upload_result.append(result)
 
-        resp = jsonify(
+        response = jsonify(
             {'message': 'File successfully uploaded', "id": bulk_upload_doc_id, 'result': bulk_upload_result})
-        return resp, 200
     else:
         logging.debug(
             "Not allowing address [{}] to upload image.".format(request_data["uploaded_by"]))
-        resp = jsonify({'message': 'Zip upload failed'})
-        return resp, 400
+        response = jsonify({'message': 'Zip upload failed'})
+
+    shutil.rmtree(zip_dir_path)
+    return response
 
 
 @metadata_routes.route('/api/v1/my-metadata', methods=["GET"])
