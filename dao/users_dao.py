@@ -23,7 +23,6 @@ class UsersDao(BaseDao):
             logging.info("Nonce found [{0}] for address [{1}]".format(data["result"][0]["nonce"], public_address))
             return {"status": "exists", "nonce": data["result"][0]["nonce"]}
 
-        print("Nonce not found for address [{}]".format(public_address))
         return {"status": "not found"}
 
     def get_nonce_if_not_exists(self, public_address):
