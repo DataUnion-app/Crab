@@ -24,6 +24,8 @@ class TestBase(unittest.TestCase):
         self.dummy_data_path = os.path.join(Helper.get_project_root(), 'tests', 'data')
         self.image_metadata_dao = ImageMetadataDao()
         self.image_metadata_dao.set_config(self.db_user, self.password, self.db_host, "metadata")
+        self.acct = Account.create()
+        self.token = None
         super(TestBase, self).__init__(*args, **kwargs)
 
     def setUp(self):
@@ -94,6 +96,11 @@ class TestBase(unittest.TestCase):
             data = json.loads(response.text)
             image_id = data["id"]
             self.assertTrue(image_id is not None)
+
+    def get_token(self):
+        if not self.token:
+            self.token = Helper.login(self.acct.address, self.acct.key)
+        return self.token
 
     if __name__ == '__main__':
         unittest.main()
