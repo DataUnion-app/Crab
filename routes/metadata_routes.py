@@ -15,6 +15,7 @@ import logging
 from security.hashing import hash_image
 from models.ImageStatus import ImageStatus
 import shutil
+from commands.metadata.query_metadata_command import QueryMetadataCommand
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -336,8 +337,11 @@ def query_metadata():
     page = 1
     if "page" in args:
         page = int(args["page"])
-    result = {}
 
+    query_metadata_command = QueryMetadataCommand()
+    query_metadata_command.input = {'public_address': public_address, "page": page, "status": args['status'],
+                                    'skip_tagged': args['skip_tagged']}
+    result = query_metadata_command.execute()
     return result, 200
 
 
