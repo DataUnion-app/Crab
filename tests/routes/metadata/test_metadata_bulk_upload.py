@@ -17,8 +17,8 @@ class TestMetadataBulkUpload(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         self.url = 'http://localhost:8080'
         self.db_host = ''
-        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                     'data')
+        self.data_dir = os.path.join(Helper.get_project_root(), 'data')
+        self.dummy_data_path = os.path.join(Helper.get_project_root(), 'tests', 'data')
         super(TestMetadataBulkUpload, self).__init__(*args, **kwargs)
 
     def setUp(self):
@@ -63,7 +63,7 @@ class TestMetadataBulkUpload(unittest.TestCase):
         api_url = self.url + "/api/v1/bulk/upload-zip"
 
         payload = {'uploaded_by': acct.address}
-        zip_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'data.zip')
+        zip_path = os.path.join(self.dummy_data_path, 'data.zip')
         with open(zip_path, 'rb') as zip_file:
             files = [
                 ('file',
@@ -83,7 +83,7 @@ class TestMetadataBulkUpload(unittest.TestCase):
 
         api_url = self.url + "/api/v1/upload-file"
         payload = {'uploaded_by': acct.address}
-        image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample.png')
+        image_path = os.path.join(self.dummy_data_path, 'sample.png')
 
         with open(image_path, 'rb') as img:
             files = [

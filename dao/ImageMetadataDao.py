@@ -141,3 +141,17 @@ class ImageMetadataDao(BaseDao):
                 document["reports"].append({"reported_by": address})
 
             self.update_doc(document["_id"], document)
+
+    def query_metadata(self, status=None, skip_tagged=False, page=1):
+
+        image_status = status if status else {"$gt": None}
+
+        query = {"sort": [{"_id": "asc"}], "limit": self.page_size, "skip": (page - 1) * self.page_size,
+                 "selector": {"_id": {"$gt": None}, "status": image_status},
+                 "fields": ["filename", "_id", "_rev"]}
+        url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
+        headers = {'Content-Type': 'application/json'}
+
+        response = requests.request("POST", url, headers=headers, data=json.dumps(query))
+        data = json.loads(response.text)["docs"]
+        return {"result": data}

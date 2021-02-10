@@ -20,8 +20,8 @@ class TestMetadata(unittest.TestCase):
         self.db_host = '127.0.0.1:5984'
         self.db_user = 'admin'
         self.password = 'admin'
-        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                     'data')
+        self.data_dir = os.path.join(Helper.get_project_root(), 'data')
+        self.dummy_data_path = os.path.join(Helper.get_project_root(), 'tests', 'data')
         self.image_metadata_dao = ImageMetadataDao()
         self.image_metadata_dao.set_config(self.db_user, self.password, self.db_host, "metadata")
         super(TestMetadata, self).__init__(*args, **kwargs)
@@ -68,7 +68,7 @@ class TestMetadata(unittest.TestCase):
         api_url = self.url + "/api/v1/upload-file"
 
         payload = {'uploaded_by': acct.address}
-        image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample.png')
+        image_path = os.path.join(self.dummy_data_path, 'sample.png')
         with open(image_path, 'rb') as img:
             files = [
                 ('file',
@@ -89,7 +89,7 @@ class TestMetadata(unittest.TestCase):
         api_url = self.url + "/api/v1/upload-file"
 
         payload = {'uploaded_by': acct.address}
-        image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample.png')
+        image_path = os.path.join(self.dummy_data_path, 'sample.png')
 
         with open(image_path, 'rb') as img:
             files = [
@@ -103,7 +103,7 @@ class TestMetadata(unittest.TestCase):
             image_id = data["id"]
             self.assertTrue(image_id is not None)
 
-        image_path2 = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample2.png')
+        image_path2 = os.path.join(self.dummy_data_path, 'sample2.png')
         with open(image_path2, 'rb') as img2:
             files2 = [
                 ('file',
@@ -122,7 +122,7 @@ class TestMetadata(unittest.TestCase):
 
         api_url = self.url + "/api/v1/upload-file"
         payload = {'uploaded_by': acct.address}
-        image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample.png')
+        image_path = os.path.join(self.dummy_data_path, 'sample.png')
 
         with open(image_path, 'rb') as img:
             files = [
@@ -247,7 +247,7 @@ class TestMetadata(unittest.TestCase):
         api_url = self.url + "/api/v1/bulk/upload-zip"
 
         payload = {'uploaded_by': account.address}
-        zip_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', filename)
+        zip_path = os.path.join(self.dummy_data_path, filename)
         with open(zip_path, 'rb') as zip_file:
             files = [
                 ('file',

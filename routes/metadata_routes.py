@@ -15,6 +15,7 @@ import logging
 from security.hashing import hash_image
 from models.ImageStatus import ImageStatus
 import shutil
+from commands.metadata.query_metadata_command import QueryMetadataCommand
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -229,7 +230,7 @@ def get_userdata():
     Returns:
         Returns the object containing list of image ids and tags for the image that user has added.
         e.g.
-        {page: 1, result: [{ photo_id: "", tags :["xyz","abc"]}], page_size: 100}
+        {page: 1, result: [{ photo_id: "", page_size: 100}]
 
     Raises:
         None.
@@ -319,6 +320,29 @@ def get_image():
     else:
         resp = jsonify({'message': 'Missing query parameter: `id`'})
         return resp, 400
+
+
+@metadata_routes.route('/api/v1/query-metadata', methods=["GET"])
+@jwt_required
+def query_metadata():
+    args = request.args
+    required_params = {"status", "skip_tagged"}
+    public_address = get_jwt_identity()
+
+    if required_params != set(args.keys()):
+        return jsonify(
+            {"status": "failed",
+             "message": "Invalid input body. Expected query parameters :{0}".format(required_params)}), 400
+
+    page = 1
+    if "page" in args:
+        page = int(args["page"])
+
+    query_metadata_command = QueryMetadataCommand()
+    query_metadata_command.input = {'public_address': public_address, "page": page, "status": args['status'],
+                                    'skip_tagged': args['skip_tagged']}
+    result = query_metadata_command.execute()
+    return result, 200
 
 
 @metadata_routes.route('/api/v1/stats', methods=["GET"])
