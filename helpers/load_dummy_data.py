@@ -10,6 +10,7 @@ from nltk.corpus import words
 import nltk
 import random
 import sys
+import datetime
 
 nltk.download('words')
 
@@ -49,9 +50,14 @@ class DummyDataLoader:
     def upload_metadata(self, token, account, image_id, metadata):
         headers = {'Authorization': 'Bearer {0}'.format(token)}
         api_url = self.url + "/api/v1/upload"
+        start_time = datetime.datetime.now()
         response = requests.request("POST", api_url, headers=headers, data=json.dumps(metadata))
+        end_time = datetime.datetime.now()
+        delta = int((end_time - start_time).total_seconds() * 1000)
         if response.status_code != 200:
             print("Metadata upload failed for [{}]".format(image_id))
+        else:
+            print("Image id:[{0}] tagged successfully in [{1}]ms".format(image_id, delta))
 
     def upload_image(self, file_path, file_name, token, account):
         api_url = self.url + "/api/v1/upload-file"
@@ -67,14 +73,18 @@ class DummyDataLoader:
                 ('file',
                  (file_name, img, 'image/png'))
             ]
-            print("Uploading file {}".format(file_name))
+
+            start_time = datetime.datetime.now()
             response = requests.request("POST", api_url, headers=headers, data=payload, files=files)
-            print("Image [{}] upload response: [{}]".format(file_name, response.text.rstrip()))
+            end_time = datetime.datetime.now()
+            delta = end_time - start_time
             if response.status_code == 200:
                 data = json.loads(response.text)
+                print("Image [{0}] uploaded with id [{1}] successfully in [{2}]ms".format(file_path, data["id"], int(
+                    delta.total_seconds() * 1000)))
                 return data["id"]
             else:
-                print("Image upload failed")
+                print("Image upload failed with response code [{}]".format(response.status_code))
                 return None
 
     def generate_image(self, x_size, y_size, path):
@@ -130,6 +140,9 @@ class DummyDataLoader:
             print("Public address:{0} key:{1}".format(acct.address, acct.key.hex()))
 
         dir_path = os.path.join(self.data_dir, 'random')
+        if not os.path.exists(dir_path):
+            os.mkdir(dir_path)
+
         for i in range(count):
             idx = random.randint(0, len(accts) - 1)
             file_path = os.path.join(dir_path, '{0}.png'.format(i))
@@ -150,12 +163,19 @@ class DummyDataLoader:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print("Usage: python -m helpers.load_dummy_data <images> <accounts>")
+    if len(sys.argv) < 3:
+        print("Usage: python -m helpers.load_dummy_data <images> <accounts> <x_size> <y_size>")
         exit(-1)
 
     images = int(sys.argv[1])
     accounts = int(sys.argv[2])
 
+    x_size = 1024
+    y_size = 1024
+
+    if len(sys.argv) == 5:
+        x_size = int(sys.argv[3])
+        y_size = int(sys.argv[4])
+
     d = DummyDataLoader()
-    d.load_random_data2(count=images, accounts=accounts)
+    d.load_random_data2(count=images, accounts=accounts, x_size=x_size, y_size=y_size)
