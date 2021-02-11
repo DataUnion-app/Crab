@@ -70,7 +70,7 @@ class ImageMetadataDao(BaseDao):
         # TODO
         pass
 
-    def add_metadata_for_image(self, public_address, photo_id, tags, other):
+    def add_metadata_for_image(self, public_address, photo_id, tags, description, other):
         document = self.get_doc_by_id(photo_id)
         document["updated_at"] = datetime.timestamp(datetime.now())
 
@@ -80,6 +80,7 @@ class ImageMetadataDao(BaseDao):
                     "other": other,
                     "uploaded_by": public_address,
                     "created_at": datetime.timestamp(datetime.now()),
+                    "description": description,
                     "updated_at": datetime.timestamp(datetime.now())}
 
         if user_tags is not None:

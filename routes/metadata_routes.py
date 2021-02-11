@@ -16,6 +16,7 @@ from security.hashing import hash_image
 from models.ImageStatus import ImageStatus
 import shutil
 from commands.metadata.query_metadata_command import QueryMetadataCommand
+from commands.metadata.add_new_metadata_command import AddNewMetadataCommand
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -38,16 +39,24 @@ def allowed_file(filename):
 @metadata_routes.route('/api/v1/upload', methods=["POST"])
 @jwt_required
 def upload_metadata():
-    required_params = {"timestamp", "other", "photo_id", "tags"}
+    required_params = ["timestamp", "other", "photo_id", "tags"]
     data = json.loads(request.data)
     public_address = get_jwt_identity()
 
-    if required_params != set(data.keys()):
+    if not all(elem in data.keys() for elem in required_params):
         return jsonify(
             {"status": "failed", "message": "Invalid input body. Expected keys :{0}".format(required_params)}), 400
 
-    imageMetadataDao.add_metadata_for_image(public_address, data["photo_id"], data["tags"], data["other"])
-    return jsonify({"status": "success"}), 200
+    add_new_metadata_command = AddNewMetadataCommand()
+    add_new_metadata_command.input = {
+        "public_address": public_address,
+        "photo_id": data.get("photo_id"),
+        "tags": data.get("tags"),
+        "description": data.get("description", None),
+        "other": data.get("other")
+    }
+    result = add_new_metadata_command.execute()
+    return jsonify(result), 200
 
 
 @metadata_routes.route('/api/v1/upload-file', methods=['POST'])

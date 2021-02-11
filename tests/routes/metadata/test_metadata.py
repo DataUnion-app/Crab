@@ -137,7 +137,7 @@ class TestMetadata(unittest.TestCase):
             self.assertTrue(image_id is not None)
 
         api_url = self.url + "/api/v1/upload"
-        data = {"photo_id": image_id, "timestamp": "", "other": {}, "tags": ["t1", "t2"]}
+        data = {"photo_id": image_id, "timestamp": "", "other": {}, "tags": ["t1", "t2"], "description": "test"}
         response = requests.request("POST", api_url, headers=headers, data=json.dumps(data))
         self.assertTrue(response.status_code, 200)
 
