@@ -16,6 +16,7 @@ class QueryMetadataCommand(BaseCommand):
     def execute(self):
         result = self.imageMetadataDao.query_metadata(self.input['status'], self.input['skip_tagged'],
                                                       self.input['page'])
+
         return result
 
     @property
