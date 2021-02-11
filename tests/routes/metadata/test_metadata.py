@@ -150,6 +150,7 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(['t1', 't2'], result[0].get('tags'))
         self.assertEqual({}, result[0].get('other'))
         self.assertEqual(acct.address, result[0].get('uploaded_by'))
+        self.assertEqual('test', result[0].get('description'))
 
         acct2 = Account.create()
         api_url = self.url + "/api/v1/upload"
@@ -165,6 +166,7 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(['u1', 'u2'], result[1].get('tags'))
         self.assertEqual({}, result[0].get('other'))
         self.assertEqual(acct2.address, result[1].get('uploaded_by'))
+        self.assertIsNone(result[1].get('description'))
 
     def test_get_all_metadata(self):
         acct = Account.create()
