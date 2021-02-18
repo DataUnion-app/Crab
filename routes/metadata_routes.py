@@ -181,6 +181,7 @@ def upload_zip_file():
 
             f_path = os.path.join(zip_dir_path, file_name)
             doc_id = str(hash_image(f_path))
+            result['doc_id'] = doc_id
 
             # Check if it exists in the database already
             image_exists = imageMetadataDao.exists(doc_id)
@@ -205,7 +206,6 @@ def upload_zip_file():
                 # Save metadata
                 doc_id = imageMetadataDao.save(doc_id, data_to_save)["id"]
                 result['success'] = True
-                result['doc_id'] = doc_id
 
             else:
                 result['success'] = False

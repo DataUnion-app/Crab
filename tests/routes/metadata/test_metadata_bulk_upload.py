@@ -76,6 +76,28 @@ class TestMetadataBulkUpload(unittest.TestCase):
             image_id = data["id"]
             self.assertTrue(image_id is not None)
 
+    def test_upload_zip2(self):
+        acct = Account.create()
+        token = Helper.login(acct.address, acct.key)
+        headers = {'Authorization': 'Bearer {0}'.format(token)}
+
+        api_url = self.url + "/api/v1/bulk/upload-zip"
+
+        payload = {'uploaded_by': acct.address}
+        zip_path = os.path.join(self.dummy_data_path, 'data2.zip')
+        with open(zip_path, 'rb') as zip_file:
+            files = [
+                ('file',
+                 ('data2.zip', zip_file, 'application/zip'))
+            ]
+
+            response = requests.request("POST", api_url, headers=headers, data=payload, files=files)
+            self.assertTrue(response.status_code, 200)
+            data = json.loads(response.text)
+            image_id = data["id"]
+            self.assertTrue(image_id is not None)
+            self.assertTrue(3, data['result'])
+
     def test_metadata_to_image(self):
         acct = Account.create()
         token = Helper.login(acct.address, acct.key)
