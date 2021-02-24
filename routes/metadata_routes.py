@@ -409,3 +409,54 @@ def get_stats():
 
     response = jsonify(result)
     return response, 200
+
+
+@metadata_routes.route('/api/v1/my-stats', methods=["GET"])
+# @jwt_required
+def get_my_stats():
+    args = request.args
+    required_params = {"start_time", "end_time"}
+    # public_address = get_jwt_identity()
+    public_address = "0x956C31bDc30DD876cf2A63d9Cf5B52BCC1F6bEb0"
+    if not all(elem in args.keys() for elem in required_params):
+        return jsonify(
+            {"status": "failed",
+             "message": "Invalid input body. Expected query parameters :{0}".format(required_params)}), 400
+    page_size = 2
+
+    selector = {
+        "selector": {
+            "_id": {
+                "$gt": None
+            },
+            "uploaded_by": public_address,
+            "type": "image"
+        },
+        "fields": [
+            "uploaded_at"
+        ],
+        "limit": page_size,
+        "skip": 0,
+        "sort": [
+            "uploaded_at"
+        ]
+    }
+
+    all_data = []
+
+    while True:
+        result = imageMetadataDao.query_data(selector)["result"]
+        all_data = all_data + result
+        selector["skip"] = selector["skip"] + page_size
+        if len(result) < page_size:
+            break
+
+    # data = [datetime.fromtimestamp(row['uploaded_at']).strftime('%Y-%m-%d %H:%M:%S') for row in all_data]
+    d = pd.DataFrame.from_dict(all_data, orient='columns')
+    d['uploaded_at'] = pd.to_datetime(d['uploaded_at'])
+    # d = pd.DataFrame({'uploaded_at': all_data}, columns=['uploaded_at'])
+    # d['uploaded_at'] = d['uploaded_at'].apply(lambda x: pd.to_datetime(x["uploaded_at"]))
+    # groups = d.groupby(pd.Grouper(freq='D')).count()
+
+    response = jsonify({})
+    return response, 200
