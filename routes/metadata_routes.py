@@ -416,17 +416,21 @@ def get_stats():
 @jwt_required
 def get_my_stats():
     args = request.args
-    required_params = {"start_time", "end_time"}
+    # required_params = {"start_time", "end_time"}
+    required_params = {}
     public_address = get_jwt_identity()
     if not all(elem in args.keys() for elem in required_params):
         return jsonify(
             {"status": "failed",
              "message": "Invalid input body. Expected query parameters :{0}".format(required_params)}), 400
     my_stats_command = MyStatsCommand()
-    my_stats_command.input = {
-        'public_address': public_address,
-        'start_time': args['start_time'],
-        'end_time': args['end_time']
-    }
-    response = my_stats_command.execute()
+    try:
+        my_stats_command.input = {
+            'public_address': public_address
+            #  'start_time': int(args['start_time']),
+            #  'end_time': int(args['end_time'])
+        }
+        response = my_stats_command.execute()
+    except:
+        return jsonify({"status": "failed", "messages": ["Please contact support team."]}), 400
     return response, 200

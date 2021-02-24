@@ -26,6 +26,10 @@ class MyStatsCommand(BaseCommand):
                 },
                 "uploaded_by": self.input['public_address'],
                 "type": "image"
+                # "uploaded_at": {
+                #     "$gte": self.input['start_time'],
+                #     "$lt": self.input['end_time']
+                # }
             },
             "fields": [
                 "uploaded_at"
