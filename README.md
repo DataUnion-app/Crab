@@ -76,3 +76,10 @@ Please follow the installation guide [here](https://docs.couchdb.org/en/stable/i
 # Troubleshooting
 
 1. If on windows machine and while installing `couchdb` if you see this error, please make sure [dot net 3.5 framework](https://www.microsoft.com/en-in/download/details.aspx?id=21) is installed.
+
+
+# 🏛 License
+```text
+Copyright 2021 DataUnion.app
+See the LICENSE file for the license of this code.
+```
