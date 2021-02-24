@@ -412,12 +412,11 @@ def get_stats():
 
 
 @metadata_routes.route('/api/v1/my-stats', methods=["GET"])
-# @jwt_required
+@jwt_required
 def get_my_stats():
     args = request.args
     required_params = {"start_time", "end_time"}
-    # public_address = get_jwt_identity()
-    public_address = "0x956C31bDc30DD876cf2A63d9Cf5B52BCC1F6bEb0"
+    public_address = get_jwt_identity()
     if not all(elem in args.keys() for elem in required_params):
         return jsonify(
             {"status": "failed",
@@ -451,12 +450,13 @@ def get_my_stats():
         if len(result) < page_size:
             break
 
-    # data = [datetime.fromtimestamp(row['uploaded_at']).strftime('%Y-%m-%d %H:%M:%S') for row in all_data]
-    d = pd.DataFrame.from_dict(all_data, orient='columns')
+    data = {
+        "uploaded_at": [datetime.fromtimestamp(row['uploaded_at']).strftime('%Y-%m-%d %H:%M:%S') for row in all_data]}
+    d = pd.DataFrame.from_dict(data, orient='columns')
     d['uploaded_at'] = pd.to_datetime(d['uploaded_at'])
-    # d = pd.DataFrame({'uploaded_at': all_data}, columns=['uploaded_at'])
-    # d['uploaded_at'] = d['uploaded_at'].apply(lambda x: pd.to_datetime(x["uploaded_at"]))
-    # groups = d.groupby(pd.Grouper(freq='D')).count()
-
-    response = jsonify({})
+    d['idx'] = d['uploaded_at']
+    d = d.set_index('idx')
+    groups = d.groupby(pd.Grouper(freq='1H')).count().reset_index()
+    groups = groups.rename(columns={"idx": "time", "uploaded_at": "num_images"})
+    response = jsonify({"result": json.loads(groups.to_json(orient='records'))})
     return response, 200
