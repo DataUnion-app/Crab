@@ -142,7 +142,7 @@ class DummyDataLoader:
         dir_path = os.path.join(self.data_dir, 'random')
         if not os.path.exists(dir_path):
             os.mkdir(dir_path)
-
+        image_ids = []
         for i in range(count):
             idx = random.randint(0, len(accts) - 1)
             file_path = os.path.join(dir_path, '{0}.png'.format(i))
@@ -151,9 +151,12 @@ class DummyDataLoader:
             os.remove(file_path)
 
             if image_id is not None:
+                image_ids.append(image_id)
                 idx2 = random.randint(0, len(accts) - 1)
                 self.upload_metadata(tokens[idx2], accts[idx2], image_id, self.get_dummy_metadata(image_id))
         print("Finished loading dummy data")
+
+        return image_ids
 
     def get_dummy_metadata(self, image_id):
         n = random.randint(1, 10)

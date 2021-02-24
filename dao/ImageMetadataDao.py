@@ -3,6 +3,7 @@ from .BaseDao import BaseDao
 import json
 from datetime import datetime
 from models.ImageStatus import ImageStatus
+import logging
 
 
 class ImageMetadataDao(BaseDao):
@@ -156,3 +157,19 @@ class ImageMetadataDao(BaseDao):
         response = requests.request("POST", url, headers=headers, data=json.dumps(query))
         data = json.loads(response.text)["docs"]
         return {"result": data}
+
+    def mark_as_verified(self, photos, public_address):
+        query = {"selector": {"_id": {"$in": photos}}, "limit": len(photos)}
+        url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
+        headers = {'Content-Type': 'application/json'}
+
+        response = requests.request("POST", url, headers=headers, data=json.dumps(query))
+        data = json.loads(response.text)["docs"]
+        for document in data:
+            verified = document.get("verified")
+            if not verified:
+                document["verified"] = [{"by": public_address, "time": datetime.timestamp(datetime.now())}]
+            elif len([report for report in verified if report["by"] == public_address]) == 0:
+                document["verified"].append({"by": public_address, "time": datetime.timestamp(datetime.now())})
+            self.update_doc(document["_id"], document)
+        return True

@@ -18,6 +18,7 @@ import shutil
 from commands.metadata.query_metadata_command import QueryMetadataCommand
 from commands.metadata.add_new_metadata_command import AddNewMetadataCommand
 from commands.metadata.my_stats_command import MyStatsCommand
+from commands.metadata.verify_image_command import VerifyImageCommand
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -305,6 +306,32 @@ def report_images():
     except ValueError as e:
         return jsonify(
             {"status": "failed", "message": "Invalid input body."}), 400
+
+
+@metadata_routes.route('/api/v1/verify-images', methods=["POST"])
+@jwt_required
+def verify_images():
+    required_params = {"photos"}
+    data = json.loads(request.data)
+    public_address = get_jwt_identity()
+
+    if not all(elem in data.keys() for elem in required_params):
+        return jsonify(
+            {"status": "failed", "message": "Invalid input body. Expected keys :{0}".format(required_params)}), 400
+    if not isinstance(data["photos"], list):
+        return jsonify(
+            {"status": "failed", "message": "Invalid input body. Expected `photos` to be a list"}), 400
+
+    verify_image = VerifyImageCommand()
+    verify_image.input = {
+        "public_address": public_address,
+        "photos": data["photos"]
+    }
+    verify_image.execute()
+    if verify_image.successful:
+        return jsonify({"status": "success"}), 200
+    else:
+        return jsonify({"status": "failed", "messages": verify_image.messages}), 400
 
 
 @metadata_routes.route('/api/v1/get-image-by-id', methods=["GET"])
