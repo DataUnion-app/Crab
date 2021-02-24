@@ -17,6 +17,7 @@ from models.ImageStatus import ImageStatus
 import shutil
 from commands.metadata.query_metadata_command import QueryMetadataCommand
 from commands.metadata.add_new_metadata_command import AddNewMetadataCommand
+from commands.metadata.my_stats_command import MyStatsCommand
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -421,42 +422,11 @@ def get_my_stats():
         return jsonify(
             {"status": "failed",
              "message": "Invalid input body. Expected query parameters :{0}".format(required_params)}), 400
-    page_size = 2
-
-    selector = {
-        "selector": {
-            "_id": {
-                "$gt": None
-            },
-            "uploaded_by": public_address,
-            "type": "image"
-        },
-        "fields": [
-            "uploaded_at"
-        ],
-        "limit": page_size,
-        "skip": 0,
-        "sort": [
-            "uploaded_at"
-        ]
+    my_stats_command = MyStatsCommand()
+    my_stats_command.input = {
+        'public_address': public_address,
+        'start_time': args['start_time'],
+        'end_time': args['end_time']
     }
-
-    all_data = []
-
-    while True:
-        result = imageMetadataDao.query_data(selector)["result"]
-        all_data = all_data + result
-        selector["skip"] = selector["skip"] + page_size
-        if len(result) < page_size:
-            break
-
-    data = {
-        "uploaded_at": [datetime.fromtimestamp(row['uploaded_at']).strftime('%Y-%m-%d %H:%M:%S') for row in all_data]}
-    d = pd.DataFrame.from_dict(data, orient='columns')
-    d['uploaded_at'] = pd.to_datetime(d['uploaded_at'])
-    d['idx'] = d['uploaded_at']
-    d = d.set_index('idx')
-    groups = d.groupby(pd.Grouper(freq='1H')).count().reset_index()
-    groups = groups.rename(columns={"idx": "time", "uploaded_at": "num_images"})
-    response = jsonify({"result": json.loads(groups.to_json(orient='records'))})
+    response = my_stats_command.execute()
     return response, 200
