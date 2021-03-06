@@ -1,7 +1,5 @@
 import unittest
-from web3.auto import w3
 from eth_account import Account
-from eth_account.messages import defunct_hash_message, encode_defunct
 from dao.users_dao import UsersDao
 from dao.sessions_dao import SessionsDao
 from dao.ImageMetadataDao import ImageMetadataDao
@@ -10,7 +8,6 @@ import os
 import shutil
 import requests
 from tests.helper import Helper
-from models.ImageStatus import ImageStatus
 
 
 class TestBase(unittest.TestCase):

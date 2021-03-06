@@ -1,18 +1,15 @@
 import unittest
-from web3.auto import w3
 from eth_account import Account
-from eth_account.messages import defunct_hash_message, encode_defunct
-from dao.users_dao import UsersDao
-from dao.sessions_dao import SessionsDao
 from dao.ImageMetadataDao import ImageMetadataDao
 import json
 import os
 import shutil
 import requests
 from tests.helper import Helper
+from tests.test_base import TestBase
 
 
-class TestMetadataBulkUpload(unittest.TestCase):
+class TestMetadataBulkUpload(TestBase):
 
     def __init__(self, *args, **kwargs):
         self.url = 'http://localhost:8080'
@@ -20,40 +17,6 @@ class TestMetadataBulkUpload(unittest.TestCase):
         self.data_dir = os.path.join(Helper.get_project_root(), 'data')
         self.dummy_data_path = os.path.join(Helper.get_project_root(), 'tests', 'data')
         super(TestMetadataBulkUpload, self).__init__(*args, **kwargs)
-
-    def setUp(self):
-        self.clear_data_directory()
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
-
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
-
-        image_metadata_dao = ImageMetadataDao()
-        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
-
-    def tearDown(self):
-        self.clear_data_directory()
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
-
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
-
-        image_metadata_dao = ImageMetadataDao()
-        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
 
     def test_upload_zip(self):
         acct = Account.create()

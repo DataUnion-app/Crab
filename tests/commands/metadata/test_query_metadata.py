@@ -1,9 +1,10 @@
 from commands.metadata.query_metadata_command import QueryMetadataCommand
 from models.ImageStatus import ImageStatus
 import unittest
+from tests.test_base import TestBase
 
 
-class TestQueryMetadataCommand(unittest.TestCase):
+class TestQueryMetadataCommand(TestBase):
 
     def test_query_metadata_1(self):
         query_metadata_command = QueryMetadataCommand()

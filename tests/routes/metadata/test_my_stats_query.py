@@ -2,6 +2,7 @@ from tests.test_base import TestBase
 import requests
 from datetime import datetime
 from helpers.load_dummy_data import DummyDataLoader
+import unittest
 
 
 class TestMetadataQuery(TestBase):
@@ -16,4 +17,3 @@ class TestMetadataQuery(TestBase):
         api_url = "{0}/api/v1/my-stats?start_time=1&end_time={1}".format(self.url, datetime.timestamp(datetime.now()))
         response = requests.request("GET", api_url, headers=headers, data={})
         self.assertEqual(200, response.status_code)
-

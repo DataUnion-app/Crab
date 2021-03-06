@@ -30,21 +30,3 @@ class TestMyStatsCommand(TestBase):
         self.assertIsNotNone(result)
         self.assertEqual('success', result.get('status'))
 
-    def test_query_my_stats_2(self):
-        acct = Account.create()
-        login = Login()
-        token = login.register_and_login(acct.address, acct.key)
-
-        dummy_data_loader = DummyDataLoader()
-        image_ids = dummy_data_loader.load_random_data3(acct, token, 2, 2, 2)
-
-        query_my_stats_command = MyStatsCommand()
-        query_my_stats_command.input = {
-            'status': ImageStatus.AVAILABLE_FOR_TAGGING.name,
-            'public_address': acct.address,
-            'group_by': 1
-        }
-
-        result = query_my_stats_command.execute()
-        self.assertIsNotNone(result)
-        self.assertEqual('success', result.get('status'))

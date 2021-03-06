@@ -7,24 +7,15 @@ from dao.sessions_dao import SessionsDao
 import json
 import requests
 from tests.helper import Helper
+from tests.test_base import TestBase
 
 
-class TestUserAuthentication(unittest.TestCase):
+class TestUserAuthentication(TestBase):
 
     def __init__(self, *args, **kwargs):
         self.url = 'http://localhost:8080'
         self.db_host = ''
         super(TestUserAuthentication, self).__init__(*args, **kwargs)
-
-    @classmethod
-    def setUpClass(cls):
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.create_db()
-
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.create_db()
 
     def test_user_login(self):
         acct = Account.create()
@@ -224,16 +215,6 @@ class TestUserAuthentication(unittest.TestCase):
         self.assertEqual(refresh_response.status_code, 401)
         refresh_response_data = json.loads(refresh_response.text)
         self.assertEqual(refresh_response_data, {'msg': 'Token has been revoked'})
-
-    @classmethod
-    def tearDownClass(cls):
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
 
 
 if __name__ == '__main__':
