@@ -1,7 +1,5 @@
 import unittest
-from web3.auto import w3
 from eth_account import Account
-from eth_account.messages import defunct_hash_message, encode_defunct
 from dao.users_dao import UsersDao
 from dao.sessions_dao import SessionsDao
 from dao.ImageMetadataDao import ImageMetadataDao
@@ -10,7 +8,6 @@ import os
 import shutil
 import requests
 from tests.helper import Helper
-from models.ImageStatus import ImageStatus
 
 
 class TestBase(unittest.TestCase):
@@ -32,35 +29,29 @@ class TestBase(unittest.TestCase):
         self.clear_data_directory()
         user_dao = UsersDao()
         user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
+        user_dao.delete_all_docs()
 
         sessions_dao = SessionsDao()
         sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
+        sessions_dao.delete_all_docs()
 
         image_metadata_dao = ImageMetadataDao()
         image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
+        image_metadata_dao.delete_all_docs()
 
     def tearDown(self):
         self.clear_data_directory()
         user_dao = UsersDao()
         user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
+        user_dao.delete_all_docs()
 
         sessions_dao = SessionsDao()
         sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
+        sessions_dao.delete_all_docs()
 
         image_metadata_dao = ImageMetadataDao()
         image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
+        sessions_dao.delete_all_docs()
 
     def clear_data_directory(self):
         for filename in os.listdir(self.data_dir):

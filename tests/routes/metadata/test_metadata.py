@@ -11,9 +11,10 @@ import shutil
 import requests
 from tests.helper import Helper
 from models.ImageStatus import ImageStatus
+from tests.test_base import TestBase
 
 
-class TestMetadata(unittest.TestCase):
+class TestMetadata(TestBase):
 
     def __init__(self, *args, **kwargs):
         self.url = 'http://localhost:8080'
@@ -25,40 +26,6 @@ class TestMetadata(unittest.TestCase):
         self.image_metadata_dao = ImageMetadataDao()
         self.image_metadata_dao.set_config(self.db_user, self.password, self.db_host, "metadata")
         super(TestMetadata, self).__init__(*args, **kwargs)
-
-    def setUp(self):
-        self.clear_data_directory()
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
-
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
-
-        image_metadata_dao = ImageMetadataDao()
-        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
-
-    def tearDown(self):
-        self.clear_data_directory()
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
-
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
-
-        image_metadata_dao = ImageMetadataDao()
-        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
 
     def test_add_image(self):
         acct = Account.create()

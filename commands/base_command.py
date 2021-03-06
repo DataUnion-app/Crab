@@ -14,6 +14,10 @@ class BaseCommand(metaclass=abc.ABCMeta):
     def execute(self):
         pass
 
+    @classmethod
+    def validate_input(cls):
+        return True
+
     @property
     def is_valid(self):
         pass

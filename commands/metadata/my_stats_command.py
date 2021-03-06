@@ -25,11 +25,11 @@ class MyStatsCommand(BaseCommand):
                     "$gt": None
                 },
                 "uploaded_by": self.input['public_address'],
-                "type": "image"
-                # "uploaded_at": {
-                #     "$gte": self.input['start_time'],
-                #     "$lt": self.input['end_time']
-                # }
+                "type": "image",
+                "uploaded_at": {
+                    "$gte": self.input['start_time'],
+                    "$lt": self.input['end_time']
+                }
             },
             "fields": [
                 "uploaded_at"
@@ -45,7 +45,8 @@ class MyStatsCommand(BaseCommand):
 
         while True:
             result = self.imageMetadataDao.query_data(selector)["result"]
-            all_data = all_data + result
+            if result is not None:
+                all_data = all_data + result
             selector["skip"] = selector["skip"] + page_size
             if len(result) < page_size:
                 break
@@ -57,7 +58,11 @@ class MyStatsCommand(BaseCommand):
         d['uploaded_at'] = pd.to_datetime(d['uploaded_at'])
         d['idx'] = d['uploaded_at']
         d = d.set_index('idx')
-        groups = d.groupby(pd.Grouper(freq='1H')).count().reset_index()
+
+        # Group by hours. Default = 24
+        group_by = str(self.input.get('group_by', 24)) + 'H'
+
+        groups = d.groupby(pd.Grouper(freq=group_by)).count().reset_index()
         groups = groups.rename(columns={"idx": "time", "uploaded_at": "num_images"})
         result = {"status": "success", "result": json.loads(groups.to_json(orient='records'))}
         return result
