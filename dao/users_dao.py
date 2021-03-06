@@ -1,4 +1,6 @@
 import requests
+
+from models.UsageFlag import UsageFlag
 from .BaseDao import BaseDao
 import json
 from datetime import datetime
@@ -42,6 +44,7 @@ class UsersDao(BaseDao):
         document["nonce"] = nonce
         document["status"] = "new"
         document["is_access_blocked"] = False
+        document['usage_flag'] = UsageFlag.UNKNOWN.name
 
         self.save(doc_id, document)
         return nonce
@@ -103,3 +106,19 @@ class UsersDao(BaseDao):
         documents[0]["is_access_blocked"] = False
         documents[0]["updated_at"] = datetime.timestamp(datetime.now())
         self.update_doc(documents[0]["_id"], documents[0])
+
+    def set_usage_flag(self, public_address, flag):
+        documents = self.get_by_public_address(public_address)["result"]
+        if len(documents) != 1:
+            return
+
+        documents[0]["usage_flag"] = flag
+        documents[0]["updated_at"] = datetime.timestamp(datetime.now())
+        self.update_doc(documents[0]["_id"], documents[0])
+
+    def get_usage_flag(self, public_address):
+        documents = self.get_by_public_address(public_address)["result"]
+        if len(documents) != 1:
+            return
+
+        return documents[0].get("usage_flag")
