@@ -9,6 +9,7 @@ from models.ImageStatus import ImageStatus
 class StatsCommand(BaseCommand):
 
     def __init__(self):
+        super().__init__()
         user = config['couchdb']['user']
         password = config['couchdb']['password']
         db_host = config['couchdb']['db_host']
@@ -17,9 +18,9 @@ class StatsCommand(BaseCommand):
         self.imageMetadataDao.set_config(user, password, db_host, metadata_db)
 
     def execute(self):
-        self.validate_input()
+        is_valid = self.validate_input()
 
-        if self.is_valid is False:
+        if is_valid is False:
             self.successful = False
             return
 
@@ -108,27 +109,19 @@ class StatsCommand(BaseCommand):
         result = {"status": "success", "result": result}
         return result
 
-    @property
-    def is_valid(self):
-        pass
-
     def validate_input(self):
         if self.input is None:
-            self.is_valid = False
             self.messages.append("Empty input")
             return
 
         if self.input.get('start_time') is None:
-            self.is_valid = False
             self.messages.append("Missing start_time")
-            return
+            return False
 
         if self.input.get('end_time') is None:
-            self.is_valid = False
             self.messages.append("Missing end_time")
-            return
+            return False
 
         if self.input.get('interval') is None:
-            self.is_valid = False
             self.messages.append("Missing interval")
-            return
+            return False
