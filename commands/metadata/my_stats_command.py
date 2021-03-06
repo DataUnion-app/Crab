@@ -25,11 +25,11 @@ class MyStatsCommand(BaseCommand):
                     "$gt": None
                 },
                 "uploaded_by": self.input['public_address'],
-                "type": "image"
-                # "uploaded_at": {
-                #     "$gte": self.input['start_time'],
-                #     "$lt": self.input['end_time']
-                # }
+                "type": "image",
+                "uploaded_at": {
+                    "$gte": self.input['start_time'],
+                    "$lt": self.input['end_time']
+                }
             },
             "fields": [
                 "uploaded_at"
@@ -45,7 +45,8 @@ class MyStatsCommand(BaseCommand):
 
         while True:
             result = self.imageMetadataDao.query_data(selector)["result"]
-            all_data = all_data + result
+            if result is not None:
+                all_data = all_data + result
             selector["skip"] = selector["skip"] + page_size
             if len(result) < page_size:
                 break

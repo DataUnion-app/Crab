@@ -1,12 +1,10 @@
-from flask import Blueprint, render_template, session, abort, request, jsonify, send_file
+from flask import Blueprint, request, jsonify, send_file
 import json
 import os
 import zipfile
 import pandas as pd
 from datetime import datetime
-from dao.users_dao import UsersDao
-from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
-                                get_jwt_identity, get_raw_jwt)
+from flask_jwt_extended import (jwt_required, get_jwt_identity)
 from config import config
 from dao.ImageMetadataDao import ImageMetadataDao
 from utils.get_random_string import get_random_string
@@ -416,7 +414,7 @@ def get_stats():
 @jwt_required
 def get_my_stats():
     args = request.args
-    required_params = {}
+    required_params = {'start_time', 'end_time'}
     public_address = get_jwt_identity()
     if not all(elem in args.keys() for elem in required_params):
         return jsonify(
@@ -426,11 +424,14 @@ def get_my_stats():
     try:
         my_stats_command.input = {
             'public_address': public_address,
-            'group_by': int(args.get('group_by', 24))
-            #  'start_time': int(args['start_time']),
-            #  'end_time': int(args['end_time'])
+            'group_by': int(args.get('group_by', 24)),
+            'start_time': float(args['start_time']),
+            'end_time': float(args['end_time'])
         }
         response = my_stats_command.execute()
+    except ValueError:
+        return jsonify({"status": "failed", "messages": ["Value error: Please check if input is correct"]}), 400
     except:
         return jsonify({"status": "failed", "messages": ["Please contact support team."]}), 400
+
     return response, 200

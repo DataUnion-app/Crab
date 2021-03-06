@@ -32,35 +32,29 @@ class TestBase(unittest.TestCase):
         self.clear_data_directory()
         user_dao = UsersDao()
         user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
+        user_dao.delete_all_docs()
 
         sessions_dao = SessionsDao()
         sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
+        sessions_dao.delete_all_docs()
 
         image_metadata_dao = ImageMetadataDao()
         image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
+        image_metadata_dao.delete_all_docs()
 
     def tearDown(self):
         self.clear_data_directory()
         user_dao = UsersDao()
         user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
+        user_dao.delete_all_docs()
 
         sessions_dao = SessionsDao()
         sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
+        sessions_dao.delete_all_docs()
 
         image_metadata_dao = ImageMetadataDao()
         image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
+        sessions_dao.delete_all_docs()
 
     def clear_data_directory(self):
         for filename in os.listdir(self.data_dir):
