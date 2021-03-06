@@ -2,7 +2,6 @@ from flask import Blueprint, request, jsonify, send_file
 import json
 import os
 import zipfile
-import pandas as pd
 from datetime import datetime
 from flask_jwt_extended import (jwt_required, get_jwt_identity)
 from config import config
@@ -16,6 +15,7 @@ import shutil
 from commands.metadata.query_metadata_command import QueryMetadataCommand
 from commands.metadata.add_new_metadata_command import AddNewMetadataCommand
 from commands.metadata.my_stats_command import MyStatsCommand
+from commands.metadata.stats_command import StatsCommand
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -355,59 +355,13 @@ def query_metadata():
 
 @metadata_routes.route('/api/v1/stats', methods=["GET"])
 def get_stats():
-    all_data = imageMetadataDao.getAll()['result']
-    all_data = [row for row in all_data if row.get('type') == "image" and
-                row.get('status') in [ImageStatus.AVAILABLE_FOR_TAGGING.name, ImageStatus.VERIFIED.name]]
-
-    data = dict({})
-
-    if len(all_data) == 0:
-        result = dict({
-            "initial_images": 0,
-            "data": []
-        })
+    stats_command = StatsCommand()
+    result = stats_command.execute()
+    if stats_command.successful:
         response = jsonify(result)
         return response, 200
-
-    for row in all_data:
-        data[row['_id']] = {'time': datetime.fromtimestamp(row['uploaded_at']).strftime('%Y-%m-%d %H:%M:%S'),
-                            'tags': []}
-        tags_set = set()
-        tag_data = row.get('tag_data')
-        if tag_data:
-            for tags in tag_data:
-                for tag in tags['tags']:
-                    tags_set.add(tag)
-            data[row['_id']]['tags'] = tags_set
-    d = pd.DataFrame.from_dict(data, orient='index')
-    d['time'] = pd.to_datetime(d['time'])
-    groups = d.groupby(pd.Grouper(key='time', freq='D'))
-    total_summary = []
-    for key, group in groups:
-        summary = dict({})
-        summary['time'] = key.timestamp()
-        summary['num_images'] = 0
-        summary['tags'] = []
-        for row_index, row in group.iterrows():
-            summary['num_images'] = summary['num_images'] + 1
-            for tag in row['tags']:
-                present = False
-                for index, s in enumerate(summary['tags']):
-                    if s.get('name') == tag:
-                        present = True
-                        summary['tags'][index]['value'] = summary['tags'][index]['value'] + 1
-                if not present:
-                    value = {"name": tag, "value": 1}
-                    summary['tags'].append(value)
-        total_summary.append(summary)
-
-    result = dict({
-        "initial_images": len(all_data),
-        "data": total_summary
-    })
-
-    response = jsonify(result)
-    return response, 200
+    else:
+        return jsonify({'status': 'failed', 'messages': stats_command.messages}), 400
 
 
 @metadata_routes.route('/api/v1/my-stats', methods=["GET"])
