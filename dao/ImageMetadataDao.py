@@ -7,7 +7,7 @@ from models.ImageStatus import ImageStatus
 
 class ImageMetadataDao(BaseDao):
 
-    def get_images_by_eth_address(self, eth_address, page=1, status=None):
+    def get_images_by_eth_address(self, eth_address, page=1, status=None, fields=None):
         query = {
             "sort": [
                 {
@@ -21,7 +21,8 @@ class ImageMetadataDao(BaseDao):
                     "$gt": None
                 },
                 "uploaded_by": eth_address
-            }
+            },
+            "fields": fields
         }
         if status:
             query["selector"]["status"] = status
@@ -69,7 +70,7 @@ class ImageMetadataDao(BaseDao):
         # TODO
         pass
 
-    def add_metadata_for_image(self, public_address, photo_id, tags, other):
+    def add_metadata_for_image(self, public_address, photo_id, tags, description, other):
         document = self.get_doc_by_id(photo_id)
         document["updated_at"] = datetime.timestamp(datetime.now())
 
@@ -79,6 +80,7 @@ class ImageMetadataDao(BaseDao):
                     "other": other,
                     "uploaded_by": public_address,
                     "created_at": datetime.timestamp(datetime.now()),
+                    "description": description,
                     "updated_at": datetime.timestamp(datetime.now())}
 
         if user_tags is not None:
@@ -140,3 +142,17 @@ class ImageMetadataDao(BaseDao):
                 document["reports"].append({"reported_by": address})
 
             self.update_doc(document["_id"], document)
+
+    def query_metadata(self, status=None, skip_tagged=False, page=1):
+
+        image_status = status if status else {"$gt": None}
+
+        query = {"sort": [{"_id": "asc"}], "limit": self.page_size, "skip": (page - 1) * self.page_size,
+                 "selector": {"_id": {"$gt": None}, "status": image_status},
+                 "fields": ["filename", "_id", "_rev"]}
+        url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
+        headers = {'Content-Type': 'application/json'}
+
+        response = requests.request("POST", url, headers=headers, data=json.dumps(query))
+        data = json.loads(response.text)["docs"]
+        return {"result": data}

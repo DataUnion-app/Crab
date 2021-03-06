@@ -1,59 +1,22 @@
 import unittest
-from web3.auto import w3
 from eth_account import Account
-from eth_account.messages import defunct_hash_message, encode_defunct
-from dao.users_dao import UsersDao
-from dao.sessions_dao import SessionsDao
 from dao.ImageMetadataDao import ImageMetadataDao
 import json
 import os
 import shutil
 import requests
 from tests.helper import Helper
+from tests.test_base import TestBase
 
 
-class TestMetadataBulkUpload(unittest.TestCase):
+class TestMetadataBulkUpload(TestBase):
 
     def __init__(self, *args, **kwargs):
         self.url = 'http://localhost:8080'
         self.db_host = ''
-        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                     'data')
+        self.data_dir = os.path.join(Helper.get_project_root(), 'data')
+        self.dummy_data_path = os.path.join(Helper.get_project_root(), 'tests', 'data')
         super(TestMetadataBulkUpload, self).__init__(*args, **kwargs)
-
-    def setUp(self):
-        self.clear_data_directory()
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
-
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
-
-        image_metadata_dao = ImageMetadataDao()
-        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
-
-    def tearDown(self):
-        self.clear_data_directory()
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
-
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
-
-        image_metadata_dao = ImageMetadataDao()
-        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
 
     def test_upload_zip(self):
         acct = Account.create()
@@ -63,7 +26,7 @@ class TestMetadataBulkUpload(unittest.TestCase):
         api_url = self.url + "/api/v1/bulk/upload-zip"
 
         payload = {'uploaded_by': acct.address}
-        zip_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'data.zip')
+        zip_path = os.path.join(self.dummy_data_path, 'data.zip')
         with open(zip_path, 'rb') as zip_file:
             files = [
                 ('file',
@@ -76,6 +39,28 @@ class TestMetadataBulkUpload(unittest.TestCase):
             image_id = data["id"]
             self.assertTrue(image_id is not None)
 
+    def test_upload_zip2(self):
+        acct = Account.create()
+        token = Helper.login(acct.address, acct.key)
+        headers = {'Authorization': 'Bearer {0}'.format(token)}
+
+        api_url = self.url + "/api/v1/bulk/upload-zip"
+
+        payload = {'uploaded_by': acct.address}
+        zip_path = os.path.join(self.dummy_data_path, 'data2.zip')
+        with open(zip_path, 'rb') as zip_file:
+            files = [
+                ('file',
+                 ('data2.zip', zip_file, 'application/zip'))
+            ]
+
+            response = requests.request("POST", api_url, headers=headers, data=payload, files=files)
+            self.assertTrue(response.status_code, 200)
+            data = json.loads(response.text)
+            image_id = data["id"]
+            self.assertTrue(image_id is not None)
+            self.assertTrue(3, data['result'])
+
     def test_metadata_to_image(self):
         acct = Account.create()
         token = Helper.login(acct.address, acct.key)
@@ -83,7 +68,7 @@ class TestMetadataBulkUpload(unittest.TestCase):
 
         api_url = self.url + "/api/v1/upload-file"
         payload = {'uploaded_by': acct.address}
-        image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample.png')
+        image_path = os.path.join(self.dummy_data_path, 'sample.png')
 
         with open(image_path, 'rb') as img:
             files = [

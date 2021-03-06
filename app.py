@@ -3,6 +3,7 @@ import os
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 import logging
+from datetime import timedelta
 from logging.handlers import TimedRotatingFileHandler
 from routes.authentication_routes import authentication_routes, sessions_dao
 from routes.metadata_routes import metadata_routes
@@ -29,6 +30,8 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['JWT_SECRET_KEY'] = config['application']['jwt_secret_string']
 app.config['JWT_BLACKLIST_ENABLED'] = True
 app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(seconds=config['application'].getint('jwt_access_token_validity'))
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(seconds=config['application'].getint('jwt_refresh_token_validity'))
 
 jwt = JWTManager(app)
 

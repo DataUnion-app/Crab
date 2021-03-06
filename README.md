@@ -25,6 +25,10 @@ Backend for DataUnion.app
 
 Please follow the installation guide [here](https://docs.couchdb.org/en/stable/install/index.html).
 
+### Prerequisites
+
+For windows install [Visual studio build tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+
 ### Starting the backend
 1. Install `Python 3.9.0`
 2. Navigate to the directory where Crab is cloned.
@@ -62,17 +66,7 @@ Please follow the installation guide [here](https://docs.couchdb.org/en/stable/i
 
 # Supported api
 
-| Method | Endpoint             | Example Usage                                                                                                                                                                                                                                     |
-|--------|----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| POST   | /api/v1/upload       | `curl --location --request POST 'http://localhost:8080/api/v1/upload' \ --header 'Content-Type: application/json' \ --data-raw '{    "photo_id" : "XSUdXxoxFF",    "timestamp" : "timestamp",    "other" : "other",    "tags" : ["tag1,tag2"] }'` |
-| POST   | /api/v1/upload-file  | `curl --location --request POST 'http://localhost:8080/api/v1/upload-file' \ --form 'file=@"/C:<path>"' \ --form 'uploaded_by="0x123"'`                                                                                                           |
-| POST   | /api/v1/upload-zip   | `curl --location --request POST 'http://localhost:8080/api/v1/upload-file' \ --form 'file=@"/C:<path>"' \ --form 'uploaded_by="0x123"'`                                                                                                           |
-| GET    | /api/get/my-metadata | `curl --location --request GET 'http://localhost:8080/api/v1/all-metadata'`                                                                                                                                                                       |
-| GET    | /api/v1/my-images    | `curl --location --request GET 'http://localhost:8080/api/v1/metadata?eth_address=0x123'`                                                                                                                                                         |
-| GET    | /api/v1/get-image-by-id    | `curl --location --request GET 'http://localhost:8080/api/v1/get_image?id=EaglPwWTXM'`                                                                                                                                                            |
-| GET    | /api/v1/report-images    | `curl --location --request GET 'http://localhost:8080/api/v1/get_image?id=EaglPwWTXM'`                                                                                                                                                            |
-| GET    | /api/vi/stats        | `curl --location --request GET 'http://localhost:8080/api/v1/stats'`                                                                                                                                                                              |
-
+Please visit the wiki page [here](https://github.com/DataUnion-app/Crab/wiki/Crab-backend-API).
 # Troubleshooting
 
 1. If on windows machine and while installing `couchdb` if you see this error, please make sure [dot net 3.5 framework](https://www.microsoft.com/en-in/download/details.aspx?id=21) is installed.

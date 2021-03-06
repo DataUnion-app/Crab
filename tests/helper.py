@@ -2,10 +2,10 @@ import json
 import requests
 from web3.auto import w3
 from eth_account.messages import defunct_hash_message, encode_defunct
+import os
 
 
 class Helper:
-
     URL = "http://localhost:8080"
 
     @staticmethod
@@ -42,3 +42,7 @@ class Helper:
         response = requests.request("POST", api_url, headers=headers, data=payload)
         data = json.loads(response.text)
         return data
+
+    @staticmethod
+    def get_project_root():
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

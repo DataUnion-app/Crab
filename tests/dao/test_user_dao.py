@@ -3,14 +3,10 @@ from web3.auto import w3
 from eth_account import Account
 from eth_account.messages import defunct_hash_message, encode_defunct
 from dao.users_dao import UsersDao
+from tests.test_base import TestBase
 
 
-class TestUserDao(unittest.TestCase):
-
-    def setUp(self):
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.create_db()
+class TestUserDao(TestBase):
 
     def test_get_nonce(self):
         user_dao = UsersDao()
@@ -57,11 +53,6 @@ class TestUserDao(unittest.TestCase):
         user_dao.unblock_access(acct.address)
         is_blocked = user_dao.is_access_blocked(acct.address)
         self.assertFalse(is_blocked)
-
-    def tearDown(self):
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
 
 
 if __name__ == '__main__':

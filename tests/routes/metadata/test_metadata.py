@@ -11,54 +11,21 @@ import shutil
 import requests
 from tests.helper import Helper
 from models.ImageStatus import ImageStatus
+from tests.test_base import TestBase
 
 
-class TestMetadata(unittest.TestCase):
+class TestMetadata(TestBase):
 
     def __init__(self, *args, **kwargs):
         self.url = 'http://localhost:8080'
         self.db_host = '127.0.0.1:5984'
         self.db_user = 'admin'
         self.password = 'admin'
-        self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                     'data')
+        self.data_dir = os.path.join(Helper.get_project_root(), 'data')
+        self.dummy_data_path = os.path.join(Helper.get_project_root(), 'tests', 'data')
         self.image_metadata_dao = ImageMetadataDao()
         self.image_metadata_dao.set_config(self.db_user, self.password, self.db_host, "metadata")
         super(TestMetadata, self).__init__(*args, **kwargs)
-
-    def setUp(self):
-        self.clear_data_directory()
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
-
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
-
-        image_metadata_dao = ImageMetadataDao()
-        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
-
-    def tearDown(self):
-        self.clear_data_directory()
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
-
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
-
-        image_metadata_dao = ImageMetadataDao()
-        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
 
     def test_add_image(self):
         acct = Account.create()
@@ -68,7 +35,7 @@ class TestMetadata(unittest.TestCase):
         api_url = self.url + "/api/v1/upload-file"
 
         payload = {'uploaded_by': acct.address}
-        image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample.png')
+        image_path = os.path.join(self.dummy_data_path, 'sample.png')
         with open(image_path, 'rb') as img:
             files = [
                 ('file',
@@ -89,7 +56,7 @@ class TestMetadata(unittest.TestCase):
         api_url = self.url + "/api/v1/upload-file"
 
         payload = {'uploaded_by': acct.address}
-        image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample.png')
+        image_path = os.path.join(self.dummy_data_path, 'sample.png')
 
         with open(image_path, 'rb') as img:
             files = [
@@ -103,7 +70,7 @@ class TestMetadata(unittest.TestCase):
             image_id = data["id"]
             self.assertTrue(image_id is not None)
 
-        image_path2 = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample2.png')
+        image_path2 = os.path.join(self.dummy_data_path, 'sample2.png')
         with open(image_path2, 'rb') as img2:
             files2 = [
                 ('file',
@@ -122,7 +89,7 @@ class TestMetadata(unittest.TestCase):
 
         api_url = self.url + "/api/v1/upload-file"
         payload = {'uploaded_by': acct.address}
-        image_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'sample.png')
+        image_path = os.path.join(self.dummy_data_path, 'sample.png')
 
         with open(image_path, 'rb') as img:
             files = [
@@ -137,7 +104,7 @@ class TestMetadata(unittest.TestCase):
             self.assertTrue(image_id is not None)
 
         api_url = self.url + "/api/v1/upload"
-        data = {"photo_id": image_id, "timestamp": "", "other": {}, "tags": ["t1", "t2"]}
+        data = {"photo_id": image_id, "timestamp": "", "other": {}, "tags": ["t1", "t2"], "description": "test"}
         response = requests.request("POST", api_url, headers=headers, data=json.dumps(data))
         self.assertTrue(response.status_code, 200)
 
@@ -150,6 +117,7 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(['t1', 't2'], result[0].get('tags'))
         self.assertEqual({}, result[0].get('other'))
         self.assertEqual(acct.address, result[0].get('uploaded_by'))
+        self.assertEqual('test', result[0].get('description'))
 
         acct2 = Account.create()
         api_url = self.url + "/api/v1/upload"
@@ -165,6 +133,7 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(['u1', 'u2'], result[1].get('tags'))
         self.assertEqual({}, result[0].get('other'))
         self.assertEqual(acct2.address, result[1].get('uploaded_by'))
+        self.assertIsNone(result[1].get('description'))
 
     def test_get_all_metadata(self):
         acct = Account.create()
@@ -247,7 +216,7 @@ class TestMetadata(unittest.TestCase):
         api_url = self.url + "/api/v1/bulk/upload-zip"
 
         payload = {'uploaded_by': account.address}
-        zip_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', filename)
+        zip_path = os.path.join(self.dummy_data_path, filename)
         with open(zip_path, 'rb') as zip_file:
             files = [
                 ('file',
