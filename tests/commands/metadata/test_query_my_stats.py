@@ -1,6 +1,5 @@
 from commands.metadata.my_stats_command import MyStatsCommand
 from models.ImageStatus import ImageStatus
-import unittest
 from helpers.load_dummy_data import DummyDataLoader
 from helpers.login import Login
 from eth_account import Account
