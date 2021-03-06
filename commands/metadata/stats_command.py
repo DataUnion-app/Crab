@@ -17,6 +17,12 @@ class StatsCommand(BaseCommand):
         self.imageMetadataDao.set_config(user, password, db_host, metadata_db)
 
     def execute(self):
+        self.validate_input()
+
+        if self.is_valid is False:
+            self.successful = False
+            return
+
         page_size = 100
 
         selector = {
@@ -27,6 +33,10 @@ class StatsCommand(BaseCommand):
                 "type": "image",
                 "status": {
                     "$in": [ImageStatus.AVAILABLE_FOR_TAGGING.name, ImageStatus.VERIFIED.name]
+                },
+                "uploaded_at": {
+                    "$gte": self.input['start_time'],
+                    "$lt": self.input['end_time']
                 }
             },
             "fields": [
@@ -65,7 +75,11 @@ class StatsCommand(BaseCommand):
                 data[row['_id']]['tags'] = tags_set
         d = pd.DataFrame.from_dict(data, orient='index')
         d['time'] = pd.to_datetime(d['time'])
-        groups = d.groupby(pd.Grouper(key='time', freq='D'))
+
+        # Interval in hours
+        interval = str(self.input['interval']) + 'H'
+
+        groups = d.groupby(pd.Grouper(key='time', freq=interval))
         total_summary = []
         for key, group in groups:
             summary = dict({})
@@ -97,3 +111,24 @@ class StatsCommand(BaseCommand):
     @property
     def is_valid(self):
         pass
+
+    def validate_input(self):
+        if self.input is None:
+            self.is_valid = False
+            self.messages.append("Empty input")
+            return
+
+        if self.input.get('start_time') is None:
+            self.is_valid = False
+            self.messages.append("Missing start_time")
+            return
+
+        if self.input.get('end_time') is None:
+            self.is_valid = False
+            self.messages.append("Missing end_time")
+            return
+
+        if self.input.get('interval') is None:
+            self.is_valid = False
+            self.messages.append("Missing interval")
+            return

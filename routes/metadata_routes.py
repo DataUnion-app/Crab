@@ -355,13 +355,29 @@ def query_metadata():
 
 @metadata_routes.route('/api/v1/stats', methods=["GET"])
 def get_stats():
-    stats_command = StatsCommand()
-    result = stats_command.execute()
-    if stats_command.successful:
-        response = jsonify(result)
-        return response, 200
-    else:
-        return jsonify({'status': 'failed', 'messages': stats_command.messages}), 400
+    args = request.args
+    required_params = {'start_time', 'end_time', 'interval'}
+
+    if not all(elem in args.keys() for elem in required_params):
+        return jsonify(
+            {"status": "failed",
+             "message": "Invalid input body. Expected query parameters :{0}".format(required_params)}), 400
+    try:
+        stats_command = StatsCommand()
+        stats_command.input = {
+            'start_time': float(args.get('start_time')),
+            'end_time': float(args.get('end_time')),
+            'interval': float(args.get('interval'))
+        }
+
+        result = stats_command.execute()
+        if stats_command.successful:
+            response = jsonify(result)
+            return response, 200
+        else:
+            return jsonify({'status': 'failed', 'messages': stats_command.messages}), 400
+    except ValueError:
+        return jsonify({'status': 'failed', 'messages': ['Value error.']}), 400
 
 
 @metadata_routes.route('/api/v1/my-stats', methods=["GET"])
