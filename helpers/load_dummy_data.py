@@ -143,6 +143,8 @@ class DummyDataLoader:
         if not os.path.exists(dir_path):
             os.mkdir(dir_path)
 
+        image_ids = []
+
         for i in range(count):
             idx = random.randint(0, len(accts) - 1)
             file_path = os.path.join(dir_path, '{0}.png'.format(i))
@@ -152,8 +154,33 @@ class DummyDataLoader:
 
             if image_id is not None:
                 idx2 = random.randint(0, len(accts) - 1)
+                image_ids.append(image_id)
                 self.upload_metadata(tokens[idx2], accts[idx2], image_id, self.get_dummy_metadata(image_id))
         print("Finished loading dummy data")
+        return image_ids
+
+    def load_random_data3(self, account=None, token=None, count=10, x_size=100, y_size=100):
+        if token is None or account is None:
+            print("Token or account is None")
+            return
+
+        dir_path = os.path.join(self.data_dir, 'random')
+        if not os.path.exists(dir_path):
+            os.mkdir(dir_path)
+
+        image_ids = []
+
+        for i in range(count):
+            file_path = os.path.join(dir_path, '{0}.png'.format(i))
+            self.generate_image(x_size, y_size, file_path)
+            image_id = self.upload_image(file_path, '{0}.png'.format(i), token, account)
+            os.remove(file_path)
+
+            if image_id is not None:
+                image_ids.append(image_id)
+                self.upload_metadata(token, account, image_id, self.get_dummy_metadata(image_id))
+        print("Finished loading dummy data")
+        return image_ids
 
     def get_dummy_metadata(self, image_id):
         n = random.randint(1, 10)

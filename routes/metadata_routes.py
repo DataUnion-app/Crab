@@ -416,7 +416,6 @@ def get_stats():
 @jwt_required
 def get_my_stats():
     args = request.args
-    # required_params = {"start_time", "end_time"}
     required_params = {}
     public_address = get_jwt_identity()
     if not all(elem in args.keys() for elem in required_params):
@@ -426,7 +425,8 @@ def get_my_stats():
     my_stats_command = MyStatsCommand()
     try:
         my_stats_command.input = {
-            'public_address': public_address
+            'public_address': public_address,
+            'group_by': int(args.get('group_by', 24))
             #  'start_time': int(args['start_time']),
             #  'end_time': int(args['end_time'])
         }

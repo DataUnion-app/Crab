@@ -57,7 +57,11 @@ class MyStatsCommand(BaseCommand):
         d['uploaded_at'] = pd.to_datetime(d['uploaded_at'])
         d['idx'] = d['uploaded_at']
         d = d.set_index('idx')
-        groups = d.groupby(pd.Grouper(freq='1H')).count().reset_index()
+
+        # Group by hours. Default = 24
+        group_by = str(self.input.get('group_by', 24)) + 'H'
+
+        groups = d.groupby(pd.Grouper(freq=group_by)).count().reset_index()
         groups = groups.rename(columns={"idx": "time", "uploaded_at": "num_images"})
         result = {"status": "success", "result": json.loads(groups.to_json(orient='records'))}
         return result
