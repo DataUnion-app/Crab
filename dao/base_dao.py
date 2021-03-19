@@ -29,7 +29,7 @@ class BaseDao(metaclass=abc.ABCMeta):
         response = requests.request("PUT", url, headers=headers, data=json.dumps(data))
         return json.loads(response.text)
 
-    def getAll(self):
+    def get_all(self):
         query = {"selector": {"_id": {"$gt": None}}}
         headers = {'Content-Type': 'application/json'}
         url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
@@ -51,7 +51,7 @@ class BaseDao(metaclass=abc.ABCMeta):
         url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
         response = requests.request("POST", url, headers=headers, data=json.dumps(selector))
         if response.status_code != 200:
-            logging.info("Failed to query data from db [{}]. Reason [{}]".format(self.db_name, response.text.rstrip()))
+            logging.info("Failed to query data from db [%s]. Reason [%s]", self.db_name, response.text.rstrip())
         try:
             data = json.loads(response.text).get("docs")
             return {"result": data}
