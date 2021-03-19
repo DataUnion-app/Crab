@@ -1,4 +1,4 @@
-from dao.ImageMetadataDao import ImageMetadataDao
+from dao.image_metadata_dao import ImageMetadataDao
 from commands.base_command import BaseCommand
 from config import config
 from datetime import datetime

@@ -4,7 +4,7 @@ from eth_account import Account
 from eth_account.messages import defunct_hash_message, encode_defunct
 from dao.users_dao import UsersDao
 from dao.sessions_dao import SessionsDao
-from dao.ImageMetadataDao import ImageMetadataDao
+from dao.image_metadata_dao import ImageMetadataDao
 import json
 import os
 import shutil
@@ -115,7 +115,6 @@ class TestMetadata(TestBase):
 
         self.assertEqual(1, len(result))
         self.assertEqual(['t1', 't2'], result[0].get('tags'))
-        self.assertEqual({}, result[0].get('other'))
         self.assertEqual(acct.address, result[0].get('uploaded_by'))
         self.assertEqual('test', result[0].get('description'))
 
@@ -131,7 +130,6 @@ class TestMetadata(TestBase):
 
         self.assertEqual(2, len(result))
         self.assertEqual(['u1', 'u2'], result[1].get('tags'))
-        self.assertEqual({}, result[0].get('other'))
         self.assertEqual(acct2.address, result[1].get('uploaded_by'))
         self.assertIsNone(result[1].get('description'))
 

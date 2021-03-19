@@ -5,7 +5,7 @@ import zipfile
 from datetime import datetime
 from flask_jwt_extended import (jwt_required, get_jwt_identity)
 from config import config
-from dao.ImageMetadataDao import ImageMetadataDao
+from dao.image_metadata_dao import ImageMetadataDao
 from utils.get_random_string import get_random_string
 from werkzeug.utils import secure_filename
 import logging

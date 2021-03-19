@@ -1,4 +1,4 @@
-from dao.ImageMetadataDao import ImageMetadataDao
+from dao.image_metadata_dao import ImageMetadataDao
 from commands.base_command import BaseCommand
 from config import config
 
@@ -16,8 +16,7 @@ class AddNewMetadataCommand(BaseCommand):
     def execute(self):
         result = self.imageMetadataDao.add_metadata_for_image(self.input["public_address"], self.input["photo_id"],
                                                               self.input["tags"],
-                                                              self.input.get("description", None),
-                                                              self.input.get("other", None))
+                                                              self.input.get("description", None))
         self.successful = True
         if result.get('ok') is True:
             return {"status": "success"}

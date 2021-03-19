@@ -2,7 +2,7 @@ import unittest
 from eth_account import Account
 from dao.users_dao import UsersDao
 from dao.sessions_dao import SessionsDao
-from dao.ImageMetadataDao import ImageMetadataDao
+from dao.image_metadata_dao import ImageMetadataDao
 import json
 import os
 import shutil
