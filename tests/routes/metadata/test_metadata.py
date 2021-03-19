@@ -104,7 +104,8 @@ class TestMetadata(TestBase):
             self.assertTrue(image_id is not None)
 
         api_url = self.url + "/api/v1/upload"
-        data = {"photo_id": image_id, "timestamp": "", "other": {}, "tags": ["t1", "t2"], "description": "test"}
+        data = {"photo_id": image_id, "timestamp": "", "other": {}, "tags": ["t1  ", "  t2", " t3\t "],
+                "description": "test"}
         response = requests.request("POST", api_url, headers=headers, data=json.dumps(data))
         self.assertTrue(response.status_code, 200)
 
@@ -114,7 +115,7 @@ class TestMetadata(TestBase):
         result = metadata_dao.get_doc_by_id(image_id)['tag_data']
 
         self.assertEqual(1, len(result))
-        self.assertEqual(['t1', 't2'], result[0].get('tags'))
+        self.assertEqual(['t1', 't2', 't3'], result[0].get('tags'))
         self.assertEqual(acct.address, result[0].get('uploaded_by'))
         self.assertEqual('test', result[0].get('description'))
 
@@ -122,7 +123,7 @@ class TestMetadata(TestBase):
         api_url = self.url + "/api/v1/upload"
         token2 = Helper.login(acct2.address, acct2.key)
         headers2 = {'Authorization': 'Bearer {0}'.format(token2)}
-        data2 = {"photo_id": image_id, "timestamp": "", "other": {}, "tags": ["u1", "u2"]}
+        data2 = {"photo_id": image_id, "timestamp": "", "tags": ["u1", "u2"]}
         response2 = requests.request("POST", api_url, headers=headers2, data=json.dumps(data2))
         self.assertTrue(response2.status_code, 200)
 
