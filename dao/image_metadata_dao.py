@@ -1,7 +1,7 @@
-import requests
-from .BaseDao import BaseDao
 import json
 from datetime import datetime
+import requests
+from dao.base_dao import BaseDao
 from models.ImageStatus import ImageStatus
 import logging
 
@@ -71,14 +71,13 @@ class ImageMetadataDao(BaseDao):
         # TODO
         pass
 
-    def add_metadata_for_image(self, public_address, photo_id, tags, description, other):
+    def add_metadata_for_image(self, public_address, photo_id, tags, description):
         document = self.get_doc_by_id(photo_id)
         document["updated_at"] = datetime.timestamp(datetime.now())
 
         user_tags = document.get("tag_data")
 
         tag_data = {"tags": tags,
-                    "other": other,
                     "uploaded_by": public_address,
                     "created_at": datetime.timestamp(datetime.now()),
                     "description": description,
@@ -116,7 +115,7 @@ class ImageMetadataDao(BaseDao):
         return {"result": data}
 
     def get_userdata(self, address):
-        query = {"selector": {"_id": {"$gt": None}},
+        query = {"selector": {"_id": address},
                  "fields": ["tags", "_id"]}
         url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
         headers = {'Content-Type': 'application/json'}
@@ -144,7 +143,7 @@ class ImageMetadataDao(BaseDao):
 
             self.update_doc(document["_id"], document)
 
-    def query_metadata(self, status=None, skip_tagged=False, page=1):
+    def query_metadata(self, status=None, page=1):
 
         image_status = status if status else {"$gt": None}
 

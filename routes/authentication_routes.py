@@ -105,12 +105,40 @@ def revoke_refresh_token():
     sessions_dao.add_to_blacklist(jti)
     return jsonify({'message': 'Refresh token has been revoked'}), 200
 
+
 @authentication_routes.route("/logout", methods=['POST'])
 @jwt_required
 def logout():
     jti = get_raw_jwt()['jti']
     sessions_dao.add_to_blacklist(jti)
     return jsonify({'message': 'Access token has been revoked'}), 200
+
+
+@authentication_routes.route("/usage-flag", methods=['POST'])
+@jwt_required
+def set_guideline_flag():
+    data = json.loads(request.data)
+
+    if not data.get('flag'):
+        return jsonify({'message': 'Missing property in json body "flag"'}), 400
+
+    flag = data.get('flag')
+
+    if not (flag == 'REJECTED' or flag == 'ACCEPTED'):
+        return jsonify(
+            {'message': 'Invalid property in json body "flag". Valid values are: "ACCEPTED" or "REJECTED"'}), 400
+
+    public_address = get_jwt_identity()
+    user_dao.set_usage_flag(public_address, flag)
+    return jsonify({'status': 'success'}), 200
+
+
+@authentication_routes.route("/usage-flag", methods=['GET'])
+@jwt_required
+def check_guideline_flag():
+    public_address = get_jwt_identity()
+    flag = user_dao.get_usage_flag(public_address)
+    return jsonify({'usage_flag': flag}), 200
 
 
 @authentication_routes.route("/check", methods=['GET'])

@@ -4,16 +4,17 @@ from eth_account import Account
 from eth_account.messages import defunct_hash_message, encode_defunct
 from dao.users_dao import UsersDao
 from dao.sessions_dao import SessionsDao
-from dao.ImageMetadataDao import ImageMetadataDao
+from dao.image_metadata_dao import ImageMetadataDao
 import json
 import os
 import shutil
 import requests
 from tests.helper import Helper
 from models.ImageStatus import ImageStatus
+from tests.test_base import TestBase
 
 
-class TestMetadata(unittest.TestCase):
+class TestMetadata(TestBase):
 
     def __init__(self, *args, **kwargs):
         self.url = 'http://localhost:8080'
@@ -25,40 +26,6 @@ class TestMetadata(unittest.TestCase):
         self.image_metadata_dao = ImageMetadataDao()
         self.image_metadata_dao.set_config(self.db_user, self.password, self.db_host, "metadata")
         super(TestMetadata, self).__init__(*args, **kwargs)
-
-    def setUp(self):
-        self.clear_data_directory()
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
-
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
-
-        image_metadata_dao = ImageMetadataDao()
-        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
-
-    def tearDown(self):
-        self.clear_data_directory()
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_db()
-        user_dao.create_db()
-
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_db()
-        sessions_dao.create_db()
-
-        image_metadata_dao = ImageMetadataDao()
-        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_db()
-        image_metadata_dao.create_db()
 
     def test_add_image(self):
         acct = Account.create()
@@ -137,7 +104,8 @@ class TestMetadata(unittest.TestCase):
             self.assertTrue(image_id is not None)
 
         api_url = self.url + "/api/v1/upload"
-        data = {"photo_id": image_id, "timestamp": "", "other": {}, "tags": ["t1", "t2"], "description": "test"}
+        data = {"photo_id": image_id, "timestamp": "", "other": {}, "tags": ["t1  ", "  t2", " t3\t "],
+                "description": "test"}
         response = requests.request("POST", api_url, headers=headers, data=json.dumps(data))
         self.assertTrue(response.status_code, 200)
 
@@ -147,8 +115,7 @@ class TestMetadata(unittest.TestCase):
         result = metadata_dao.get_doc_by_id(image_id)['tag_data']
 
         self.assertEqual(1, len(result))
-        self.assertEqual(['t1', 't2'], result[0].get('tags'))
-        self.assertEqual({}, result[0].get('other'))
+        self.assertEqual(['t1', 't2', 't3'], result[0].get('tags'))
         self.assertEqual(acct.address, result[0].get('uploaded_by'))
         self.assertEqual('test', result[0].get('description'))
 
@@ -156,7 +123,7 @@ class TestMetadata(unittest.TestCase):
         api_url = self.url + "/api/v1/upload"
         token2 = Helper.login(acct2.address, acct2.key)
         headers2 = {'Authorization': 'Bearer {0}'.format(token2)}
-        data2 = {"photo_id": image_id, "timestamp": "", "other": {}, "tags": ["u1", "u2"]}
+        data2 = {"photo_id": image_id, "timestamp": "", "tags": ["u1", "u2"]}
         response2 = requests.request("POST", api_url, headers=headers2, data=json.dumps(data2))
         self.assertTrue(response2.status_code, 200)
 
@@ -164,7 +131,6 @@ class TestMetadata(unittest.TestCase):
 
         self.assertEqual(2, len(result))
         self.assertEqual(['u1', 'u2'], result[1].get('tags'))
-        self.assertEqual({}, result[0].get('other'))
         self.assertEqual(acct2.address, result[1].get('uploaded_by'))
         self.assertIsNone(result[1].get('description'))
 
