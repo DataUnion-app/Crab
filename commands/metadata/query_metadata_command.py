@@ -1,4 +1,4 @@
-from dao.ImageMetadataDao import ImageMetadataDao
+from dao.image_metadata_dao import ImageMetadataDao
 from commands.base_command import BaseCommand
 from config import config
 
@@ -14,9 +14,7 @@ class QueryMetadataCommand(BaseCommand):
         self.imageMetadataDao.set_config(user, password, db_host, metadata_db)
 
     def execute(self):
-        result = self.imageMetadataDao.query_metadata(self.input['status'], self.input['skip_tagged'],
-                                                      self.input['page'])
-
+        result = self.imageMetadataDao.query_metadata(self.input['status'], self.input['page'])
         return result
 
     @property

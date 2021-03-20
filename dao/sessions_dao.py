@@ -1,5 +1,5 @@
 import requests
-from .BaseDao import BaseDao
+from .base_dao import BaseDao
 import json
 from datetime import datetime
 from utils.get_random_string import get_random_string

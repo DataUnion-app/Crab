@@ -1,5 +1,5 @@
 import unittest
-from dao.ImageMetadataDao import ImageMetadataDao
+from dao.image_metadata_dao import ImageMetadataDao
 
 
 class TestUserDao(unittest.TestCase):

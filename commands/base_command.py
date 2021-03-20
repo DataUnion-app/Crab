@@ -39,5 +39,5 @@ class BaseCommand(metaclass=abc.ABCMeta):
         return self._messages
 
     @messages.setter
-    def x(self, value):
+    def messages(self, value):
         self._messages = value

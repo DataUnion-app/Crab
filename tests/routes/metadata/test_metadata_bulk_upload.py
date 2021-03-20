@@ -1,6 +1,6 @@
 import unittest
 from eth_account import Account
-from dao.ImageMetadataDao import ImageMetadataDao
+from dao.image_metadata_dao import ImageMetadataDao
 import json
 import os
 import shutil
@@ -12,7 +12,6 @@ from tests.test_base import TestBase
 class TestMetadataBulkUpload(TestBase):
 
     def __init__(self, *args, **kwargs):
-        self.url = 'http://localhost:8080'
         self.db_host = ''
         self.data_dir = os.path.join(Helper.get_project_root(), 'data')
         self.dummy_data_path = os.path.join(Helper.get_project_root(), 'tests', 'data')
@@ -94,7 +93,6 @@ class TestMetadataBulkUpload(TestBase):
 
         self.assertEqual(1, len(result))
         self.assertEqual(['t1', 't2'], result[0].get('tags'))
-        self.assertEqual({}, result[0].get('other'))
         self.assertEqual(acct.address, result[0].get('uploaded_by'))
 
         acct2 = Account.create()
@@ -109,7 +107,6 @@ class TestMetadataBulkUpload(TestBase):
 
         self.assertEqual(2, len(result))
         self.assertEqual(['u1', 'u2'], result[1].get('tags'))
-        self.assertEqual({}, result[0].get('other'))
         self.assertEqual(acct2.address, result[1].get('uploaded_by'))
 
     def clear_data_directory(self):

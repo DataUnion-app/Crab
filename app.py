@@ -1,16 +1,17 @@
-from flask import Flask, send_file
 import os
-from flask_jwt_extended import JWTManager
-from flask_cors import CORS
 import logging
 from datetime import timedelta
 from logging.handlers import TimedRotatingFileHandler
+from flask import Flask, send_file
+from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 from routes.authentication_routes import authentication_routes, sessions_dao
 from routes.metadata_routes import metadata_routes
 from routes.staticdata import staticdata_routes
 from config import config
 
-if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
+if not config['application'].getboolean('jwt_on'):
+    jwt_required = lambda fn: fn
 
 handler = TimedRotatingFileHandler(filename='logs/{}'.format(config["logging"]["file_name"]), when="D", interval=1)
 
@@ -49,7 +50,7 @@ def version():
 
 @app.route('/', methods=["GET"])
 def api():
-    return send_file(os.path.join('public', 'api.html'))
+    return send_file(os.path.join('public', 'index.html'))
 
 
 if __name__ == '__main__':
