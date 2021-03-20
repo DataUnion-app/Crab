@@ -145,17 +145,19 @@ class ImageMetadataDao(BaseDao):
 
     def query_metadata(self, status=None, page=1):
 
-        image_status = status if status else {"$gt": None}
+        skip = 0
+        if page > 1:
+            skip = (page - 1) * 100
+        query_url = '/_design/query-metadata/_view/query-metadata?startkey=["{0}"]&limit={1}&skip={2}&sorted=true'.format(
+            status,
+            self.page_size, skip)
 
-        query = {"sort": [{"_id": "asc"}], "limit": self.page_size, "skip": (page - 1) * self.page_size,
-                 "selector": {"_id": {"$gt": None}, "status": image_status},
-                 "fields": ["filename", "_id", "_rev"]}
-        url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_url)
         headers = {'Content-Type': 'application/json'}
 
-        response = requests.request("POST", url, headers=headers, data=json.dumps(query))
-        data = json.loads(response.text)["docs"]
-        return {"result": data}
+        response = requests.request("GET", url, headers=headers, data={})
+        data = json.loads(response.text)
+        return {"result": [row.get("value") for row in data["rows"]], "page": page, "page_size": self.page_size}
 
     def mark_as_verified(self, photos, public_address):
         query = {"selector": {"_id": {"$in": photos}}, "limit": len(photos)}

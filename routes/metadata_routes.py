@@ -356,25 +356,30 @@ def get_image():
         return resp, 400
 
 
-@metadata_routes.route('/api/v1/query-metadata', methods=["GET"])
+@metadata_routes.route('/api/v1/query-metadata', methods=["POST"])
 @jwt_required
 def query_metadata():
-    args = request.args
-    required_params = {"status", "skip_tagged"}
+    data = json.loads(request.data)
+    required_params = {"status", "skip_untagged"}
     public_address = get_jwt_identity()
 
-    if required_params != set(args.keys()):
+    if required_params != set(data.keys()):
         return jsonify(
             {"status": "failed",
              "message": "Invalid input body. Expected query parameters :{0}".format(required_params)}), 400
 
     page = 1
-    if "page" in args:
-        page = int(args["page"])
+    if "page" in data:
+        try:
+            page = int(data["page"])
+        except ValueError:
+            return jsonify(
+                {"status": "failed",
+                 "message": "Invalid input body. 'page' is not a number"}), 400
 
     query_metadata_command = QueryMetadataCommand()
-    query_metadata_command.input = {'public_address': public_address, "page": page, "status": args['status'],
-                                    'skip_tagged': args['skip_tagged']}
+    query_metadata_command.input = {'public_address': public_address, "page": page, "status": data['status'],
+                                    'skip_untagged': data['skip_untagged']}
     result = query_metadata_command.execute()
     return result, 200
 
