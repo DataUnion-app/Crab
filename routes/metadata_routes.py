@@ -308,7 +308,7 @@ def report_images():
 @metadata_routes.route('/api/v1/verify-images', methods=["POST"])
 @jwt_required
 def verify_images():
-    required_params = {"photos"}
+    required_params = {"image_ids"}
     data = json.loads(request.data)
     public_address = get_jwt_identity()
 
@@ -322,7 +322,7 @@ def verify_images():
     verify_image = VerifyImageCommand()
     verify_image.input = {
         "public_address": public_address,
-        "photos": data["photos"]
+        "image_ids": data["image_ids"]
     }
     verify_image.execute()
     if verify_image.successful:

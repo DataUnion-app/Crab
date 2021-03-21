@@ -6,6 +6,7 @@ from config import config
 class VerifyImageCommand(BaseCommand):
 
     def __init__(self):
+        super().__init__()
         user = config['couchdb']['user']
         password = config['couchdb']['password']
         db_host = config['couchdb']['db_host']
@@ -14,10 +15,16 @@ class VerifyImageCommand(BaseCommand):
         self.imageMetadataDao.set_config(user, password, db_host, metadata_db)
 
     def execute(self):
-        result = self.imageMetadataDao.mark_as_verified(self.input['photos'], self.input['public_address'])
-        if result:
+        results = self.imageMetadataDao.mark_as_verified(self.input['image_ids'], self.input['public_address'])
+
+        for result in results:
+            if result['success']:
+                self.imageMetadataDao.move_to_verified_if_possible(result['image_id'])
+
+        if all(result['success'] is True for result in results):
             self.successful = True
         else:
+            self.messages.append('Some or all images are not in verifiable state')
             self.successful = False
 
     @property

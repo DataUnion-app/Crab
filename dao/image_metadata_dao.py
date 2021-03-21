@@ -116,6 +116,14 @@ class ImageMetadataDao(BaseDao):
             document["status"] = ImageStatus.VERIFIABLE.name
             self.update_doc(photo_id, document)
 
+    def move_to_verified_if_possible(self, photo_id):
+        document = self.get_doc_by_id(photo_id)
+        verified = document.get("verified")
+        if len(verified) >= self.threshold_verified:
+            document["updated_at"] = datetime.timestamp(datetime.now())
+            document["status"] = ImageStatus.VERIFIED.name
+            self.update_doc(photo_id, document)
+
     def get_by_status(self, status):
         query = {"selector": {"_id": {"$gt": None}, "status": status},
                  "fields": ["filename", "other", "tags", "_id", "_rev"]}
@@ -181,11 +189,16 @@ class ImageMetadataDao(BaseDao):
 
         response = requests.request("POST", url, headers=headers, data=json.dumps(query))
         data = json.loads(response.text)["docs"]
+        result = []
         for document in data:
+            if document['status'] not in [ImageStatus.VERIFIABLE.name, ImageStatus.VERIFIED.name]:
+                result.append([{'image_id': document['_id'], 'success': False}])
+                continue
             verified = document.get("verified")
             if not verified:
                 document["verified"] = [{"by": public_address, "time": datetime.timestamp(datetime.now())}]
             elif len([report for report in verified if report["by"] == public_address]) == 0:
                 document["verified"].append({"by": public_address, "time": datetime.timestamp(datetime.now())})
             self.update_doc(document["_id"], document)
-        return True
+            result.append({'image_id': document['_id'], 'success': True})
+        return result
