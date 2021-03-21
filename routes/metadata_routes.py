@@ -363,7 +363,7 @@ def query_metadata():
     required_params = {"status", "skip_untagged"}
     public_address = get_jwt_identity()
 
-    if required_params != set(data.keys()):
+    if not all(elem in data.keys() for elem in required_params):
         return jsonify(
             {"status": "failed",
              "message": "Invalid input body. Expected query parameters :{0}".format(required_params)}), 400
