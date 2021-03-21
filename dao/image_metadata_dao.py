@@ -192,7 +192,7 @@ class ImageMetadataDao(BaseDao):
         result = []
         for document in data:
             if document['status'] not in [ImageStatus.VERIFIABLE.name, ImageStatus.VERIFIED.name]:
-                result.append([{'image_id': document['_id'], 'success': False}])
+                result.append({'image_id': document['_id'], 'success': False})
                 continue
             verified = document.get("verified")
             if not verified:
