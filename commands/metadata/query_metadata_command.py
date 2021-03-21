@@ -21,7 +21,7 @@ class QueryMetadataCommand(BaseCommand):
             self.successful = False
             return
 
-        result = self.imageMetadataDao.query_metadata(self.input['status'], self.input['page'])
+        result = self.imageMetadataDao.query_metadata(self.input['status'], self.input['page'], self.input['fields'])
         self.successful = True
         return result
 
@@ -38,9 +38,12 @@ class QueryMetadataCommand(BaseCommand):
             self.messages.append("Missing page")
             return False
 
-        if self.input.get('skip_untagged') is None:
-            self.messages.append("Missing skip_untagged")
+        if self.input.get('fields') is None:
+            self.messages.append("Missing fields")
             return False
+        else:
+            probable_fields = ["image_id", "descriptions", "tag_data"]
+            self.input["fields"] = list(set(self.input.get('fields')) & set(probable_fields))
 
     @property
     def is_valid(self):

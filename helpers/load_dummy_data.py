@@ -110,8 +110,7 @@ class DummyDataLoader:
 
             data.append({
                 "name": "{0}.png".format(i),
-                "tags": rand_words,
-                "other": {}
+                "tags": rand_words
             })
 
         meta_data = {"images": data}

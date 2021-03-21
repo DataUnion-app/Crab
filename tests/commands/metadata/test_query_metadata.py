@@ -13,9 +13,9 @@ class TestQueryMetadataCommand(TestBase):
         query_metadata_command = QueryMetadataCommand()
         query_metadata_command.input = {
             'status': ImageStatus.AVAILABLE_FOR_TAGGING.name,
-            'skip_untagged': True,
             'public_address': '',
-            'page': 1
+            'page': 1,
+            'fields': ["image_id"]
         }
 
         result = query_metadata_command.execute()

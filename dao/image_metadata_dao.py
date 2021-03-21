@@ -92,7 +92,6 @@ class ImageMetadataDao(BaseDao):
                 document["tag_data"].append(tag_data)
             else:
                 document["tag_data"][found_index]["tags"] = tags
-                document["tag_data"][found_index]["other"] = other
                 document["tag_data"][found_index]["updated_at"] = datetime.timestamp(datetime.now())
 
         else:
@@ -143,7 +142,7 @@ class ImageMetadataDao(BaseDao):
 
             self.update_doc(document["_id"], document)
 
-    def query_metadata(self, status=None, page=1):
+    def query_metadata(self, status, page, fields):
 
         skip = 0
         if page > 1:
@@ -157,7 +156,10 @@ class ImageMetadataDao(BaseDao):
 
         response = requests.request("GET", url, headers=headers, data={})
         data = json.loads(response.text)
-        return {"result": [row.get("value") for row in data["rows"]], "page": page, "page_size": self.page_size}
+
+        result = list(map(lambda row: {field: row["value"].get(field) for field in fields}, data["rows"]))
+
+        return {"result": result, "page": page, "page_size": self.page_size}
 
     def mark_as_verified(self, photos, public_address):
         query = {"selector": {"_id": {"$in": photos}}, "limit": len(photos)}

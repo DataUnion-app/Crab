@@ -100,12 +100,15 @@ class InitiateDB:
                     "map": '''function (doc) {
                               if(doc.status) {
                                  let tag_data = [];
+                                 let descriptions = [];
                                  if(doc.tag_data) {
                                    doc["tag_data"].forEach(element => {
                                     tag_data = tag_data.concat(element["tags"])
+                                    if(element["description"]) descriptions = descriptions.concat(element["description"])
                                    })
                                  }
-                                emit([doc.status, doc.uploaded_at], {'image_id':doc._id, 'tag_data': tag_data});
+                                var date = new Date(doc.uploaded_at* 1000);
+                                emit([doc.status, date.getFullYear(), date.getMonth() +1,  date.getDate()], {'image_id':doc._id, 'tag_data': tag_data, "descriptions": descriptions});
                                 }
                             }'''
                 }

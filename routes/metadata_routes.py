@@ -360,7 +360,7 @@ def get_image():
 @jwt_required
 def query_metadata():
     data = json.loads(request.data)
-    required_params = {"status", "skip_untagged"}
+    required_params = {"status", "fields"}
     public_address = get_jwt_identity()
 
     if not all(elem in data.keys() for elem in required_params):
@@ -379,7 +379,7 @@ def query_metadata():
 
     query_metadata_command = QueryMetadataCommand()
     query_metadata_command.input = {'public_address': public_address, "page": page, "status": data['status'],
-                                    'skip_untagged': data['skip_untagged']}
+                                    'fields': data["fields"]}
     result = query_metadata_command.execute()
     return result, 200
 
