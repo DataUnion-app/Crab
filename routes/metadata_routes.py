@@ -15,6 +15,7 @@ import shutil
 from commands.metadata.query_metadata_command import QueryMetadataCommand
 from commands.metadata.add_new_metadata_command import AddNewMetadataCommand
 from commands.metadata.my_stats_command import MyStatsCommand
+from commands.metadata.verify_image_command import VerifyImageCommand
 from commands.metadata.stats_command import StatsCommand
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
@@ -304,6 +305,32 @@ def report_images():
             {"status": "failed", "message": "Invalid input body."}), 400
 
 
+@metadata_routes.route('/api/v1/verify-images', methods=["POST"])
+@jwt_required
+def verify_images():
+    required_params = {"image_ids"}
+    data = json.loads(request.data)
+    public_address = get_jwt_identity()
+
+    if not all(elem in data.keys() for elem in required_params):
+        return jsonify(
+            {"status": "failed", "message": "Invalid input body. Expected keys :{0}".format(required_params)}), 400
+    if not isinstance(data["photos"], list):
+        return jsonify(
+            {"status": "failed", "message": "Invalid input body. Expected `photos` to be a list"}), 400
+
+    verify_image = VerifyImageCommand()
+    verify_image.input = {
+        "public_address": public_address,
+        "image_ids": data["image_ids"]
+    }
+    verify_image.execute()
+    if verify_image.successful:
+        return jsonify({"status": "success"}), 200
+    else:
+        return jsonify({"status": "failed", "messages": verify_image.messages}), 400
+
+
 @metadata_routes.route('/api/v1/get-image-by-id', methods=["GET"])
 @jwt_required
 def get_image():
@@ -329,27 +356,35 @@ def get_image():
         return resp, 400
 
 
-@metadata_routes.route('/api/v1/query-metadata', methods=["GET"])
+@metadata_routes.route('/api/v1/query-metadata', methods=["POST"])
 @jwt_required
 def query_metadata():
-    args = request.args
-    required_params = {"status", "skip_tagged"}
+    data = json.loads(request.data)
+    required_params = {"status", "fields"}
     public_address = get_jwt_identity()
 
-    if required_params != set(args.keys()):
+    if not all(elem in data.keys() for elem in required_params):
         return jsonify(
             {"status": "failed",
              "message": "Invalid input body. Expected query parameters :{0}".format(required_params)}), 400
 
     page = 1
-    if "page" in args:
-        page = int(args["page"])
+    if "page" in data:
+        try:
+            page = int(data["page"])
+        except ValueError:
+            return jsonify(
+                {"status": "failed",
+                 "message": "Invalid input body. 'page' is not a number"}), 400
 
     query_metadata_command = QueryMetadataCommand()
-    query_metadata_command.input = {'public_address': public_address, "page": page, "status": args['status'],
-                                    'skip_tagged': args['skip_tagged']}
+    query_metadata_command.input = {'public_address': public_address, "page": page, "status": data['status'],
+                                    'fields': data["fields"]}
     result = query_metadata_command.execute()
-    return result, 200
+    if query_metadata_command.successful:
+        return result, 200
+    else:
+        return jsonify({'status': 'failed', 'messages': query_metadata_command.messages}), 400
 
 
 @metadata_routes.route('/api/v1/stats', methods=["GET"])

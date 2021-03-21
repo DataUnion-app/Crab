@@ -110,8 +110,7 @@ class DummyDataLoader:
 
             data.append({
                 "name": "{0}.png".format(i),
-                "tags": rand_words,
-                "other": {}
+                "tags": rand_words
             })
 
         meta_data = {"images": data}
@@ -153,6 +152,7 @@ class DummyDataLoader:
             os.remove(file_path)
 
             if image_id is not None:
+                image_ids.append(image_id)
                 idx2 = random.randint(0, len(accts) - 1)
                 image_ids.append(image_id)
                 self.upload_metadata(tokens[idx2], accts[idx2], image_id, self.get_dummy_metadata(image_id))
@@ -180,6 +180,8 @@ class DummyDataLoader:
                 image_ids.append(image_id)
                 self.upload_metadata(token, account, image_id, self.get_dummy_metadata(image_id))
         print("Finished loading dummy data")
+        return image_ids
+
         return image_ids
 
     def get_dummy_metadata(self, image_id):

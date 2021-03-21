@@ -3,9 +3,15 @@ from datetime import datetime
 import requests
 from dao.base_dao import BaseDao
 from models.ImageStatus import ImageStatus
+import logging
 
 
 class ImageMetadataDao(BaseDao):
+
+    def __init__(self):
+        super().__init__()
+        self.threshold_verifiable = 3
+        self.threshold_verified = 3
 
     def get_images_by_eth_address(self, eth_address, page=1, status=None, fields=None):
         query = {
@@ -91,7 +97,6 @@ class ImageMetadataDao(BaseDao):
                 document["tag_data"].append(tag_data)
             else:
                 document["tag_data"][found_index]["tags"] = tags
-                document["tag_data"][found_index]["other"] = other
                 document["tag_data"][found_index]["updated_at"] = datetime.timestamp(datetime.now())
 
         else:
@@ -99,9 +104,25 @@ class ImageMetadataDao(BaseDao):
 
         document["updated_at"] = datetime.timestamp(datetime.now())
         document["status"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
-        document["status_description"] = "Image verified. Metadata saved"
+        document["status_description"] = "Metadata saved"
         result = self.update_doc(photo_id, document)
         return result
+
+    def move_to_verifiable_if_possible(self, photo_id):
+        document = self.get_doc_by_id(photo_id)
+        tag_data = document.get("tag_data")
+        if len(tag_data) >= self.threshold_verifiable:
+            document["updated_at"] = datetime.timestamp(datetime.now())
+            document["status"] = ImageStatus.VERIFIABLE.name
+            self.update_doc(photo_id, document)
+
+    def move_to_verified_if_possible(self, photo_id):
+        document = self.get_doc_by_id(photo_id)
+        verified = document.get("verified")
+        if len(verified) >= self.threshold_verified:
+            document["updated_at"] = datetime.timestamp(datetime.now())
+            document["status"] = ImageStatus.VERIFIED.name
+            self.update_doc(photo_id, document)
 
     def get_by_status(self, status):
         query = {"selector": {"_id": {"$gt": None}, "status": status},
@@ -142,16 +163,42 @@ class ImageMetadataDao(BaseDao):
 
             self.update_doc(document["_id"], document)
 
-    def query_metadata(self, status=None, page=1):
+    def query_metadata(self, status, page, fields):
 
-        image_status = status if status else {"$gt": None}
+        skip = 0
+        if page > 1:
+            skip = (page - 1) * 100
+        query_url = '/_design/query-metadata/_view/query-metadata?startkey=["{0}"]&limit={1}&skip={2}&sorted=true'.format(
+            status,
+            self.page_size, skip)
 
-        query = {"sort": [{"_id": "asc"}], "limit": self.page_size, "skip": (page - 1) * self.page_size,
-                 "selector": {"_id": {"$gt": None}, "status": image_status},
-                 "fields": ["filename", "_id", "_rev"]}
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_url)
+        headers = {'Content-Type': 'application/json'}
+
+        response = requests.request("GET", url, headers=headers, data={})
+        data = json.loads(response.text)
+
+        result = list(map(lambda row: {field: row["value"].get(field) for field in fields}, data["rows"]))
+
+        return {"result": result, "page": page, "page_size": self.page_size}
+
+    def mark_as_verified(self, photos, public_address):
+        query = {"selector": {"_id": {"$in": photos}}, "limit": len(photos)}
         url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
         headers = {'Content-Type': 'application/json'}
 
         response = requests.request("POST", url, headers=headers, data=json.dumps(query))
         data = json.loads(response.text)["docs"]
-        return {"result": data}
+        result = []
+        for document in data:
+            if document['status'] not in [ImageStatus.VERIFIABLE.name, ImageStatus.VERIFIED.name]:
+                result.append({'image_id': document['_id'], 'success': False})
+                continue
+            verified = document.get("verified")
+            if not verified:
+                document["verified"] = [{"by": public_address, "time": datetime.timestamp(datetime.now())}]
+            elif len([report for report in verified if report["by"] == public_address]) == 0:
+                document["verified"].append({"by": public_address, "time": datetime.timestamp(datetime.now())})
+            self.update_doc(document["_id"], document)
+            result.append({'image_id': document['_id'], 'success': True})
+        return result
