@@ -8,6 +8,11 @@ import logging
 
 class ImageMetadataDao(BaseDao):
 
+    def __init__(self):
+        super().__init__()
+        self.threshold_verifiable = 3
+        self.threshold_verified = 3
+
     def get_images_by_eth_address(self, eth_address, page=1, status=None, fields=None):
         query = {
             "sort": [
@@ -99,9 +104,17 @@ class ImageMetadataDao(BaseDao):
 
         document["updated_at"] = datetime.timestamp(datetime.now())
         document["status"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
-        document["status_description"] = "Image verified. Metadata saved"
+        document["status_description"] = "Metadata saved"
         result = self.update_doc(photo_id, document)
         return result
+
+    def move_to_verifiable_if_possible(self, photo_id):
+        document = self.get_doc_by_id(photo_id)
+        tag_data = document.get("tag_data")
+        if len(tag_data) >= self.threshold_verifiable:
+            document["updated_at"] = datetime.timestamp(datetime.now())
+            document["status"] = ImageStatus.VERIFIABLE.name
+            self.update_doc(photo_id, document)
 
     def get_by_status(self, status):
         query = {"selector": {"_id": {"$gt": None}, "status": status},

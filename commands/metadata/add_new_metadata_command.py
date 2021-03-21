@@ -20,9 +20,13 @@ class AddNewMetadataCommand(BaseCommand):
         result = self.imageMetadataDao.add_metadata_for_image(self.input["public_address"], self.input["photo_id"],
                                                               self.input["tags"],
                                                               self.input.get("description", None))
-        self.successful = True
+
         if result.get('ok') is True:
+            self.imageMetadataDao.move_to_verifiable_if_possible(self.input["photo_id"])
+            self.successful = True
             return {"status": "success"}
+
+        self.successful = False
         return {"status": "failed"}
 
     def clean_input(self):

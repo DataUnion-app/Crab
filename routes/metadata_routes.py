@@ -381,7 +381,10 @@ def query_metadata():
     query_metadata_command.input = {'public_address': public_address, "page": page, "status": data['status'],
                                     'fields': data["fields"]}
     result = query_metadata_command.execute()
-    return result, 200
+    if query_metadata_command.successful:
+        return result, 200
+    else:
+        return jsonify({'status': 'failed', 'messages': query_metadata_command.messages}), 400
 
 
 @metadata_routes.route('/api/v1/stats', methods=["GET"])
