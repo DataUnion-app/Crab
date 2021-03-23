@@ -6,7 +6,7 @@ from commands.staticdata.get_banned_words import GetBannedWordsCommand
 staticdata_routes = Blueprint('staticdata_routes', __name__)
 
 
-@staticdata_routes.route('/staticdata/tags', methods=["GET"])
+@staticdata_routes.route('/staticdata/recommended-tags', methods=["GET"])
 def get_all_tags():
     all_tags = {
         "category1": ["abc", "xyz"]
@@ -14,7 +14,7 @@ def get_all_tags():
     return json.dumps(all_tags), 200
 
 
-@staticdata_routes.route('/staticdata/banned-words', methods=["GET"])
+@staticdata_routes.route('/staticdata/banned-tags', methods=["GET"])
 def get_banned_words():
     get_banned_words_command = GetBannedWordsCommand()
     words = get_banned_words_command.execute()
