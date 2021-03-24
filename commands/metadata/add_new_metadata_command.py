@@ -23,11 +23,15 @@ class AddNewMetadataCommand(BaseCommand):
         self.clean_input()
 
         banned_words = self.staticdata_dao.get_words_by_type(WordTypes.BANNED_WORDS.name)
-        banned_words_in_input = list(set(self.input['tags']) & set(banned_words))
+
+        tags_lower_case = map(lambda x: x.lower(), self.input['tags'])
+
+        banned_words_in_input = list(set(tags_lower_case) & set(banned_words))
         if len(banned_words_in_input) > 0:
             self.messages.append("Tags contains banned words {}".format(banned_words_in_input))
             self.successful = False
-            return
+            return {"status": "failed"}
+
         result = self.image_metadata_dao.add_metadata_for_image(self.input["public_address"], self.input["photo_id"],
                                                                 self.input["tags"],
                                                                 self.input.get("description", None))
