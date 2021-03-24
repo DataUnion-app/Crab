@@ -44,7 +44,7 @@ nltk==3.5
 numpy==1.19.3
 pandas==1.2.0
 parsimonious==0.8.1
-Pillow==8.0.1
+Pillow==8.1.2
 protobuf==3.14.0
 pycparser==2.20
 pycryptodome==3.9.9
