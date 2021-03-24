@@ -70,6 +70,7 @@ class InitiateDB:
         self.create_users_db()
         self.create_sessions_db()
         self.create_metadata_db()
+        self.create_static_data_db()
 
     def create_view(self, db_name):
         print("Creating all-docs view for [{0}]".format(db_name))

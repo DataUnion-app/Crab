@@ -3,7 +3,6 @@ from datetime import datetime
 import requests
 from dao.base_dao import BaseDao
 from models.ImageStatus import ImageStatus
-import logging
 
 
 class ImageMetadataDao(BaseDao):
