@@ -28,6 +28,6 @@ class GetWordsByTypeCommand(BaseCommand):
             self.messages.append("Empty input.")
             return False
         if not self.input.get('type') in WordTypes.__members__:
-            self.messages.append("'words' parameter is not a list.")
+            self.messages.append("'type' parameter is not valid.")
             return False
         return True
