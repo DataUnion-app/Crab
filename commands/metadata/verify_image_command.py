@@ -15,6 +15,10 @@ class VerifyImageCommand(BaseCommand):
         self.imageMetadataDao.set_config(user, password, db_host, metadata_db)
 
     def execute(self):
+        if not self.validate_input():
+            self.successful = False
+            self.messages.append('Invalid input.')
+            return
         results = self.imageMetadataDao.mark_as_verified(self.input['image_ids'], self.input['public_address'])
 
         for result in results:
@@ -26,6 +30,9 @@ class VerifyImageCommand(BaseCommand):
         else:
             self.messages.append('Some or all images are not in verifiable state')
             self.successful = False
+
+    def validate_input(self):
+        return True
 
     @property
     def is_valid(self):

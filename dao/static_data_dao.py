@@ -1,17 +1,23 @@
 from dao.base_dao import BaseDao
 from datetime import datetime
 from utils.get_random_string import get_random_string
+from enum import Enum
+
+
+class WordTypes(Enum):
+    BANNED_WORDS = 1,
+    RECOMMENDED_WORDS = 2
 
 
 class StaticDataDao(BaseDao):
 
-    def add_banned_words(self, words):
+    def add_words(self, words, type):
         selector = {
             "selector": {
                 "_id": {
                     "$gt": None
                 },
-                "type": "banned_words",
+                "type": type,
             },
             "limit": 1,
             "skip": 0,
@@ -23,7 +29,7 @@ class StaticDataDao(BaseDao):
             doc_id = get_random_string(10)
             self.save(doc_id, {
                 "version": 1,
-                "type": "banned_words",
+                "type": type,
                 "words": words,
                 "created_at": datetime.timestamp(datetime.now()),
                 "updated_at": datetime.timestamp(datetime.now())
@@ -35,13 +41,13 @@ class StaticDataDao(BaseDao):
             document['version'] = document['version'] + 1
             self.update_doc(document['_id'], document)
 
-    def get_banned_words(self):
+    def get_words_by_type(self, type):
         selector = {
             "selector": {
                 "_id": {
                     "$gt": None
                 },
-                "type": "banned_words",
+                "type": type,
             },
             "limit": 1,
             "skip": 0,

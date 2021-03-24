@@ -27,9 +27,6 @@ class TestBase(unittest.TestCase):
         self.image_metadata_dao = ImageMetadataDao()
         self.image_metadata_dao.set_config(self.db_user, self.password, self.db_host, "metadata")
 
-        self.staticdata_dao = StaticDataDao()
-        self.staticdata_dao.set_config(self.db_user, self.password, self.db_host, "staticdata")
-
         self.user_dao = UsersDao()
         self.user_dao.set_config(self.db_user, self.password, self.db_host, "users")
 
@@ -46,7 +43,6 @@ class TestBase(unittest.TestCase):
         self.user_dao.delete_all_docs()
         self.sessions_dao.delete_all_docs()
         self.image_metadata_dao.delete_all_docs()
-        self.staticdata_dao.delete_all_docs()
 
     def tearDown(self):
         self.clear_data_directory()
@@ -54,7 +50,6 @@ class TestBase(unittest.TestCase):
         self.user_dao.delete_all_docs()
         self.sessions_dao.delete_all_docs()
         self.image_metadata_dao.delete_all_docs()
-        self.staticdata_dao.delete_all_docs()
 
     def clear_data_directory(self):
         for filename in os.listdir(self.data_dir):
