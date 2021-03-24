@@ -32,6 +32,9 @@ class TestBase(unittest.TestCase):
 
         self.sessions_dao = SessionsDao()
         self.sessions_dao.set_config(self.db_user, self.password, self.db_host, "sessions")
+        
+        self.static_data_dao = StaticDataDao()
+        self.static_data_dao.set_config(self.db_user, self.password, self.db_host, "staticdata")
 
         self.acct = Account.create()
         self.token = None

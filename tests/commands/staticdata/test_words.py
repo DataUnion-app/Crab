@@ -7,8 +7,6 @@ from commands.staticdata.add_words import AddWordsCommand
 class TestWords(TestBase):
     def __init__(self, x):
         super().__init__(x)
-        self.static_data_dao = StaticDataDao()
-        self.static_data_dao.set_config(self.db_user, self.password, self.db_host, "staticdata")
 
     def setUp(self):
         self.static_data_dao.delete_all_docs()
