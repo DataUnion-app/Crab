@@ -19,7 +19,7 @@ class VerifyImageCommand(BaseCommand):
             self.successful = False
             self.messages.append('Invalid input.')
             return
-        results = self.imageMetadataDao.mark_as_verified(self.input['image_ids'], self.input['public_address'])
+        results = self.imageMetadataDao.mark_as_verified(self.input['data'], self.input['public_address'])
 
         for result in results:
             if result['success']:
@@ -32,6 +32,26 @@ class VerifyImageCommand(BaseCommand):
             self.successful = False
 
     def validate_input(self):
+        if not self.input:
+            self.messages.append("Empty input body.")
+            return False
+        if not isinstance(self.input['data'], list):
+            self.messages.append('"data" is not a list.')
+            return False
+
+        for row in self.input['data']:
+            if not row.get('image_id'):
+                self.messages.append('missing "image_id" in data.')
+                return False
+            if not row.get('image_id'):
+                self.messages.append('missing "tags" in data.')
+                return False
+            if not isinstance(row['tags'].get('up_votes'), list):
+                self.messages.append('"tags.up_votes" is not a list.')
+                return False
+            if not isinstance(row['tags'].get('down_votes'), list):
+                self.messages.append('"tags.down_votes" is not a list.')
+                return False
         return True
 
     @property

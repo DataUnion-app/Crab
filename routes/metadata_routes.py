@@ -310,21 +310,13 @@ def report_images():
 @metadata_routes.route('/api/v1/verify-images', methods=["POST"])
 @jwt_required
 def verify_images():
-    required_params = {"image_ids"}
     data = json.loads(request.data)
     public_address = get_jwt_identity()
-
-    if not all(elem in data.keys() for elem in required_params):
-        return jsonify(
-            {"status": "failed", "message": "Invalid input body. Expected keys :{0}".format(required_params)}), 400
-    if not isinstance(data["photos"], list):
-        return jsonify(
-            {"status": "failed", "message": "Invalid input body. Expected `photos` to be a list"}), 400
 
     verify_image = VerifyImageCommand()
     verify_image.input = {
         "public_address": public_address,
-        "image_ids": data["image_ids"]
+        "data": data.get("data")
     }
     verify_image.execute()
     if verify_image.successful:

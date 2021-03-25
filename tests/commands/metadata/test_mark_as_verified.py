@@ -18,7 +18,7 @@ class TestMarkAsVerified(TestBase):
 
         verify_image_command.input = {
             'public_address': acct.address,
-            'image_ids': image_ids
+            'data': image_ids
         }
 
         verify_image_command.execute()
@@ -46,20 +46,21 @@ class TestMarkAsVerified(TestBase):
         }
         add_new_metadata_command2.execute()
 
-        TestMarkAsVerified.mark_as_verified(image_ids)
-        TestMarkAsVerified.mark_as_verified(image_ids)
-        TestMarkAsVerified.mark_as_verified(image_ids)
+        for i in range(3):
+            TestMarkAsVerified.mark_as_verified(image_ids, ['abc'], ['123'])
 
         status = self.image_metadata_dao.get_doc_by_id(image_ids[0])['status']
         self.assertEqual(ImageStatus.VERIFIED.name, status)
 
     @staticmethod
-    def mark_as_verified(image_ids):
+    def mark_as_verified(image_ids, up_votes, down_votes):
         acct = Account.create()
         verify_image_command = VerifyImageCommand()
+        data = [{'image_id': image_id, 'tags': {'up_votes': up_votes, 'down_votes': down_votes}} for image_id in
+                image_ids]
         verify_image_command.input = {
             'public_address': acct.address,
-            'image_ids': image_ids
+            'data': data
         }
 
         verify_image_command.execute()

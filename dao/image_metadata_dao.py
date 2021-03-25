@@ -181,23 +181,36 @@ class ImageMetadataDao(BaseDao):
 
         return {"result": result, "page": page, "page_size": self.page_size}
 
-    def mark_as_verified(self, photos, public_address):
-        query = {"selector": {"_id": {"$in": photos}}, "limit": len(photos)}
+    def mark_as_verified(self, data, public_address):
+        image_ids = [row['image_id'] for row in data]
+        query = {"selector": {"_id": {"$in": image_ids}}, "limit": len(image_ids)}
         url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
         headers = {'Content-Type': 'application/json'}
 
         response = requests.request("POST", url, headers=headers, data=json.dumps(query))
-        data = json.loads(response.text)["docs"]
+        documents = json.loads(response.text)["docs"]
         result = []
-        for document in data:
+        for document in documents:
             if document['status'] not in [ImageStatus.VERIFIABLE.name, ImageStatus.VERIFIED.name]:
                 result.append({'image_id': document['_id'], 'success': False})
                 continue
             verified = document.get("verified")
+
+            up_votes = []
+            down_votes = []
+            for row in data:
+                if row['image_id'] == document['_id']:
+                    up_votes = row['tags']['up_votes']
+                    down_votes = row['tags']['down_votes']
+                    break
+
+            verified_data = {"by": public_address, "time": datetime.timestamp(datetime.now()),
+                             'tags': {'up_votes': up_votes, 'down_votes': down_votes}}
+
             if not verified:
-                document["verified"] = [{"by": public_address, "time": datetime.timestamp(datetime.now())}]
+                document["verified"] = [verified_data]
             elif len([report for report in verified if report["by"] == public_address]) == 0:
-                document["verified"].append({"by": public_address, "time": datetime.timestamp(datetime.now())})
+                document["verified"].append(verified_data)
             self.update_doc(document["_id"], document)
             result.append({'image_id': document['_id'], 'success': True})
         return result
