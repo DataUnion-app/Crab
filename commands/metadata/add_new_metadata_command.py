@@ -7,6 +7,8 @@ from config import config
 
 
 class AddNewMetadataCommand(BaseCommand):
+    MAX_DESCRIPTION_LENGTH = 2000
+    MAX_TAG_LENGTH = 200
 
     def __init__(self):
         super().__init__()
@@ -21,6 +23,10 @@ class AddNewMetadataCommand(BaseCommand):
 
     def execute(self):
         self.clean_input()
+
+        if not self.validate_input():
+            self.successful = False
+            return {"status": "failed"}
 
         banned_words = self.staticdata_dao.get_words_by_type(WordTypes.BANNED_WORDS.name)
 
@@ -51,6 +57,22 @@ class AddNewMetadataCommand(BaseCommand):
     @staticmethod
     def remove_control_characters(tag):
         return "".join(ch for ch in tag if unicodedata.category(ch)[0] != "C")
+
+    def validate_input(self):
+        if self.input.get("description") is not None:
+            if len(self.input.get("description")) > AddNewMetadataCommand.MAX_DESCRIPTION_LENGTH:
+                self.messages.append(
+                    "Length of description exceeds limit of [{0}] characters.".format(
+                        AddNewMetadataCommand.MAX_DESCRIPTION_LENGTH))
+                return False
+
+        all_tags_in_limit = all([len(tag) <= AddNewMetadataCommand.MAX_TAG_LENGTH for tag in self.input.get("tags")])
+
+        if not all_tags_in_limit:
+            self.messages.append(
+                "Length of tag(s) exceeds limit of [{0}] characters.".format(AddNewMetadataCommand.MAX_TAG_LENGTH))
+            return False
+        return True
 
     @property
     def is_valid(self):
