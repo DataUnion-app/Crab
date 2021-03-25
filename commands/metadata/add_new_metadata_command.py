@@ -1,6 +1,7 @@
 import unicodedata
 
 from dao.image_metadata_dao import ImageMetadataDao
+from dao.static_data_dao import StaticDataDao, WordTypes
 from commands.base_command import BaseCommand
 from config import config
 
@@ -15,24 +16,34 @@ class AddNewMetadataCommand(BaseCommand):
         password = config['couchdb']['password']
         db_host = config['couchdb']['db_host']
         metadata_db = config['couchdb']['metadata_db']
-        self.imageMetadataDao = ImageMetadataDao()
-        self.imageMetadataDao.set_config(user, password, db_host, metadata_db)
-        self.max_tag_length = 200
+        self.image_metadata_dao = ImageMetadataDao()
+        self.image_metadata_dao.set_config(user, password, db_host, metadata_db)
+        self.staticdata_dao = StaticDataDao()
+        self.staticdata_dao.set_config(user, password, db_host, config['couchdb']['static_data_db'])
 
     def execute(self):
         self.clean_input()
-        is_valid = self.validate_input()
 
-        if not is_valid:
+        if not self.validate_input():
             self.successful = False
             return {"status": "failed"}
 
-        result = self.imageMetadataDao.add_metadata_for_image(self.input["public_address"], self.input["photo_id"],
-                                                              self.input["tags"],
-                                                              self.input.get("description", None))
+        banned_words = self.staticdata_dao.get_words_by_type(WordTypes.BANNED_WORDS.name)
+
+        tags_lower_case = map(lambda x: x.lower(), self.input['tags'])
+
+        banned_words_in_input = list(set(tags_lower_case) & set(banned_words))
+        if len(banned_words_in_input) > 0:
+            self.messages.append("Tags contains banned words {}".format(banned_words_in_input))
+            self.successful = False
+            return {"status": "failed"}
+
+        result = self.image_metadata_dao.add_metadata_for_image(self.input["public_address"], self.input["photo_id"],
+                                                                self.input["tags"],
+                                                                self.input.get("description", None))
 
         if result.get('ok') is True:
-            self.imageMetadataDao.move_to_verifiable_if_possible(self.input["photo_id"])
+            self.image_metadata_dao.move_to_verifiable_if_possible(self.input["photo_id"])
             self.successful = True
             return {"status": "success"}
 
@@ -55,7 +66,7 @@ class AddNewMetadataCommand(BaseCommand):
                         AddNewMetadataCommand.MAX_DESCRIPTION_LENGTH))
                 return False
 
-        all_tags_in_limit = all([len(tag) <= self.max_tag_length for tag in self.input.get("tags")])
+        all_tags_in_limit = all([len(tag) <= AddNewMetadataCommand.MAX_TAG_LENGTH for tag in self.input.get("tags")])
 
         if not all_tags_in_limit:
             self.messages.append(

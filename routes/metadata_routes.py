@@ -55,6 +55,8 @@ def upload_metadata():
         "description": data.get("description", None),
     }
     result = add_new_metadata_command.execute()
+    if not add_new_metadata_command.successful:
+        return jsonify({'status': 'failed', 'messages': add_new_metadata_command.messages}), 400
     return jsonify(result), 200
 
 
