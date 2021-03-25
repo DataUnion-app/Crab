@@ -188,7 +188,7 @@ class DummyDataLoader:
         n = random.randint(1, 10)
 
         rand_words = random.sample(words.words(), n)
-        return {"photo_id": image_id, "timestamp": "", "other": "", "tags": rand_words}
+        return {"photo_id": image_id, "timestamp": "", "tags": rand_words}
 
 
 if __name__ == '__main__':
