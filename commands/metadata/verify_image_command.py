@@ -40,10 +40,13 @@ class VerifyImageCommand(BaseCommand):
             return False
 
         for row in self.input['data']:
+            if not isinstance(row, dict):
+                self.messages.append('row in data not an object.')
+                return False
             if not row.get('image_id'):
                 self.messages.append('missing "image_id" in data.')
                 return False
-            if not row.get('image_id'):
+            if not row.get('tags'):
                 self.messages.append('missing "tags" in data.')
                 return False
             if not isinstance(row['tags'].get('up_votes'), list):
