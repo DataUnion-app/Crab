@@ -55,6 +55,7 @@ class InitiateDB:
         users_db = config['couchdb']['users_db']
         self.create_db(users_db)
         self.create_view(users_db)
+        self.create_doc_count_view(users_db)
 
     def create_sessions_db(self):
         sessions_db = config['couchdb']['sessions_db']
@@ -88,6 +89,23 @@ class InitiateDB:
             'Content-Type': 'application/json'
         }
 
+        url = "http://{0}:{1}@{2}/{3}".format(self.user, self.password, self.db_host, db_name)
+        response = requests.request("POST", url, headers=headers, data=json.dumps(body))
+        print(response.text)
+
+    def create_doc_count_view(self, db_name):
+        print("Creating doc_count_view for [{0}]".format(db_name))
+        body = {"_id": "_design/counts",
+                "language": "javascript",
+                "views": {
+                    "all": {
+                        "map": "function(doc) { emit(null, 1); }",
+                        "reduce": "function(keys, values, combine) { return sum(values); }"
+                    }
+                }
+                }
+
+        headers = {'Content-Type': 'application/json'}
         url = "http://{0}:{1}@{2}/{3}".format(self.user, self.password, self.db_host, db_name)
         response = requests.request("POST", url, headers=headers, data=json.dumps(body))
         print(response.text)
