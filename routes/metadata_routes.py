@@ -97,15 +97,17 @@ def upload_file():
         # File does not exist yet
         if not image_exists:
             # Save file
+            image_dir = os.path.join(config['application']['upload_folder'], request_data["uploaded_by"])
             os.rename(file_path,
-                      os.path.join(config['application']['upload_folder'], request_data["uploaded_by"],
+                      os.path.join(image_dir,
                                    doc_id + '-' + filename))
 
             add_new_image_command1 = AddNewImageCommand()
             add_new_image_command1.input = {
                 'public_address': request_data["uploaded_by"],
                 'filename': doc_id + '-' + filename,
-                'doc_id': doc_id
+                'doc_id': doc_id,
+                'image_dir': image_dir
             }
             add_new_image_command1.execute()
             if add_new_image_command1.successful:
