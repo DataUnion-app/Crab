@@ -1,6 +1,7 @@
 import requests
 import json
 from config import config
+from commands.staticdata.add_words import AddWordsCommand, WordTypes
 
 
 class InitiateDB:
@@ -66,6 +67,19 @@ class InitiateDB:
         static_data_db = config['couchdb']['static_data_db']
         self.create_db(static_data_db)
         self.create_view(static_data_db)
+        add_recommended_words = AddWordsCommand()
+        add_recommended_words.input = {
+            'type': WordTypes.RECOMMENDED_WORDS.name,
+            'words': []
+        }
+        add_recommended_words.execute()
+
+        add_banned_words = AddWordsCommand()
+        add_banned_words.input = {
+            'type': WordTypes.BANNED_WORDS.name,
+            'words': []
+        }
+        add_banned_words.execute()
 
     def init(self):
         self.create_users_db()

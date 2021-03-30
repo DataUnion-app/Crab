@@ -13,6 +13,7 @@ from security.hashing import hash_image
 from models.ImageStatus import ImageStatus
 import shutil
 from commands.metadata.query_metadata_command import QueryMetadataCommand
+from commands.metadata.add_new_image_command import AddNewImageCommand
 from commands.metadata.add_new_metadata_command import AddNewMetadataCommand
 from commands.metadata.my_stats_command import MyStatsCommand
 from commands.metadata.verify_image_command import VerifyImageCommand
@@ -99,21 +100,19 @@ def upload_file():
             os.rename(file_path,
                       os.path.join(config['application']['upload_folder'], request_data["uploaded_by"],
                                    doc_id + '-' + filename))
-            data_to_save = dict({})
-            data_to_save["filename"] = doc_id + '-' + filename
-            data_to_save["uploaded_by"] = request_data["uploaded_by"]
-            data_to_save["status"] = "new"
-            data_to_save["hash"] = doc_id
-            data_to_save["type"] = "image"
-            data_to_save["extension"] = filename.split('.')[-1]
-            data_to_save["status_description"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
-            data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
 
-            # Save metadata
-            doc_id = imageMetadataDao.save(doc_id, data_to_save)["id"]
-
-            resp = jsonify({'message': 'File successfully uploaded', "id": doc_id})
-            return resp, 200
+            add_new_image_command1 = AddNewImageCommand()
+            add_new_image_command1.input = {
+                'public_address': request_data["uploaded_by"],
+                'filename': doc_id + '-' + filename,
+                'doc_id': doc_id
+            }
+            add_new_image_command1.execute()
+            if add_new_image_command1.successful:
+                resp = jsonify({'message': 'File successfully uploaded', "id": doc_id})
+                return resp, 200
+            else:
+                return jsonify({'status': 'failed', 'messages': add_new_image_command1.messages}), 400
         else:
             os.remove(file_path)
             logging.debug(
