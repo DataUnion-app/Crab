@@ -27,7 +27,7 @@ idna==2.10
 ImageHash==4.2.0
 ipfshttpclient==0.7.0a1
 itsdangerous==1.1.0
-Jinja2==2.11.2
+jinja2>=2.11.3
 joblib==1.0.1
 jsonschema==3.2.0
 lru-dict==1.1.6
@@ -55,7 +55,7 @@ six==1.15.0
 tldextract==3.1.0
 toolz==0.11.1
 tqdm==4.57.0
-urllib3==1.26.2
+urllib3>=1.26.4
 uWSGI==2.0.19.1
 varint==1.0.2
 web3==5.13.1
