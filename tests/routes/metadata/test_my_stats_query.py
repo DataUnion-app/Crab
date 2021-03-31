@@ -2,7 +2,6 @@ from tests.test_base import TestBase
 import requests
 from datetime import datetime
 from helpers.load_dummy_data import DummyDataLoader
-import unittest
 
 
 class TestMetadataQuery(TestBase):

@@ -1,57 +1,58 @@
 import unittest
 from eth_account import Account
+
+from dao.static_data_dao import StaticDataDao
 from dao.users_dao import UsersDao
 from dao.sessions_dao import SessionsDao
-from dao.ImageMetadataDao import ImageMetadataDao
+from dao.image_metadata_dao import ImageMetadataDao
 import json
 import os
 import shutil
 import requests
 from tests.helper import Helper
+from config import config
 
 
 class TestBase(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         self.url = 'http://localhost:8080'
-        self.db_host = '127.0.0.1:5984'
-        self.db_user = 'admin'
-        self.password = 'admin'
+        self.db_host = config['couchdb']['db_host']
+        self.db_user = config['couchdb']['user']
+        self.password = config['couchdb']['password']
+
         self.data_dir = os.path.join(Helper.get_project_root(), 'data')
         self.dummy_data_path = os.path.join(Helper.get_project_root(), 'tests', 'data')
+
         self.image_metadata_dao = ImageMetadataDao()
         self.image_metadata_dao.set_config(self.db_user, self.password, self.db_host, "metadata")
+
+        self.user_dao = UsersDao()
+        self.user_dao.set_config(self.db_user, self.password, self.db_host, "users")
+
+        self.sessions_dao = SessionsDao()
+        self.sessions_dao.set_config(self.db_user, self.password, self.db_host, "sessions")
+        
+        self.static_data_dao = StaticDataDao()
+        self.static_data_dao.set_config(self.db_user, self.password, self.db_host, "staticdata")
+
         self.acct = Account.create()
         self.token = None
         super(TestBase, self).__init__(*args, **kwargs)
 
     def setUp(self):
         self.clear_data_directory()
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_all_docs()
 
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_all_docs()
-
-        image_metadata_dao = ImageMetadataDao()
-        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        image_metadata_dao.delete_all_docs()
+        self.user_dao.delete_all_docs()
+        self.sessions_dao.delete_all_docs()
+        self.image_metadata_dao.delete_all_docs()
 
     def tearDown(self):
         self.clear_data_directory()
-        user_dao = UsersDao()
-        user_dao.set_config("admin", "admin", "127.0.0.1:5984", "users")
-        user_dao.delete_all_docs()
 
-        sessions_dao = SessionsDao()
-        sessions_dao.set_config("admin", "admin", "127.0.0.1:5984", "sessions")
-        sessions_dao.delete_all_docs()
-
-        image_metadata_dao = ImageMetadataDao()
-        image_metadata_dao.set_config("admin", "admin", "127.0.0.1:5984", "metadata")
-        sessions_dao.delete_all_docs()
+        self.user_dao.delete_all_docs()
+        self.sessions_dao.delete_all_docs()
+        self.image_metadata_dao.delete_all_docs()
 
     def clear_data_directory(self):
         for filename in os.listdir(self.data_dir):

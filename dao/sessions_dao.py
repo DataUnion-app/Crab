@@ -1,6 +1,4 @@
-import requests
-from .BaseDao import BaseDao
-import json
+from .base_dao import BaseDao
 from datetime import datetime
 from utils.get_random_string import get_random_string
 
