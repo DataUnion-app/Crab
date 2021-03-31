@@ -122,3 +122,18 @@ class UsersDao(BaseDao):
             return
 
         return documents[0].get("usage_flag")
+
+    def get_users_count(self):
+        query_url = "/_design/counts/_view/all"
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_url)
+        response = requests.request("GET", url, headers={}, data=json.dumps({}))
+        result = {'count': 0}
+        if response.status_code != 200:
+            return result
+        data = json.loads(response.text)['rows']
+        if len(data) == 0:
+            result['count'] = 0
+        else:
+            result['count'] = data[0]['value']
+
+        return result
