@@ -195,23 +195,23 @@ def upload_zip_file():
             # File does not exist yet
             if not image_exists:
                 # Save file
-                data_to_save = dict({})
-                data_to_save["filename"] = file_name
-                data_to_save["uploaded_by"] = request_data["uploaded_by"]
-                data_to_save["status"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
-                data_to_save["hash"] = bulk_upload_doc_id
-                data_to_save["type"] = "image"
-                data_to_save["bulk_upload_id"] = bulk_upload_doc_id
-                data_to_save["status_description"] = "Image not verified"
-                data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
-
+                filename_with_docid = doc_id + '-' + file_name
+                image_dir = os.path.join(config['application']['upload_folder'], request_data["uploaded_by"])
                 os.rename(os.path.join(zip_dir_path, file_name),
-                          os.path.join(config['application']['upload_folder'], request_data["uploaded_by"],
-                                       doc_id + '-' + file_name))
+                          os.path.join(image_dir, filename_with_docid))
 
-                # Save metadata
-                doc_id = imageMetadataDao.save(doc_id, data_to_save)["id"]
-                result['success'] = True
+                add_new_image_command1 = AddNewImageCommand()
+                add_new_image_command1.input = {
+                    'public_address': request_data["uploaded_by"],
+                    'filename': filename_with_docid,
+                    'doc_id': doc_id,
+                    'image_dir': image_dir
+                }
+                add_new_image_command1.execute()
+                if add_new_image_command1.successful:
+                    result['success'] = True
+                else:
+                    result['success'] = False
 
             else:
                 result['success'] = False
