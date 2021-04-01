@@ -46,7 +46,7 @@ class TestMarkAsVerified(TestBase):
         }
         add_new_metadata_command2.execute()
 
-        for i in range(3):
+        for i in range(10):
             TestMarkAsVerified.mark_as_verified(image_ids, ['abc'], ['123'])
 
         status = self.image_metadata_dao.get_doc_by_id(image_ids[0])['status']

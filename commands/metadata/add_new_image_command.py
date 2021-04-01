@@ -52,7 +52,7 @@ class AddNewImageCommand(BaseCommand):
         qr_code_hash = str(hash_image(qr_code_image_path))
 
         data_to_save = dict({})
-        data_to_save["filename"] = doc_id + '-' + filename
+        data_to_save["filename"] = filename
         data_to_save["uploaded_by"] = public_address
         data_to_save["status"] = "new"
         data_to_save["hash"] = doc_id
