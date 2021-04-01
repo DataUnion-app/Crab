@@ -3,6 +3,7 @@ from datetime import datetime
 import requests
 from dao.base_dao import BaseDao
 from models.ImageStatus import ImageStatus
+import logging
 
 
 class ImageMetadataDao(BaseDao):
@@ -116,12 +117,20 @@ class ImageMetadataDao(BaseDao):
             self.update_doc(photo_id, document)
 
     def move_to_verified_if_possible(self, photo_id):
-        document = self.get_doc_by_id(photo_id)
-        verified = document.get("verified")
-        if len(verified) >= self.threshold_verified:
-            document["updated_at"] = datetime.timestamp(datetime.now())
-            document["status"] = ImageStatus.VERIFIED.name
-            self.update_doc(photo_id, document)
+        query_string = "/_design/verification/_view/verification-view?key=\"{0}\"&limit=1".format(
+            photo_id)
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_string)
+        response = requests.request("GET", url, headers={}, data=json.dumps({}))
+
+        if response.status_code == 200:
+            data = json.loads(response.text)
+            if len(data['rows']) == 1 and data['rows'][0]['value'].get('can_be_marked_as_verified'):
+                document = self.get_doc_by_id(photo_id)
+                document["updated_at"] = datetime.timestamp(datetime.now())
+                document["status"] = ImageStatus.VERIFIED.name
+                self.update_doc(photo_id, document)
+        else:
+            logging.error("Could not check if verified [%s]" % photo_id)
 
     def get_by_status(self, status):
         query = {"selector": {"_id": {"$gt": None}, "status": status},
@@ -144,7 +153,6 @@ class ImageMetadataDao(BaseDao):
         return {"result": data}
 
     def marked_as_reported(self, address, photos):
-
         doc_ids = [photo["photo_id"] for photo in photos]
 
         query = {"selector": {"_id": {"$in": doc_ids}}}
@@ -163,7 +171,6 @@ class ImageMetadataDao(BaseDao):
             self.update_doc(document["_id"], document)
 
     def query_metadata(self, status, page, fields):
-
         skip = 0
         if page > 1:
             skip = (page - 1) * 100
@@ -214,3 +221,23 @@ class ImageMetadataDao(BaseDao):
             self.update_doc(document["_id"], document)
             result.append({'image_id': document['_id'], 'success': True})
         return result
+
+    def exists(self, doc_id):
+        selector = {
+            "selector": {
+                "$or": [
+                    {
+                        "hash": doc_id
+                    },
+                    {
+                        "qr_code_hash": doc_id
+                    }
+                ]
+            },
+            "limit": 1,
+            "fields": ["hash", "qr_code_hash"]
+        }
+        result = self.query_data(selector)['result']
+        if len(result) == 0:
+            return False
+        return True

@@ -47,7 +47,7 @@ class AddNewImageCommand(BaseCommand):
                 imd[i, j] = d[:-1] + ((d[-1] | 1) if qr.getpixel((i % qw, j % qh)) else (d[-1] & ~1),)
 
         root, ext = splitext(filename)
-        qr_code_image_path = os.path.join(image_dir, root + '_watermark.png')
+        qr_code_image_path = os.path.join(image_dir, root + '_watermark' + ext)
         im.save(qr_code_image_path)
         qr_code_hash = str(hash_image(qr_code_image_path))
 

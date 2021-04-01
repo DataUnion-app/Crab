@@ -51,6 +51,7 @@ class InitiateDB:
         print(response.text)
 
         self.create_metadata_query_view(metadata_db)
+        self.create_verification_view(metadata_db)
 
     def create_users_db(self):
         users_db = config['couchdb']['users_db']
@@ -149,11 +150,25 @@ class InitiateDB:
             "language": "javascript"
         }
 
-        headers = {
-            'Content-Type': 'application/json'
+        headers = {'Content-Type': 'application/json'}
+
+        url = "http://{0}:{1}@{2}/{3}".format(self.user, self.password, self.db_host, db_name)
+        response = requests.request("POST", url, headers=headers, data=json.dumps(body))
+        print(response.text)
+
+    def create_verification_view(self, db_name):
+        body = {
+            "_id": "_design/verification",
+            "views": {
+                "verification-view": {
+                    "map": "function (doc) {\n  if(doc['status'] == \"VERIFIABLE\"){\n      if(!doc['verified'])return;\n      verified_tag_count = {};\n      doc['verified'].forEach((element)=>{\n        element['tags'][\"up_votes\"].forEach((upvoted_tag)=>{\n          verified_tag_count[upvoted_tag] =  (verified_tag_count[upvoted_tag] + 1) || 1;\n        });\n      });\n      \n      tags = Object.keys(verified_tag_count);\n      var can_be_marked_as_verified = true;\n      for(var i = 0; i < tags.length; i++){\n        let verified_tag = tags[i];\n        if(verified_tag_count[verified_tag] < 10) {\n          can_be_marked_as_verified = false;\n          break;\n        }\n      }\n      \n      key = doc._id\n      emit(key, {'status':doc['status'],can_be_marked_as_verified,verified_tag_count});\n  }\n}"
+                }
+            },
+            "language": "javascript"
         }
 
         url = "http://{0}:{1}@{2}/{3}".format(self.user, self.password, self.db_host, db_name)
+        headers = {'Content-Type': 'application/json'}
         response = requests.request("POST", url, headers=headers, data=json.dumps(body))
         print(response.text)
 
