@@ -71,6 +71,10 @@ def upload_file():
         return jsonify(
             {"status": "failed", "message": "Invalid input body. Expected keys :{0}".format(required_params)}), 400
 
+    public_address = get_jwt_identity()
+    if public_address != request_data["uploaded_by"]:
+        return jsonify(
+            {"status": "failed", "message": "Token owner and `uploaded_by` does not match "}), 400
     if 'file' not in request.files:
         resp = jsonify({'message': 'No file part in the request'})
         resp.status_code = 400

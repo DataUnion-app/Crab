@@ -56,7 +56,7 @@ class BaseDao(metaclass=abc.ABCMeta):
             data = json.loads(response.text).get("docs")
             return {"result": data}
         except ValueError:
-            return {"result": {}}
+            return {"result": []}
 
     def update_doc(self, doc_id, data):
         return self.save(doc_id, data)
