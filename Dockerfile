@@ -2,6 +2,8 @@ FROM ubuntu:20.04
 
 RUN useradd -rm -d /home/appuser -s /bin/bash -g root -G sudo -u 1001 appuser
 
+USER appuser
+
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
@@ -16,11 +18,15 @@ RUN apt-get update && apt-get install vim -y && apt-get install less -y
 WORKDIR /home/appuser/app
 ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0
-COPY requirements/prod_linux.txt requirements.txt
-RUN pip install -r requirements.txt
-EXPOSE 8080
-COPY . .
 
-RUN chown -R appuser /home/appuser
+COPY . .
+RUN pip install -r requirements/prod_linux.txt
+
+COPY /etc/letsencrypt/live/alpha.dataunion.app/dev/fullchain.pem ssl/cert.pem
+COPY /etc/letsencrypt/live/alpha.dataunion.app/dev/privkey.pem ssl/key.pem
+
+EXPOSE 8080
+
+# RUN chown -R appuser /home/appuser
 
 CMD ["uwsgi", "app.ini"]
