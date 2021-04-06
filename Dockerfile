@@ -13,7 +13,7 @@ RUN apt-get update \
 
 RUN apt-get update && apt-get install vim -y && apt-get install less -y
 
-RUN chown -R appuser /home/appuser
+# RUN chown -R appuser /home/appuser
 # USER appuser
 
 WORKDIR /home/appuser/app
@@ -22,6 +22,8 @@ ENV FLASK_RUN_HOST=0.0.0.0
 
 COPY --chown=appuser:root . .
 RUN pip install -r requirements/prod_linux.txt
+
+RUN chown -R appuser /home/appuser
 
 EXPOSE 8080
 
