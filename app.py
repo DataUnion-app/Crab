@@ -54,4 +54,7 @@ def api():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=config['application']['port'])
+    if config['application'].getboolean('use_https'):
+        app.run(host='0.0.0.0', port=config['application']['port'], ssl_context=('ssl/cert.pem', 'ssl/key.pem'))
+    else:
+        app.run(host='0.0.0.0', port=config['application']['port'])

@@ -13,14 +13,18 @@ RUN apt-get update \
 
 RUN apt-get update && apt-get install vim -y && apt-get install less -y
 
+# RUN chown -R appuser /home/appuser
+# USER appuser
+
 WORKDIR /home/appuser/app
 ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0
-COPY requirements/prod_linux.txt requirements.txt
-RUN pip install -r requirements.txt
-EXPOSE 8080
-COPY . .
+
+COPY --chown=appuser:root . .
+RUN pip install -r requirements/prod_linux.txt
 
 RUN chown -R appuser /home/appuser
+
+EXPOSE 8080
 
 CMD ["uwsgi", "app.ini"]
