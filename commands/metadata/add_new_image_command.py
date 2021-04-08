@@ -54,7 +54,7 @@ class AddNewImageCommand(BaseCommand):
         data_to_save = dict({})
         data_to_save["filename"] = filename
         data_to_save["uploaded_by"] = public_address
-        data_to_save["status"] = "new"
+        data_to_save["status"] = ImageStatus.VERIFIABLE.name
         data_to_save["hash"] = doc_id
         data_to_save['qr_code_hash'] = qr_code_hash
         data_to_save["type"] = "image"
