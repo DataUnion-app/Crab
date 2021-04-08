@@ -131,20 +131,7 @@ class InitiateDB:
             "_id": "_design/query-metadata",
             "views": {
                 "query-metadata": {
-                    "map": '''function (doc) {
-                              if(doc.status) {
-                                 let tag_data = [];
-                                 let descriptions = [];
-                                 if(doc.tag_data) {
-                                   doc["tag_data"].forEach(element => {
-                                    tag_data = tag_data.concat(element["tags"])
-                                    if(element["description"]) descriptions = descriptions.concat(element["description"])
-                                   })
-                                 }
-                                var date = new Date(doc.uploaded_at* 1000);
-                                emit([doc.status, date.getFullYear(), date.getMonth() +1,  date.getDate()], {'image_id':doc._id, 'tag_data': tag_data, "descriptions": descriptions});
-                                }
-                            }'''
+                    "map": "function (doc) {\n                              if(doc.status) {\n                                 let tag_data = [];\n                                 let descriptions = [];\n                                 if(doc.tag_data) {\n                                   doc[\"tag_data\"].forEach(element => {\n                                    tag_data = tag_data.concat(element[\"tags\"])\n                                    if(element[\"description\"]) descriptions = descriptions.concat(element[\"description\"])\n                                   })\n                                 }\n                                var date = new Date(doc.uploaded_at* 1000);\n                                let unique_tags = [...new Set(tag_data)]\n                                emit([doc.status, date.getFullYear(), date.getMonth() +1,  date.getDate()], {'image_id':doc._id, 'tag_data': unique_tags, \"descriptions\": descriptions});\n                                }\n                            }"
                 }
             },
             "language": "javascript"

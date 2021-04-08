@@ -19,7 +19,7 @@ class TestMyStatsCommand(TestBase):
 
         query_my_stats_command = MyStatsCommand()
         query_my_stats_command.input = {
-            'status': ImageStatus.AVAILABLE_FOR_TAGGING.name,
+            'status': ImageStatus.VERIFIABLE.name,
             'public_address': acct.address,
             'start_time': 1,
             'end_time': datetime.timestamp(datetime.now())

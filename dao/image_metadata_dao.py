@@ -103,7 +103,7 @@ class ImageMetadataDao(BaseDao):
             document["tag_data"] = [tag_data]
 
         document["updated_at"] = datetime.timestamp(datetime.now())
-        document["status"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
+        document["status"] = ImageStatus.VERIFIABLE.name
         document["status_description"] = "Metadata saved"
         result = self.update_doc(photo_id, document)
         return result
@@ -167,7 +167,7 @@ class ImageMetadataDao(BaseDao):
                 document["reports"] = [{"reported_by": address}]
             elif len([report for report in reports if report["reported_by"] == address]) == 0:
                 document["reports"].append({"reported_by": address})
-
+            document["status"] = ImageStatus.REPORTED_AS_INAPPROPRIATE.name
             self.update_doc(document["_id"], document)
 
     def query_metadata(self, status, page, fields):
