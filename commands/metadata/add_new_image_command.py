@@ -62,7 +62,8 @@ class AddNewImageCommand(BaseCommand):
         data_to_save["status_description"] = ImageStatus.VERIFIABLE.name
         data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
         data_to_save["dimensions"] = [w, h]
-
+        data_to_save["verified"] = []
+        data_to_save["tag_data"] = []
         # Save metadata
         doc_id = self.image_metadata_dao.save(doc_id, data_to_save)["id"]
 

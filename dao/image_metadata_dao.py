@@ -188,6 +188,81 @@ class ImageMetadataDao(BaseDao):
 
         return {"result": result, "page": page, "page_size": self.page_size}
 
+    def query_tags(self, status, page, public_address):
+
+        skip = 0
+        if page > 1:
+            skip = (page - 1) * 100
+
+        selector = {
+            "selector": {
+                "status": status,
+                "$and": [
+                    {
+                        "$not": {
+                            "uploaded_by": public_address
+                        }
+                    },
+                    {
+                        "$not": {
+                            "tag_data": {
+                                "$elemMatch": {
+                                    "uploaded_by": {
+                                        "$eq": public_address
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "$not": {
+                            "verified": {
+                                "$elemMatch": {
+                                    "by": {
+                                        "$eq": public_address
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "sort": [
+                {
+                    "uploaded_at": "desc"
+                }
+            ],
+            "fields": [
+                "_id",
+                "tag_data",
+                "verified"
+            ],
+            "limit": self.page_size,
+            "skip": skip
+        }
+
+        data = self.query_data(selector)['result']
+        result = []
+        for row in data:
+
+            tag_data = []
+            descriptions = []
+            for tagged_data in row['tag_data']:
+                if tagged_data['description']:
+                    descriptions.append(tagged_data['description'])
+                tag_data = tag_data + tagged_data['tags']
+
+            for verified in row['verified']:
+                tag_data = tag_data + verified['tags']['up_votes']
+                tag_data = tag_data + verified['tags']['down_votes']
+
+            result.append({
+                'image_id': row['_id'],
+                'tag_data': list(set(tag_data)),
+                'descriptions': list(set(descriptions))
+            })
+        return {"result": result, "page": page, "page_size": self.page_size}
+
     def mark_as_verified(self, data, public_address):
         image_ids = [row['image_id'] for row in data]
         query = {"selector": {"_id": {"$in": image_ids}}, "limit": len(image_ids)}
