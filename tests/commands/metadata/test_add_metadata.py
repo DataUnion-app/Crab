@@ -23,7 +23,7 @@ class TestMarkAsVerified(TestBase):
 
         add_new_metadata_command.execute()
         self.assertTrue(add_new_metadata_command.successful)
-        self.assertTrue(ImageStatus.AVAILABLE_FOR_TAGGING.name, self.image_metadata_dao.get_doc_by_id(image_ids[0]))
+        self.assertTrue(ImageStatus.VERIFIABLE.name, self.image_metadata_dao.get_doc_by_id(image_ids[0]))
 
         acct2 = Account.create()
         add_new_metadata_command2 = AddNewMetadataCommand()

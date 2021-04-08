@@ -43,7 +43,7 @@ class AddNewMetadataCommand(BaseCommand):
                                                                 self.input.get("description", None))
 
         if result.get('ok') is True:
-            self.image_metadata_dao.move_to_verifiable_if_possible(self.input["photo_id"])
+            # self.image_metadata_dao.move_to_verifiable_if_possible(self.input["photo_id"])
             self.successful = True
             return {"status": "success"}
 

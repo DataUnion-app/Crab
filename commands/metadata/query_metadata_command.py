@@ -22,7 +22,8 @@ class QueryMetadataCommand(BaseCommand):
             self.successful = False
             return
 
-        result = self.imageMetadataDao.query_metadata(self.input['status'], self.input['page'], self.input['fields'])
+        result = self.imageMetadataDao.query_tags(self.input['status'], self.input['page'],
+                                                  self.input['public_address'])
         self.successful = True
         return result
 
@@ -33,6 +34,10 @@ class QueryMetadataCommand(BaseCommand):
 
         if self.input.get('status') is None:
             self.messages.append("Missing status")
+            return False
+
+        if self.input.get('public_address') is None:
+            self.messages.append("Missing public_address")
             return False
 
         if self.input.get('page') is None:

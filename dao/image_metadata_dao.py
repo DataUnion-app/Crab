@@ -103,7 +103,7 @@ class ImageMetadataDao(BaseDao):
             document["tag_data"] = [tag_data]
 
         document["updated_at"] = datetime.timestamp(datetime.now())
-        document["status"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
+        document["status"] = ImageStatus.VERIFIABLE.name
         document["status_description"] = "Metadata saved"
         result = self.update_doc(photo_id, document)
         return result
@@ -167,7 +167,7 @@ class ImageMetadataDao(BaseDao):
                 document["reports"] = [{"reported_by": address}]
             elif len([report for report in reports if report["reported_by"] == address]) == 0:
                 document["reports"].append({"reported_by": address})
-
+            document["status"] = ImageStatus.REPORTED_AS_INAPPROPRIATE.name
             self.update_doc(document["_id"], document)
 
     def query_metadata(self, status, page, fields):
@@ -186,6 +186,81 @@ class ImageMetadataDao(BaseDao):
 
         result = list(map(lambda row: {field: row["value"].get(field) for field in fields}, data["rows"]))
 
+        return {"result": result, "page": page, "page_size": self.page_size}
+
+    def query_tags(self, status, page, public_address):
+
+        skip = 0
+        if page > 1:
+            skip = (page - 1) * 100
+
+        selector = {
+            "selector": {
+                "status": status,
+                "$and": [
+                    {
+                        "$not": {
+                            "uploaded_by": public_address
+                        }
+                    },
+                    {
+                        "$not": {
+                            "tag_data": {
+                                "$elemMatch": {
+                                    "uploaded_by": {
+                                        "$eq": public_address
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "$not": {
+                            "verified": {
+                                "$elemMatch": {
+                                    "by": {
+                                        "$eq": public_address
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "sort": [
+                {
+                    "uploaded_at": "desc"
+                }
+            ],
+            "fields": [
+                "_id",
+                "tag_data",
+                "verified"
+            ],
+            "limit": self.page_size,
+            "skip": skip
+        }
+
+        data = self.query_data(selector)['result']
+        result = []
+        for row in data:
+
+            tag_data = []
+            descriptions = []
+            for tagged_data in row['tag_data']:
+                if tagged_data['description']:
+                    descriptions.append(tagged_data['description'])
+                tag_data = tag_data + tagged_data['tags']
+
+            for verified in row['verified']:
+                tag_data = tag_data + verified['tags']['up_votes']
+                tag_data = tag_data + verified['tags']['down_votes']
+
+            result.append({
+                'image_id': row['_id'],
+                'tag_data': list(set(tag_data)),
+                'descriptions': list(set(descriptions))
+            })
         return {"result": result, "page": page, "page_size": self.page_size}
 
     def mark_as_verified(self, data, public_address):
