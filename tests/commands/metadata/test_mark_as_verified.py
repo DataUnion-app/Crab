@@ -47,16 +47,28 @@ class TestMarkAsVerified(TestBase):
         add_new_metadata_command2.execute()
 
         for i in range(10):
-            TestMarkAsVerified.mark_as_verified(image_ids, ['abc'], ['123'])
+            TestMarkAsVerified.mark_as_verified(image_ids, ['abc'], ['123'], [], [])
 
         status = self.image_metadata_dao.get_doc_by_id(image_ids[0])['status']
         self.assertEqual(ImageStatus.VERIFIED.name, status)
 
+    def test_query_metadata_3(self):
+        loader = DummyDataLoader()
+        image_ids = loader.load_random_data2(1, 1, 100, 100)
+
+        TestMarkAsVerified.mark_as_verified(image_ids, ['abc'], ['123'], ['test desc'], ['test desc'])
+
+        document = self.image_metadata_dao.get_doc_by_id(image_ids[0])
+        status = document['status']
+        self.assertEqual(ImageStatus.VERIFIABLE.name, status)
+
     @staticmethod
-    def mark_as_verified(image_ids, up_votes, down_votes):
+    def mark_as_verified(image_ids, tag_up_votes: list[str], tag_down_votes: list[str], desc_up_votes: list[str],
+                         desc_down_votes: list[str]):
         acct = Account.create()
         verify_image_command = VerifyImageCommand()
-        data = [{'image_id': image_id, 'tags': {'up_votes': up_votes, 'down_votes': down_votes}} for image_id in
+        data = [{'image_id': image_id, 'tags': {'up_votes': tag_up_votes, 'down_votes': tag_down_votes},
+                 'descriptions': {'up_votes': desc_up_votes, 'down_votes': desc_down_votes}} for image_id in
                 image_ids]
         verify_image_command.input = {
             'public_address': acct.address,

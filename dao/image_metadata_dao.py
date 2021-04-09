@@ -256,6 +256,8 @@ class ImageMetadataDao(BaseDao):
                 tag_data = tag_data + verified['tags']['up_votes']
                 tag_data = tag_data + verified['tags']['down_votes']
 
+                descriptions = descriptions + verified['descriptions']['up_votes']
+                descriptions = descriptions + verified['descriptions']['down_votes']
             result.append({
                 'image_id': row['_id'],
                 'tag_data': list(set(tag_data)),
@@ -278,16 +280,21 @@ class ImageMetadataDao(BaseDao):
                 continue
             verified = document.get("verified")
 
-            up_votes = []
-            down_votes = []
+            tag_up_votes = []
+            tag_down_votes = []
+            description_up_votes = []
+            description_down_votes = []
             for row in data:
                 if row['image_id'] == document['_id']:
-                    up_votes = row['tags']['up_votes']
-                    down_votes = row['tags']['down_votes']
+                    tag_up_votes = row['tags']['up_votes']
+                    tag_down_votes = row['tags']['down_votes']
+                    description_up_votes = row['descriptions']['up_votes']
+                    description_down_votes = row['descriptions']['down_votes']
                     break
 
             verified_data = {"by": public_address, "time": datetime.timestamp(datetime.now()),
-                             'tags': {'up_votes': up_votes, 'down_votes': down_votes}}
+                             'tags': {'up_votes': tag_up_votes, 'down_votes': tag_down_votes},
+                             'descriptions': {'up_votes': description_up_votes, 'down_votes': description_down_votes}}
 
             if not verified:
                 document["verified"] = [verified_data]

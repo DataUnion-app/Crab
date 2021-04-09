@@ -39,7 +39,7 @@ class VerifyImageCommand(BaseCommand):
             self.messages.append('"data" is not a list.')
             return False
 
-        for row in self.input['data']:
+        for index, row in enumerate(self.input['data']):
             if not isinstance(row, dict):
                 self.messages.append('row in data not an object.')
                 return False
@@ -54,6 +54,17 @@ class VerifyImageCommand(BaseCommand):
                 return False
             if not isinstance(row['tags'].get('down_votes'), list):
                 self.messages.append('"tags.down_votes" is not a list.')
+                return False
+            if not row.get('descriptions'):
+                self.input['data'][index]['descriptions'] = {
+                    'up_votes': [],
+                    'down_votes': []
+                }
+            if not isinstance(row['descriptions'].get('up_votes'), list):
+                self.messages.append('"descriptions.up_votes" is not a list.')
+                return False
+            if not isinstance(row['descriptions'].get('down_votes'), list):
+                self.messages.append('"descriptions.down_votes" is not a list.')
                 return False
         return True
 
