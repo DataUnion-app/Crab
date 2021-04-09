@@ -171,13 +171,14 @@ class DummyDataLoader:
             DummyDataLoader.add_tags(image_id, ["tag1", "tag2", "tag3"], 'sample description2')
 
         for i in range(verification_count):
-            DummyDataLoader.mark_as_verified(image_ids, ["tag1"], ["tag2"])
+            DummyDataLoader.mark_as_verified(image_ids, ["tag1"], ["tag2"], ['test desc1'], ['test desc2'])
 
     @staticmethod
-    def mark_as_verified(image_ids, up_votes, down_votes):
+    def mark_as_verified(image_ids, up_votes, down_votes, desc_up_votes, desc_down_votes):
         acct = Account.create()
         verify_image_command = VerifyImageCommand()
-        data = [{'image_id': image_id, 'tags': {'up_votes': up_votes, 'down_votes': down_votes}} for image_id in
+        data = [{'image_id': image_id, 'tags': {'up_votes': up_votes, 'down_votes': down_votes},
+                 'descriptions': {'up_votes': desc_up_votes, 'down_votes': desc_down_votes}} for image_id in
                 image_ids]
         verify_image_command.input = {
             'public_address': acct.address,
@@ -244,5 +245,5 @@ if __name__ == '__main__':
         y_size = int(sys.argv[4])
 
     d = DummyDataLoader()
-    d.load_data_with_verification(image_count=images, verification_count=10, accounts=accounts, x_size=x_size,
+    d.load_data_with_verification(image_count=images, verification_count=8, accounts=accounts, x_size=x_size,
                                   y_size=y_size)
