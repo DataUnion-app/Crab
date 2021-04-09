@@ -256,6 +256,8 @@ class ImageMetadataDao(BaseDao):
                 tag_data = tag_data + verified['tags']['up_votes']
                 tag_data = tag_data + verified['tags']['down_votes']
 
+                descriptions = descriptions + verified['descriptions']['up_votes']
+                descriptions = descriptions + verified['descriptions']['down_votes']
             result.append({
                 'image_id': row['_id'],
                 'tag_data': list(set(tag_data)),
