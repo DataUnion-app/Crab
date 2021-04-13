@@ -330,5 +330,10 @@ class ImageMetadataDao(BaseDao):
         url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_url)
         headers = {'Content-Type': 'application/json'}
         response = requests.request("GET", url, headers=headers, data={})
-        data = json.loads(response.text)['rows'][0]['value']
-        return data
+        data = json.loads(response.text)['rows']
+        if len(data) == 0:
+            return {
+                "desc_down_votes": 0, "desc_up_votes": 0, "tags_down_votes": 0, "tags_up_votes": 0
+            }
+        else:
+            return data[0]['value']

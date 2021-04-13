@@ -58,7 +58,7 @@ class Login:
 
             login_response = requests.request("POST", api_url, headers=headers, data=payload)
             login_response_data = json.loads(login_response.text)
-            return login_response_data.get('access_token')
+            return login_response_data
         else:
             print("Nonce not found")
 
