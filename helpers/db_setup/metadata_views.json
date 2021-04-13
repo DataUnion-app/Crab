@@ -1,0 +1,33 @@
+{
+  "views": [
+    {
+      "_id": "_design/stats-verification",
+      "views": {
+        "stats-verification": {
+          "map": "function (doc) {\n      if(!(doc['verified']))return;\n      up_vote_tag_count = {};\n      down_vote_tag_count = {};\n      up_vote_desc_count = {};\n      down_vote_desc_count = {};\n\n      doc['verified'].forEach((element) => {\n        if(element['tags']){\n          element['tags'][\"up_votes\"].forEach((upvoted_tag) => {\n          up_vote_tag_count[upvoted_tag] = (up_vote_tag_count[upvoted_tag] + 1) || 1;\n          });\n          element['tags'][\"down_votes\"].forEach((downvoted_tag) => {\n          down_vote_tag_count[downvoted_tag] = (down_vote_tag_count[downvoted_tag] + 1) || 1;\n          });\n        }\n       \n        if(element['descriptions']){\n          element['descriptions'][\"down_votes\"].forEach((downvoted_desc)=>{\n          down_vote_desc_count[downvoted_desc] = (down_vote_desc_count[downvoted_desc] + 1) || 1;\n          });\n          \n          element['descriptions'][\"up_votes\"].forEach((up_voted_desc)=>{\n          up_vote_desc_count[up_voted_desc] = (up_vote_desc_count[up_voted_desc] + 1) || 1;\n          });\n        }\n      });\n      \n      let tag_sum_up_votes = 0;\n      let tag_sum_down_votes = 0;\n      let desc_sum_up_votes = 0;\n      let desc_sum_down_votes = 0;\n\n      Object.keys(up_vote_tag_count).forEach((element)=>{\n        tag_sum_up_votes +=  up_vote_tag_count[element]\n      })\n      \n      Object.keys(down_vote_tag_count).forEach((element)=>{\n        tag_sum_down_votes +=  down_vote_tag_count[element]\n      })\n      \n      Object.keys(up_vote_desc_count).forEach((element)=>{\n        desc_sum_up_votes +=  up_vote_desc_count[element]\n      })\n      \n      Object.keys(down_vote_desc_count).forEach((element)=>{\n        desc_sum_down_votes +=  down_vote_desc_count[element]\n      })\n\n\n      key = doc._id\n      emit(key, {'tags_up_votes':tag_sum_up_votes, 'tags_down_votes': tag_sum_down_votes, 'desc_down_votes': desc_sum_down_votes, 'desc_up_votes':desc_sum_up_votes });\n}",
+          "reduce": "function (keys, values, rereduce) {\n // if (rereduce) {\n    tags_up_votes = 0;\n    tags_down_votes = 0;\n    desc_down_votes = 0;\n    desc_up_votes = 0;\n    values.forEach((element) => {\n      tags_up_votes += element['tags_up_votes'];\n      tags_down_votes += element['tags_down_votes'];\n      desc_down_votes += element['desc_down_votes'];\n      desc_up_votes += element['desc_up_votes'];\n\n    })\n    return {tags_up_votes, tags_down_votes, desc_down_votes, desc_up_votes};\n  // } else {\n  //   return values.length;\n  // }\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/query-metadata",
+      "views": {
+        "query-metadata": {
+          "map": "function (doc) {\n                              if(doc.status) {\n                                 let tag_data = [];\n                                 let descriptions = [];\n                                 if(doc.tag_data) {\n                                   doc[\"tag_data\"].forEach(element => {\n                                    tag_data = tag_data.concat(element[\"tags\"])\n                                    if(element[\"description\"]) descriptions = descriptions.concat(element[\"description\"])\n                                   })\n                                 }\n                                 if(doc.verified) {\n                                   doc[\"verified\"].forEach(element => {\n                                    tag_data = tag_data.concat(element[\"tags\"]['up_votes'])\n                                    tag_data = tag_data.concat(element[\"tags\"]['down_votes'])\n                                    if(element[\"descriptions\"]){\n                                      descriptions = descriptions.concat(element[\"descriptions\"]['up_votes'])\n                                      descriptions = descriptions.concat(element[\"descriptions\"]['down_votes'])\n                                    }\n                                   })\n                                 }\n                                var date = new Date(doc.uploaded_at* 1000);\n                                let unique_tags = [...new Set(tag_data)];\n                                let unique_descriptions = [...new Set(descriptions)];\n\n                                emit([doc.status, date.getFullYear(), date.getMonth() +1,  date.getDate()], {'image_id':doc._id, 'tag_data': unique_tags, \"descriptions\": unique_descriptions});\n                                }\n                            }"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/verification",
+      "views": {
+        "verification-view": {
+          "map": "function (doc) {\n  if(doc['status'] == \"VERIFIABLE\"){\n      if(!doc['verified'])return;\n      verified_tag_count = {};\n      doc['verified'].forEach((element)=>{\n        element['tags'][\"up_votes\"].forEach((upvoted_tag)=>{\n          verified_tag_count[upvoted_tag] =  (verified_tag_count[upvoted_tag] + 1) || 1;\n        });\n      });\n      \n      tags = Object.keys(verified_tag_count);\n      var can_be_marked_as_verified = true;\n      for(var i = 0; i < tags.length; i++){\n        let verified_tag = tags[i];\n        if(verified_tag_count[verified_tag] < 10) {\n          can_be_marked_as_verified = false;\n          break;\n        }\n      }\n      \n      key = doc._id\n      emit(key, {'status':doc['status'],can_be_marked_as_verified,verified_tag_count});\n  }\n}"
+        }
+      },
+      "language": "javascript"
+    }
+  ],
+  "index": []
+}
