@@ -18,6 +18,7 @@ from commands.metadata.add_new_metadata_command import AddNewMetadataCommand
 from commands.metadata.my_stats_command import MyStatsCommand
 from commands.metadata.verify_image_command import VerifyImageCommand
 from commands.metadata.stats_command import StatsCommand
+from commands.metadata.tags_stats_command import TagStatsCommand
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -411,6 +412,16 @@ def get_stats():
             return jsonify({'status': 'failed', 'messages': stats_command.messages}), 400
     except ValueError:
         return jsonify({'status': 'failed', 'messages': ['Value error.']}), 400
+
+
+@metadata_routes.route('/api/v1/tag-stats', methods=["GET"])
+def get_tag_stats():
+    get_tag_stats_command = TagStatsCommand()
+    result = get_tag_stats_command.execute()
+    if get_tag_stats_command.successful:
+        return jsonify({'status': 'success', 'result': result}), 400
+    else:
+        return jsonify({'status': 'failed', 'messages': get_tag_stats_command.messages}), 400
 
 
 @metadata_routes.route('/api/v1/my-stats', methods=["GET"])

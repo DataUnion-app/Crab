@@ -323,3 +323,12 @@ class ImageMetadataDao(BaseDao):
         if len(result) == 0:
             return False
         return True
+
+    def get_tag_stats(self):
+        query_url = '/_design/stats-verification/_view/stats-verification'
+
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_url)
+        headers = {'Content-Type': 'application/json'}
+        response = requests.request("GET", url, headers=headers, data={})
+        data = json.loads(response.text)['rows'][0]['value']
+        return data
