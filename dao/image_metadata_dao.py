@@ -3,6 +3,7 @@ from datetime import datetime
 import requests
 from dao.base_dao import BaseDao
 from models.ImageStatus import ImageStatus
+import logging
 
 
 class ImageMetadataDao(BaseDao):
@@ -102,7 +103,7 @@ class ImageMetadataDao(BaseDao):
             document["tag_data"] = [tag_data]
 
         document["updated_at"] = datetime.timestamp(datetime.now())
-        document["status"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
+        document["status"] = ImageStatus.VERIFIABLE.name
         document["status_description"] = "Metadata saved"
         result = self.update_doc(photo_id, document)
         return result
@@ -116,12 +117,20 @@ class ImageMetadataDao(BaseDao):
             self.update_doc(photo_id, document)
 
     def move_to_verified_if_possible(self, photo_id):
-        document = self.get_doc_by_id(photo_id)
-        verified = document.get("verified")
-        if len(verified) >= self.threshold_verified:
-            document["updated_at"] = datetime.timestamp(datetime.now())
-            document["status"] = ImageStatus.VERIFIED.name
-            self.update_doc(photo_id, document)
+        query_string = "/_design/verification/_view/verification-view?key=\"{0}\"&limit=1".format(
+            photo_id)
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_string)
+        response = requests.request("GET", url, headers={}, data=json.dumps({}))
+
+        if response.status_code == 200:
+            data = json.loads(response.text)
+            if len(data['rows']) == 1 and data['rows'][0]['value'].get('can_be_marked_as_verified'):
+                document = self.get_doc_by_id(photo_id)
+                document["updated_at"] = datetime.timestamp(datetime.now())
+                document["status"] = ImageStatus.VERIFIED.name
+                self.update_doc(photo_id, document)
+        else:
+            logging.error("Could not check if verified [%s]" % photo_id)
 
     def get_by_status(self, status):
         query = {"selector": {"_id": {"$gt": None}, "status": status},
@@ -144,7 +153,6 @@ class ImageMetadataDao(BaseDao):
         return {"result": data}
 
     def marked_as_reported(self, address, photos):
-
         doc_ids = [photo["photo_id"] for photo in photos]
 
         query = {"selector": {"_id": {"$in": doc_ids}}}
@@ -159,11 +167,10 @@ class ImageMetadataDao(BaseDao):
                 document["reports"] = [{"reported_by": address}]
             elif len([report for report in reports if report["reported_by"] == address]) == 0:
                 document["reports"].append({"reported_by": address})
-
+            document["status"] = ImageStatus.REPORTED_AS_INAPPROPRIATE.name
             self.update_doc(document["_id"], document)
 
     def query_metadata(self, status, page, fields):
-
         skip = 0
         if page > 1:
             skip = (page - 1) * 100
@@ -181,6 +188,83 @@ class ImageMetadataDao(BaseDao):
 
         return {"result": result, "page": page, "page_size": self.page_size}
 
+    def query_tags(self, status, page, public_address):
+
+        skip = 0
+        if page > 1:
+            skip = (page - 1) * 100
+
+        selector = {
+            "selector": {
+                "status": status,
+                "$and": [
+                    {
+                        "$not": {
+                            "uploaded_by": public_address
+                        }
+                    },
+                    {
+                        "$not": {
+                            "tag_data": {
+                                "$elemMatch": {
+                                    "uploaded_by": {
+                                        "$eq": public_address
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "$not": {
+                            "verified": {
+                                "$elemMatch": {
+                                    "by": {
+                                        "$eq": public_address
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "sort": [
+                {
+                    "uploaded_at": "desc"
+                }
+            ],
+            "fields": [
+                "_id",
+                "tag_data",
+                "verified"
+            ],
+            "limit": self.page_size,
+            "skip": skip
+        }
+
+        data = self.query_data(selector)['result']
+        result = []
+        for row in data:
+
+            tag_data = []
+            descriptions = []
+            for tagged_data in row['tag_data']:
+                if tagged_data['description']:
+                    descriptions.append(tagged_data['description'])
+                tag_data = tag_data + tagged_data['tags']
+
+            for verified in row['verified']:
+                tag_data = tag_data + verified['tags']['up_votes']
+                tag_data = tag_data + verified['tags']['down_votes']
+                if verified.get('descriptions'):
+                    descriptions = descriptions + verified['descriptions'].get('up_votes', [])
+                    descriptions = descriptions + verified['descriptions'].get('down_votes', [])
+            result.append({
+                'image_id': row['_id'],
+                'tag_data': list(set(tag_data)),
+                'descriptions': list(set(descriptions))
+            })
+        return {"result": result, "page": page, "page_size": self.page_size}
+
     def mark_as_verified(self, data, public_address):
         image_ids = [row['image_id'] for row in data]
         query = {"selector": {"_id": {"$in": image_ids}}, "limit": len(image_ids)}
@@ -196,16 +280,21 @@ class ImageMetadataDao(BaseDao):
                 continue
             verified = document.get("verified")
 
-            up_votes = []
-            down_votes = []
+            tag_up_votes = []
+            tag_down_votes = []
+            description_up_votes = []
+            description_down_votes = []
             for row in data:
                 if row['image_id'] == document['_id']:
-                    up_votes = row['tags']['up_votes']
-                    down_votes = row['tags']['down_votes']
+                    tag_up_votes = row['tags']['up_votes']
+                    tag_down_votes = row['tags']['down_votes']
+                    description_up_votes = row['descriptions']['up_votes']
+                    description_down_votes = row['descriptions']['down_votes']
                     break
 
             verified_data = {"by": public_address, "time": datetime.timestamp(datetime.now()),
-                             'tags': {'up_votes': up_votes, 'down_votes': down_votes}}
+                             'tags': {'up_votes': tag_up_votes, 'down_votes': tag_down_votes},
+                             'descriptions': {'up_votes': description_up_votes, 'down_votes': description_down_votes}}
 
             if not verified:
                 document["verified"] = [verified_data]
@@ -214,3 +303,32 @@ class ImageMetadataDao(BaseDao):
             self.update_doc(document["_id"], document)
             result.append({'image_id': document['_id'], 'success': True})
         return result
+
+    def exists(self, doc_id):
+        selector = {
+            "selector": {
+                "$or": [
+                    {
+                        "hash": doc_id
+                    },
+                    {
+                        "qr_code_hash": doc_id
+                    }
+                ]
+            },
+            "limit": 1,
+            "fields": ["hash", "qr_code_hash"]
+        }
+        result = self.query_data(selector)['result']
+        if len(result) == 0:
+            return False
+        return True
+
+    def get_tag_stats(self):
+        query_url = '/_design/stats-verification/_view/stats-verification'
+
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_url)
+        headers = {'Content-Type': 'application/json'}
+        response = requests.request("GET", url, headers=headers, data={})
+        data = json.loads(response.text)['rows'][0]['value']
+        return data

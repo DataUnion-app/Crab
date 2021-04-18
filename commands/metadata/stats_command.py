@@ -33,7 +33,7 @@ class StatsCommand(BaseCommand):
                 },
                 "type": "image",
                 "status": {
-                    "$in": [ImageStatus.AVAILABLE_FOR_TAGGING.name, ImageStatus.VERIFIED.name]
+                    "$in": [ImageStatus.VERIFIABLE.name, ImageStatus.VERIFIED.name]
                 },
                 "uploaded_at": {
                     "$gte": self.input['start_time'],

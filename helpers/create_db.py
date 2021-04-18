@@ -1,6 +1,8 @@
 import requests
 import json
+import os
 from config import config
+from commands.staticdata.add_words import AddWordsCommand, WordTypes
 
 
 class InitiateDB:
@@ -8,6 +10,12 @@ class InitiateDB:
         self.user = config['couchdb']['user']
         self.password = config['couchdb']['password']
         self.db_host = config['couchdb']['db_host']
+
+    def init(self):
+        self.create_users_db()
+        self.create_sessions_db()
+        self.create_metadata_db()
+        self.create_static_data_db()
 
     def create_db(self, db_name):
         print("Creating [{0}] db".format(db_name))
@@ -49,7 +57,10 @@ class InitiateDB:
         response = requests.request("POST", url, headers=headers, data=json.dumps(body))
         print(response.text)
 
-        self.create_metadata_query_view(metadata_db)
+        path = os.path.join('helpers', 'db_setup', 'metadata_views.json')
+        with open(path) as json_file:
+            data = json.load(json_file)
+            self.create_views(metadata_db, data['views'])
 
     def create_users_db(self):
         users_db = config['couchdb']['users_db']
@@ -66,12 +77,19 @@ class InitiateDB:
         static_data_db = config['couchdb']['static_data_db']
         self.create_db(static_data_db)
         self.create_view(static_data_db)
+        add_recommended_words = AddWordsCommand()
+        add_recommended_words.input = {
+            'type': WordTypes.RECOMMENDED_WORDS.name,
+            'words': []
+        }
+        add_recommended_words.execute()
 
-    def init(self):
-        self.create_users_db()
-        self.create_sessions_db()
-        self.create_metadata_db()
-        self.create_static_data_db()
+        add_banned_words = AddWordsCommand()
+        add_banned_words.input = {
+            'type': WordTypes.BANNED_WORDS.name,
+            'words': []
+        }
+        add_banned_words.execute()
 
     def create_view(self, db_name):
         print("Creating all-docs view for [{0}]".format(db_name))
@@ -110,38 +128,14 @@ class InitiateDB:
         response = requests.request("POST", url, headers=headers, data=json.dumps(body))
         print(response.text)
 
-    def create_metadata_query_view(self, db_name):
-        print("Creating metadata_query_view view for [{0}]".format(db_name))
-        body = {
-            "_id": "_design/query-metadata",
-            "views": {
-                "query-metadata": {
-                    "map": '''function (doc) {
-                              if(doc.status) {
-                                 let tag_data = [];
-                                 let descriptions = [];
-                                 if(doc.tag_data) {
-                                   doc["tag_data"].forEach(element => {
-                                    tag_data = tag_data.concat(element["tags"])
-                                    if(element["description"]) descriptions = descriptions.concat(element["description"])
-                                   })
-                                 }
-                                var date = new Date(doc.uploaded_at* 1000);
-                                emit([doc.status, date.getFullYear(), date.getMonth() +1,  date.getDate()], {'image_id':doc._id, 'tag_data': tag_data, "descriptions": descriptions});
-                                }
-                            }'''
-                }
-            },
-            "language": "javascript"
-        }
-
-        headers = {
-            'Content-Type': 'application/json'
-        }
-
-        url = "http://{0}:{1}@{2}/{3}".format(self.user, self.password, self.db_host, db_name)
-        response = requests.request("POST", url, headers=headers, data=json.dumps(body))
-        print(response.text)
+    def create_views(self, db_name, views):
+        for view in views:
+            print("Creating [{0}] for [{1}]".format(db_name, view['_id']))
+            body = view
+            headers = {'Content-Type': 'application/json'}
+            url = "http://{0}:{1}@{2}/{3}".format(self.user, self.password, self.db_host, db_name)
+            response = requests.request("POST", url, headers=headers, data=json.dumps(body))
+            print(response.text)
 
 
 if __name__ == '__main__':

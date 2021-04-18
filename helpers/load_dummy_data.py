@@ -1,6 +1,8 @@
 import os
 import requests
 import json
+
+from commands.metadata.add_new_metadata_command import AddNewMetadataCommand
 from config import config
 import numpy
 from PIL import Image
@@ -11,6 +13,7 @@ import nltk
 import random
 import sys
 import datetime
+from commands.metadata.verify_image_command import VerifyImageCommand
 
 nltk.download('words')
 
@@ -159,6 +162,43 @@ class DummyDataLoader:
         print("Finished loading dummy data")
         return image_ids
 
+    def load_data_with_verification(self, image_count: int = 10, verification_count: int = 10, accounts: int = 1,
+                                    x_size: int = 1024,
+                                    y_size: int = 1024):
+        image_ids = self.load_random_data2(image_count, accounts, x_size, y_size)
+        for image_id in image_ids:
+            DummyDataLoader.add_tags(image_id, ["tag2", "tag1", "tag4"], 'sample description1')
+            DummyDataLoader.add_tags(image_id, ["tag1", "tag2", "tag3"], 'sample description2')
+
+        for i in range(verification_count):
+            DummyDataLoader.mark_as_verified(image_ids, ["tag1"], ["tag2"], ['test desc1'], ['test desc2'])
+
+    @staticmethod
+    def mark_as_verified(image_ids, up_votes, down_votes, desc_up_votes, desc_down_votes):
+        acct = Account.create()
+        verify_image_command = VerifyImageCommand()
+        data = [{'image_id': image_id, 'tags': {'up_votes': up_votes, 'down_votes': down_votes},
+                 'descriptions': {'up_votes': desc_up_votes, 'down_votes': desc_down_votes}} for image_id in
+                image_ids]
+        verify_image_command.input = {
+            'public_address': acct.address,
+            'data': data
+        }
+
+        verify_image_command.execute()
+
+    @staticmethod
+    def add_tags(image_id, tags, description):
+        acct = Account.create()
+        add_new_metadata_command1 = AddNewMetadataCommand()
+        add_new_metadata_command1.input = {
+            'public_address': acct.address,
+            'tags': tags,
+            'description': description,
+            'photo_id': image_id
+        }
+        add_new_metadata_command1.execute()
+
     def load_random_data3(self, account=None, token=None, count=10, x_size=100, y_size=100):
         if token is None or account is None:
             print("Token or account is None")
@@ -180,8 +220,6 @@ class DummyDataLoader:
                 image_ids.append(image_id)
                 self.upload_metadata(token, account, image_id, self.get_dummy_metadata(image_id))
         print("Finished loading dummy data")
-        return image_ids
-
         return image_ids
 
     def get_dummy_metadata(self, image_id):
@@ -207,4 +245,5 @@ if __name__ == '__main__':
         y_size = int(sys.argv[4])
 
     d = DummyDataLoader()
-    d.load_random_data2(count=images, accounts=accounts, x_size=x_size, y_size=y_size)
+    d.load_data_with_verification(image_count=images, verification_count=8, accounts=accounts, x_size=x_size,
+                                  y_size=y_size)

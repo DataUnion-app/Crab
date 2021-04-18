@@ -9,6 +9,8 @@ import json
 import os
 import shutil
 import requests
+
+from helpers.load_dummy_data import DummyDataLoader
 from tests.helper import Helper
 from models.ImageStatus import ImageStatus
 from tests.test_base import TestBase
@@ -187,11 +189,25 @@ class TestMetadata(TestBase):
         acct = Account.create()
         token = Helper.login(acct.address, acct.key)
         headers = {'Authorization': 'Bearer {0}'.format(token)}
-        images = self.image_metadata_dao.get_by_status(ImageStatus.AVAILABLE_FOR_TAGGING.name)
+        images = self.image_metadata_dao.get_by_status(ImageStatus.VERIFIABLE.name)
         data = {"photos": [{"photo_id": image["_id"]} for image in images["result"]]}
         response = requests.request("POST", api_url, headers=headers, data=json.dumps(data))
         self.assertEqual(200, response.status_code)
         self.assertEqual({"status": "success"}, json.loads(response.text))
+
+    def test_mark_as_reported2(self):
+
+        dummy_data_loader = DummyDataLoader()
+        image_id = dummy_data_loader.load_random_data2(1, 1, 500,500)[0]
+
+        headers = {'Authorization': 'Bearer {0}'.format(self.get_token())}
+        api_url = self.url + "/api/v1/report-images"
+        data = {'photos': [{'photo_id': image_id}]}
+        response = requests.request("POST", api_url, headers=headers, data=json.dumps(data))
+
+        self.assertEqual(200, response.status_code)
+        doc = self.image_metadata_dao.get_doc_by_id(image_id)
+        self.assertEqual(ImageStatus.REPORTED_AS_INAPPROPRIATE.name, doc['status'])
 
     def clear_data_directory(self):
         for filename in os.listdir(self.data_dir):

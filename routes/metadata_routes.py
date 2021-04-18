@@ -13,10 +13,12 @@ from security.hashing import hash_image
 from models.ImageStatus import ImageStatus
 import shutil
 from commands.metadata.query_metadata_command import QueryMetadataCommand
+from commands.metadata.add_new_image_command import AddNewImageCommand
 from commands.metadata.add_new_metadata_command import AddNewMetadataCommand
 from commands.metadata.my_stats_command import MyStatsCommand
 from commands.metadata.verify_image_command import VerifyImageCommand
 from commands.metadata.stats_command import StatsCommand
+from commands.metadata.tags_stats_command import TagStatsCommand
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -70,6 +72,10 @@ def upload_file():
         return jsonify(
             {"status": "failed", "message": "Invalid input body. Expected keys :{0}".format(required_params)}), 400
 
+    public_address = get_jwt_identity()
+    if public_address != request_data["uploaded_by"]:
+        return jsonify(
+            {"status": "failed", "message": "Token owner and `uploaded_by` does not match "}), 400
     if 'file' not in request.files:
         resp = jsonify({'message': 'No file part in the request'})
         resp.status_code = 400
@@ -96,24 +102,24 @@ def upload_file():
         # File does not exist yet
         if not image_exists:
             # Save file
+            image_dir = os.path.join(config['application']['upload_folder'], request_data["uploaded_by"])
             os.rename(file_path,
-                      os.path.join(config['application']['upload_folder'], request_data["uploaded_by"],
+                      os.path.join(image_dir,
                                    doc_id + '-' + filename))
-            data_to_save = dict({})
-            data_to_save["filename"] = doc_id + '-' + filename
-            data_to_save["uploaded_by"] = request_data["uploaded_by"]
-            data_to_save["status"] = "new"
-            data_to_save["hash"] = doc_id
-            data_to_save["type"] = "image"
-            data_to_save["extension"] = filename.split('.')[-1]
-            data_to_save["status_description"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
-            data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
 
-            # Save metadata
-            doc_id = imageMetadataDao.save(doc_id, data_to_save)["id"]
-
-            resp = jsonify({'message': 'File successfully uploaded', "id": doc_id})
-            return resp, 200
+            add_new_image_command1 = AddNewImageCommand()
+            add_new_image_command1.input = {
+                'public_address': request_data["uploaded_by"],
+                'filename': doc_id + '-' + filename,
+                'doc_id': doc_id,
+                'image_dir': image_dir
+            }
+            add_new_image_command1.execute()
+            if add_new_image_command1.successful:
+                resp = jsonify({'message': 'File successfully uploaded', "id": doc_id})
+                return resp, 200
+            else:
+                return jsonify({'status': 'failed', 'messages': add_new_image_command1.messages}), 400
         else:
             os.remove(file_path)
             logging.debug(
@@ -190,23 +196,23 @@ def upload_zip_file():
             # File does not exist yet
             if not image_exists:
                 # Save file
-                data_to_save = dict({})
-                data_to_save["filename"] = file_name
-                data_to_save["uploaded_by"] = request_data["uploaded_by"]
-                data_to_save["status"] = ImageStatus.AVAILABLE_FOR_TAGGING.name
-                data_to_save["hash"] = bulk_upload_doc_id
-                data_to_save["type"] = "image"
-                data_to_save["bulk_upload_id"] = bulk_upload_doc_id
-                data_to_save["status_description"] = "Image not verified"
-                data_to_save["uploaded_at"] = datetime.timestamp(datetime.now())
-
+                filename_with_docid = doc_id + '-' + file_name
+                image_dir = os.path.join(config['application']['upload_folder'], request_data["uploaded_by"])
                 os.rename(os.path.join(zip_dir_path, file_name),
-                          os.path.join(config['application']['upload_folder'], request_data["uploaded_by"],
-                                       doc_id + '-' + file_name))
+                          os.path.join(image_dir, filename_with_docid))
 
-                # Save metadata
-                doc_id = imageMetadataDao.save(doc_id, data_to_save)["id"]
-                result['success'] = True
+                add_new_image_command1 = AddNewImageCommand()
+                add_new_image_command1.input = {
+                    'public_address': request_data["uploaded_by"],
+                    'filename': filename_with_docid,
+                    'doc_id': doc_id,
+                    'image_dir': image_dir
+                }
+                add_new_image_command1.execute()
+                if add_new_image_command1.successful:
+                    result['success'] = True
+                else:
+                    result['success'] = False
 
             else:
                 result['success'] = False
@@ -406,6 +412,16 @@ def get_stats():
             return jsonify({'status': 'failed', 'messages': stats_command.messages}), 400
     except ValueError:
         return jsonify({'status': 'failed', 'messages': ['Value error.']}), 400
+
+
+@metadata_routes.route('/api/v1/tag-stats', methods=["GET"])
+def get_tag_stats():
+    get_tag_stats_command = TagStatsCommand()
+    result = get_tag_stats_command.execute()
+    if get_tag_stats_command.successful:
+        return jsonify({'status': 'success', 'result': result}), 400
+    else:
+        return jsonify({'status': 'failed', 'messages': get_tag_stats_command.messages}), 400
 
 
 @metadata_routes.route('/api/v1/my-stats', methods=["GET"])
