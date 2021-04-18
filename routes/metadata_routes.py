@@ -19,6 +19,7 @@ from commands.metadata.my_stats_command import MyStatsCommand
 from commands.metadata.verify_image_command import VerifyImageCommand
 from commands.metadata.stats_command import StatsCommand
 from commands.metadata.tags_stats_command import TagStatsCommand
+from commands.metadata.my_tag_stats_command import MyTagStatsCommand
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -347,7 +348,11 @@ def get_image():
                                  result["uploaded_by"],
                                  file_name)
 
-        if os.path.isfile(file_path):
+        if result.get('qr_code_image_path') and os.path.isfile(result.get('qr_code_image_path')):
+            return send_file(result.get('qr_code_image_path'))
+        elif result.get('image_path') and os.path.isfile(result.get('image_path')):
+            return send_file(result.get('image_path'))
+        elif os.path.isfile(file_path):
             return send_file(file_path)
         else:
             return jsonify({'status': 'failed', 'error': 'missing_file'}), 400
@@ -419,9 +424,23 @@ def get_tag_stats():
     get_tag_stats_command = TagStatsCommand()
     result = get_tag_stats_command.execute()
     if get_tag_stats_command.successful:
-        return jsonify({'status': 'success', 'result': result}), 400
+        return jsonify({'status': 'success', 'result': result}), 200
     else:
         return jsonify({'status': 'failed', 'messages': get_tag_stats_command.messages}), 400
+
+
+@metadata_routes.route('/api/v1/my-tag-stats', methods=["GET"])
+@jwt_required
+def get_my_tag_stats():
+    get_my_tag_stats_command = MyTagStatsCommand()
+    get_my_tag_stats_command.input = {
+        'public_address': get_jwt_identity()
+    }
+    result = get_my_tag_stats_command.execute()
+    if get_my_tag_stats_command.successful:
+        return jsonify({'status': 'success', 'result': result}), 200
+    else:
+        return jsonify({'status': 'failed', 'messages': get_my_tag_stats_command.messages}), 400
 
 
 @metadata_routes.route('/api/v1/my-stats', methods=["GET"])

@@ -64,6 +64,9 @@ class AddNewImageCommand(BaseCommand):
         data_to_save["dimensions"] = [w, h]
         data_to_save["verified"] = []
         data_to_save["tag_data"] = []
+        data_to_save["image_path"] = image_path
+        data_to_save["qr_code_image_path"] = qr_code_image_path
+
         # Save metadata
         doc_id = self.image_metadata_dao.save(doc_id, data_to_save)["id"]
 

@@ -337,3 +337,41 @@ class ImageMetadataDao(BaseDao):
             }
         else:
             return data[0]['value']
+
+    def my_tags(self, public_address):
+        selector = {
+            "selector": {
+                "type": "image",
+                "verified": {
+                    "$elemMatch": {
+                        "by": {
+                            "$eq": public_address
+                        }
+                    }
+                }
+            },
+            "sort": [
+                {
+                    "uploaded_at": "desc"
+                }
+            ],
+            "fields": [
+                "_id",
+                "verified"
+            ],
+        }
+
+        docs = self.query_all(selector)
+        result = []
+        for doc in docs:
+            verified = doc['verified']
+            verification = list(filter(lambda v: v['by'] == public_address, verified))[0]
+            tags_up_votes = verification['tags'].get('up_votes')
+            tags_down_votes = verification['tags'].get('down_votes')
+            descriptions_up_votes = verification['descriptions'].get('up_votes')
+            descriptions_down_votes = verification['descriptions'].get('down_votes')
+
+            result.append({'image_id': doc['_id'], 'tags_up_votes': tags_up_votes,
+                           'tags_down_votes': tags_down_votes, 'descriptions_up_votes': descriptions_up_votes,
+                           'descriptions_down_votes': descriptions_down_votes})
+        return result
