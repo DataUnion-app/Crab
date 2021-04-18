@@ -119,3 +119,18 @@ class BaseDao(metaclass=abc.ABCMeta):
         if response.status_code == 200:
             return True
         return False
+
+    def query_all(self, selector):
+        skip = 0
+        limit = self.page_size
+        docs = []
+        while True:
+            selector['skip'] = skip
+            selector['limit'] = limit
+            result = self.query_data(selector)['result']
+            docs = docs + result
+            if len(result) == 0:
+                break
+            skip = skip + limit
+
+        return docs

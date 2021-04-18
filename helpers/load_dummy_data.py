@@ -155,7 +155,6 @@ class DummyDataLoader:
             os.remove(file_path)
 
             if image_id is not None:
-                image_ids.append(image_id)
                 idx2 = random.randint(0, len(accts) - 1)
                 image_ids.append(image_id)
                 self.upload_metadata(tokens[idx2], accts[idx2], image_id, self.get_dummy_metadata(image_id))

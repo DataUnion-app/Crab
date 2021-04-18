@@ -330,5 +330,48 @@ class ImageMetadataDao(BaseDao):
         url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_url)
         headers = {'Content-Type': 'application/json'}
         response = requests.request("GET", url, headers=headers, data={})
-        data = json.loads(response.text)['rows'][0]['value']
-        return data
+        data = json.loads(response.text)['rows']
+        if len(data) == 0:
+            return {
+                "desc_down_votes": 0, "desc_up_votes": 0, "tags_down_votes": 0, "tags_up_votes": 0
+            }
+        else:
+            return data[0]['value']
+
+    def my_tags(self, public_address):
+        selector = {
+            "selector": {
+                "type": "image",
+                "verified": {
+                    "$elemMatch": {
+                        "by": {
+                            "$eq": public_address
+                        }
+                    }
+                }
+            },
+            "sort": [
+                {
+                    "uploaded_at": "desc"
+                }
+            ],
+            "fields": [
+                "_id",
+                "verified"
+            ],
+        }
+
+        docs = self.query_all(selector)
+        result = []
+        for doc in docs:
+            verified = doc['verified']
+            verification = list(filter(lambda v: v['by'] == public_address, verified))[0]
+            tags_up_votes = verification['tags'].get('up_votes')
+            tags_down_votes = verification['tags'].get('down_votes')
+            descriptions_up_votes = verification['descriptions'].get('up_votes')
+            descriptions_down_votes = verification['descriptions'].get('down_votes')
+
+            result.append({'image_id': doc['_id'], 'tags_up_votes': tags_up_votes,
+                           'tags_down_votes': tags_down_votes, 'descriptions_up_votes': descriptions_up_votes,
+                           'descriptions_down_votes': descriptions_down_votes})
+        return result
