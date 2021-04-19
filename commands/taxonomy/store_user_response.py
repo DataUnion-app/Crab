@@ -17,7 +17,10 @@ class StoreUserResponse(BaseCommand):
             self.messages.append("Document not found")
             self.successful = False
             return
-
+        if document['type'] != 'image':
+            self.messages.append("Cannot add data to document of type [{0}]".format(document['type']))
+            self.successful = False
+            return
         user_response = {
             'public_address': self.input['public_address'],
             'created_at': datetime.timestamp(datetime.now()),
