@@ -29,7 +29,7 @@ def load_taxonomy_data(image_count: int):
             'image_path': img_path,
             'status': 'VERIFIABLE',
             'class': 'test',
-            'cutout_images': ['c1'],
+            'cutout_images': [],
             'description': 'test desc'
         }
         add_taxonomy.execute()
