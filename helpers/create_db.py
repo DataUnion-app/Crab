@@ -16,6 +16,7 @@ class InitiateDB:
         self.create_sessions_db()
         self.create_metadata_db()
         self.create_static_data_db()
+        self.create_taxonomy_db()
 
     def create_db(self, db_name):
         print("Creating [{0}] db".format(db_name))
@@ -67,6 +68,12 @@ class InitiateDB:
         self.create_db(users_db)
         self.create_view(users_db)
         self.create_doc_count_view(users_db)
+
+    def create_taxonomy_db(self):
+        taxonomy_db = config['couchdb']['taxonomy_db']
+        self.create_db(taxonomy_db)
+        self.create_view(taxonomy_db)
+        self.create_doc_count_view(taxonomy_db)
 
     def create_sessions_db(self):
         sessions_db = config['couchdb']['sessions_db']

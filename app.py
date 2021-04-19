@@ -8,6 +8,7 @@ from flask_cors import CORS
 from routes.authentication_routes import authentication_routes, sessions_dao
 from routes.metadata_routes import metadata_routes
 from routes.staticdata import staticdata_routes
+from routes.taxonomy import taxonomy_routes
 from config import config
 
 if not config['application'].getboolean('jwt_on'):
@@ -24,6 +25,7 @@ CORS(app)
 app.register_blueprint(authentication_routes)
 app.register_blueprint(metadata_routes)
 app.register_blueprint(staticdata_routes)
+app.register_blueprint(taxonomy_routes, url_prefix='/api/v1/taxonomy')
 
 app.secret_key = config['application']['secret_key']
 app.config['UPLOAD_FOLDER'] = config['application']['upload_folder']
