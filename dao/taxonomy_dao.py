@@ -13,7 +13,7 @@ class TaxonomyDao(BaseDao):
                 "$not": {
                     "verified": {
                         "$elemMatch": {
-                            "by": {
+                            "public_address": {
                                 "$eq": public_address
                             }
                         }

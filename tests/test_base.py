@@ -12,6 +12,7 @@ import shutil
 import requests
 from tests.helper import Helper
 from config import config
+from utils.get_project_dir import get_project_root
 
 
 class TestBase(unittest.TestCase):
@@ -72,6 +73,11 @@ class TestBase(unittest.TestCase):
                     shutil.rmtree(file_path)
             except Exception as e:
                 print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+        data_dir = os.path.join(get_project_root(), config['taxonomy']['image_folder'])
+        if os.path.exists(data_dir) and os.path.isdir(data_dir):
+            shutil.rmtree(data_dir)
+            os.makedirs(data_dir)
 
     def upload_zip(self, account=None, token=None, filename='data.zip'):
         if not account or not token:

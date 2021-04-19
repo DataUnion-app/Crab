@@ -60,7 +60,7 @@ def get_data():
 def get_image():
     public_address = get_jwt_identity()
     args = request.args
-    image_id = args.get('image')
+    image_id = args.get('image_id')
     if not image_id:
         return json.dumps({'status': 'failed', 'messages': ['Missing parameter `image_id`']}), 400
 
