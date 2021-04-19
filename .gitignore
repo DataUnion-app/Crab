@@ -145,3 +145,4 @@ logs/*
 !logs/.gitkeep
 
 ssl/
+taxonomy_data/

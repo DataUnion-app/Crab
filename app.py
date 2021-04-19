@@ -38,6 +38,9 @@ app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(seconds=config['application'
 
 jwt = JWTManager(app)
 
+if not os.path.exists(config['taxonomy']['image_folder']):
+    os.makedirs(config['taxonomy']['image_folder'])
+
 
 @jwt.token_in_blacklist_loader
 def check_if_token_in_blacklist(decrypted_token):
