@@ -75,6 +75,21 @@ class InitiateDB:
         self.create_view(taxonomy_db)
         self.create_doc_count_view(taxonomy_db)
 
+        url = "http://{0}:{1}@{2}/{3}/_index".format(self.user, self.password, self.db_host, taxonomy_db)
+        body = {
+            "index": {
+                "fields": ["created_at"]
+            },
+            "name": "created_at-index",
+            "type": "json"
+        }
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.request("POST", url, headers=headers, data=json.dumps(body))
+        print(response.text)
+
     def create_sessions_db(self):
         sessions_db = config['couchdb']['sessions_db']
         self.create_db(sessions_db)

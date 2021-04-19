@@ -24,18 +24,18 @@ class StoreUserResponse(BaseCommand):
             'response': self.input.get('response')
         }
 
-        if not document.get('user_responses'):
-            document['user_responses'] = [user_response]
+        if not document.get('verified'):
+            document['verified'] = [user_response]
         else:
             found = False
-            for index, responses in enumerate(document['user_responses']):
+            for index, responses in enumerate(document['verified']):
                 if responses['public_address'] == self.input['public_address']:
-                    document['user_responses'][index] = user_response
+                    document['verified'][index] = user_response
                     found = True
                     break
 
             if not found:
-                document['user_responses'].append(user_response)
+                document['verified'].append(user_response)
 
         document['updated_at'] = datetime.timestamp(datetime.now())
         taxonomy_dao.update_doc(document['_id'], document)

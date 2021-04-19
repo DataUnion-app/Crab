@@ -5,6 +5,7 @@ from dao.static_data_dao import StaticDataDao
 from dao.users_dao import UsersDao
 from dao.sessions_dao import SessionsDao
 from dao.image_metadata_dao import ImageMetadataDao
+from dao.taxonomy_dao import TaxonomyDao
 import json
 import os
 import shutil
@@ -32,9 +33,12 @@ class TestBase(unittest.TestCase):
 
         self.sessions_dao = SessionsDao()
         self.sessions_dao.set_config(self.db_user, self.password, self.db_host, "sessions")
-        
+
         self.static_data_dao = StaticDataDao()
         self.static_data_dao.set_config(self.db_user, self.password, self.db_host, "staticdata")
+
+        self.taxonomy_dao = TaxonomyDao()
+        self.taxonomy_dao.set_config(self.db_user, self.password, self.db_host, "taxonomy")
 
         self.acct = Account.create()
         self.token = None
@@ -46,6 +50,7 @@ class TestBase(unittest.TestCase):
         self.user_dao.delete_all_docs()
         self.sessions_dao.delete_all_docs()
         self.image_metadata_dao.delete_all_docs()
+        self.taxonomy_dao.delete_all_docs()
 
     def tearDown(self):
         self.clear_data_directory()
@@ -53,6 +58,7 @@ class TestBase(unittest.TestCase):
         self.user_dao.delete_all_docs()
         self.sessions_dao.delete_all_docs()
         self.image_metadata_dao.delete_all_docs()
+        self.taxonomy_dao.delete_all_docs()
 
     def clear_data_directory(self):
         for filename in os.listdir(self.data_dir):
