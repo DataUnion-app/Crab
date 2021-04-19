@@ -10,6 +10,7 @@ class AddTaxonomyData(BaseCommand):
     def execute(self):
         document = {}
         document['_id'] = self.input['image_id']
+        document['type'] = 'image'
         document['image_id'] = self.input['image_id']
         document['status'] = self.input['status']
         document['uploaded_by'] = self.input['public_address']
@@ -17,6 +18,9 @@ class AddTaxonomyData(BaseCommand):
         document['created_at'] = datetime.timestamp(datetime.now())
         document['updated_at'] = datetime.timestamp(datetime.now())
         document['verified'] = []
+        document['cutout_images'] = self.input.get('cutout_images', [])
+        document['class'] = self.input['class']
+        document['description'] = self.input['description']
         taxonomy_dao.save(document['_id'], document)
         self.successful = True
         return
@@ -39,6 +43,14 @@ class AddTaxonomyData(BaseCommand):
 
         if not isinstance(self.input.get('status'), str):
             self.messages.append("Empty status")
+            return False
+
+        if not isinstance(self.input.get('class'), str):
+            self.messages.append("Empty class")
+            return False
+
+        if not isinstance(self.input.get('description'), str):
+            self.messages.append("Empty description")
             return False
 
         return True

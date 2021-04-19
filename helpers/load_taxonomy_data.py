@@ -22,7 +22,10 @@ def load_taxonomy_data(image_count: int):
             'public_address': Account.create().address,
             'image_id': doc_id,
             'image_path': img_path,
-            'status': 'VERIFIABLE'
+            'status': 'VERIFIABLE',
+            'class': 'test',
+            'cutout_images' : ['c1'],
+            'description': 'test desc'
         }
         add_taxonomy.execute()
 

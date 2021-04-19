@@ -24,7 +24,9 @@ class TestAddTaxonomy(TestBase):
             'public_address': self.acct.address,
             'image_id': image_id,
             'image_path': img_path,
-            'status': 'VERIFIABLE'
+            'status': 'VERIFIABLE',
+            'class': 'test',
+            'description': 'test description'
         }
         add_taxonomy.execute()
         self.assertTrue(add_taxonomy.successful)
@@ -36,7 +38,9 @@ class TestAddTaxonomy(TestBase):
 
         result = get_taxonomy.execute()
         self.assertTrue(get_taxonomy.successful)
-        self.assertEqual([{'image_id': image_id}], result)
+        self.assertEqual([{'image_id': image_id, 'class': 'test',
+                           'description': 'test description',
+                           'cutout_images': []}], result)
 
         get_img_path = GetImagePathCommand()
         get_img_path.input = {

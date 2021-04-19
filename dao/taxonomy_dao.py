@@ -10,6 +10,7 @@ class TaxonomyDao(BaseDao):
         selector = {
             "selector": {
                 "status": "VERIFIABLE",
+                "type": "image",
                 "$not": {
                     "verified": {
                         "$elemMatch": {
@@ -27,14 +28,18 @@ class TaxonomyDao(BaseDao):
                 }
             ],
             "fields": [
-                "_id"
+                "_id",
+                "class",
+                "description",
+                "cutout_images"
             ],
             "limit": self.page_size,
             "skip": 0
         }
 
         result = self.query_data(selector)['result']
-        res = [{'image_id': r['_id']} for r in result]
+        res = [{'image_id': r['_id'], 'class': r['class'], 'description': r['description'],
+                'cutout_images': r['cutout_images']} for r in result]
         return res
 
 
