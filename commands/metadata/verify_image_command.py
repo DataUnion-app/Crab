@@ -1,9 +1,8 @@
 import unicodedata
 
-from dao.image_metadata_dao import ImageMetadataDao
+from dao.image_metadata_dao import image_metadata_dao
 from commands.base_command import BaseCommand
-from config import config
-from dao.static_data_dao import WordTypes, StaticDataDao
+from dao.static_data_dao import WordTypes, static_data_dao
 
 
 class VerifyImageCommand(BaseCommand):
@@ -12,14 +11,8 @@ class VerifyImageCommand(BaseCommand):
 
     def __init__(self):
         super().__init__()
-        user = config['couchdb']['user']
-        password = config['couchdb']['password']
-        db_host = config['couchdb']['db_host']
-        metadata_db = config['couchdb']['metadata_db']
-        self.imageMetadataDao = ImageMetadataDao()
-        self.imageMetadataDao.set_config(user, password, db_host, metadata_db)
-        self.staticdata_dao = StaticDataDao()
-        self.staticdata_dao.set_config(user, password, db_host, config['couchdb']['static_data_db'])
+        self.imageMetadataDao = image_metadata_dao
+        self.staticdata_dao = static_data_dao
 
     def execute(self):
 

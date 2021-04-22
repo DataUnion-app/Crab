@@ -1,7 +1,8 @@
 import requests
 
+from config import config
 from models.UsageFlag import UsageFlag
-from .base_dao import BaseDao
+from dao.base_dao import BaseDao
 import json
 from datetime import datetime
 import random
@@ -137,3 +138,8 @@ class UsersDao(BaseDao):
             result['count'] = data[0]['value']
 
         return result
+
+
+user_dao = UsersDao()
+user_dao.set_config(config['couchdb']['user'], config['couchdb']['password'], config['couchdb']['db_host'],
+                    config['couchdb']['users_db'])

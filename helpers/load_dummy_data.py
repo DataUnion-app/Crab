@@ -90,7 +90,8 @@ class DummyDataLoader:
                 print("Image upload failed with response code [{}]".format(response.status_code))
                 return None
 
-    def generate_image(self, x_size, y_size, path):
+    @staticmethod
+    def generate_image(x_size, y_size, path):
         image_array = numpy.random.rand(x_size, y_size, 3) * 255
         im = Image.fromarray(image_array.astype('uint8')).convert('RGBA')
         im.save(path)

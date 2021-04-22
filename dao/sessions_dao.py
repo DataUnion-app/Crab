@@ -1,4 +1,5 @@
-from .base_dao import BaseDao
+from config import config
+from dao.base_dao import BaseDao
 from datetime import datetime
 from utils.get_random_string import get_random_string
 
@@ -15,3 +16,8 @@ class SessionsDao(BaseDao):
         if len(result) == 1:
             return True
         return False
+
+
+sessions_dao = SessionsDao()
+sessions_dao.set_config(config['couchdb']['user'], config['couchdb']['password'], config['couchdb']['db_host'],
+                    config['couchdb']['users_db'])

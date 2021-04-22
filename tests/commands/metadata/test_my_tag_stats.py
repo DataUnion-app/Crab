@@ -15,10 +15,13 @@ class TestMyTagStatsCommand(TestBase):
             'public_address': self.acct.address
         }
 
-        MetadataHelper.mark_images_as_verified(self.acct.address, image_ids[:4], ['test1'], ['test2'],
-                                               ['sample description1'],
+        MetadataHelper.mark_images_as_verified(self.acct.address, image_ids[:4], ['test1'], ['t2', 't2_2'],
+                                               ['sample description1', 's2', 's3'],
                                                ['sample description2'])
 
         result = my_tag_stats_command.execute()
         self.assertTrue(my_tag_stats_command.successful)
-        self.assertEqual(4, len(result))
+        self.assertEqual({'total_images': 4, 'total_tag_up_votes': 4,
+                          'total_tag_down_votes': 8,
+                          'total_description_up_votes': 12,
+                          'total_description_down_votes': 4}, result)

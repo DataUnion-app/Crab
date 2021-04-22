@@ -1,6 +1,8 @@
 import json
 from datetime import datetime
 import requests
+
+from config import config
 from dao.base_dao import BaseDao
 from models.ImageStatus import ImageStatus
 import logging
@@ -375,3 +377,8 @@ class ImageMetadataDao(BaseDao):
                            'tags_down_votes': tags_down_votes, 'descriptions_up_votes': descriptions_up_votes,
                            'descriptions_down_votes': descriptions_down_votes})
         return result
+
+
+image_metadata_dao = ImageMetadataDao()
+image_metadata_dao.set_config(config['couchdb']['user'], config['couchdb']['password'], config['couchdb']['db_host'],
+                              config['couchdb']['users_db'])

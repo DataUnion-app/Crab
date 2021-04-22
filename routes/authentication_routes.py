@@ -1,25 +1,12 @@
 from flask import Blueprint, render_template, session, abort, request, jsonify
 import json
-from dao.users_dao import UsersDao
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
 import logging
-from config import config
-from dao.sessions_dao import SessionsDao
+from dao.users_dao import user_dao
+from dao.sessions_dao import sessions_dao
 
 authentication_routes = Blueprint('authenticationRoutes', __name__)
-
-user = config['couchdb']['user']
-password = config['couchdb']['password']
-db_host = config['couchdb']['db_host']
-users_db = config['couchdb']['users_db']
-sessions_db = config['couchdb']['sessions_db']
-
-user_dao = UsersDao()
-user_dao.set_config(user, password, db_host, users_db)
-
-sessions_dao = SessionsDao()
-sessions_dao.set_config(user, password, db_host, sessions_db)
 
 
 @authentication_routes.route("/get-nonce", methods=['GET'])
