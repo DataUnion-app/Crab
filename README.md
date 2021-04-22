@@ -71,6 +71,16 @@ Please visit the wiki page [here](https://github.com/DataUnion-app/Crab/wiki/Cra
 
 1. If on windows machine and while installing `couchdb` if you see this error, please make sure [dot net 3.5 framework](https://www.microsoft.com/en-in/download/details.aspx?id=21) is installed.
 
+# Working
+
+- Authentication:
+  - Trello cards:
+    - https://trello.com/c/s5ooFeb8/63-integrating-authentication-process-stage-1
+    - https://trello.com/c/DwTMV6oS/21-metamask-frontend-integration
+    - https://trello.com/c/NgxA5lCZ/44-secure-backend-apis-with-jwt
+  - How it works?
+    - User/Client need to register to get a `nonce`. After client has the `nonce`, it must be signed using private key to generate a `signature` and send the data to `/login` api. Response will a `access_token` (valid for ~20 min) and a `refresh_token`.
+
 
 # 🏛 License
 ```text
