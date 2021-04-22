@@ -381,4 +381,4 @@ class ImageMetadataDao(BaseDao):
 
 image_metadata_dao = ImageMetadataDao()
 image_metadata_dao.set_config(config['couchdb']['user'], config['couchdb']['password'], config['couchdb']['db_host'],
-                              config['couchdb']['users_db'])
+                              config['couchdb']['metadata_db'])

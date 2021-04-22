@@ -9,7 +9,7 @@ class StatsCommand(BaseCommand):
 
     def __init__(self):
         super().__init__()
-        self.imageMetadataDao = image_metadata_dao()
+        self.image_metadata_dao = image_metadata_dao
 
     def execute(self):
         is_valid = self.validate_input()
@@ -49,7 +49,7 @@ class StatsCommand(BaseCommand):
         all_data = []
 
         while True:
-            result = self.imageMetadataDao.query_data(selector)["result"]
+            result = self.image_metadata_dao.query_data(selector)["result"]
             if result is not None:
                 all_data = all_data + result
             selector["skip"] = selector["skip"] + page_size
