@@ -20,4 +20,4 @@ class SessionsDao(BaseDao):
 
 sessions_dao = SessionsDao()
 sessions_dao.set_config(config['couchdb']['user'], config['couchdb']['password'], config['couchdb']['db_host'],
-                    config['couchdb']['users_db'])
+                    config['couchdb']['sessions_db'])
