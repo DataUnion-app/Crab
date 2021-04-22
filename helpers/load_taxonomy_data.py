@@ -1,8 +1,7 @@
 import os
-
+import sys
 from commands.taxonomy.add_taxonomy_data import AddTaxonomyData
 from commands.taxonomy.add_cutout_image_data import AddCutoutImageData
-from commands.taxonomy.store_user_response import StoreUserResponse
 from config import config
 from helpers.load_dummy_data import DummyDataLoader
 from utils.get_project_dir import get_project_root
@@ -47,4 +46,9 @@ def load_taxonomy_data(image_count: int):
 
 
 if __name__ == '__main__':
-    load_taxonomy_data(10)
+    if len(sys.argv) < 3:
+        print("Usage: python -m helpers.load_taxonomy_data <number-of-images>")
+        exit(-1)
+
+    images = int(sys.argv[1])
+    load_taxonomy_data(images)

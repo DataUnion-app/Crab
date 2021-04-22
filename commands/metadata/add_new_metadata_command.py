@@ -1,9 +1,8 @@
 import unicodedata
 
-from dao.image_metadata_dao import ImageMetadataDao
-from dao.static_data_dao import StaticDataDao, WordTypes
+from dao.image_metadata_dao import image_metadata_dao
+from dao.static_data_dao import static_data_dao, WordTypes
 from commands.base_command import BaseCommand
-from config import config
 
 
 class AddNewMetadataCommand(BaseCommand):
@@ -12,14 +11,8 @@ class AddNewMetadataCommand(BaseCommand):
 
     def __init__(self):
         super().__init__()
-        user = config['couchdb']['user']
-        password = config['couchdb']['password']
-        db_host = config['couchdb']['db_host']
-        metadata_db = config['couchdb']['metadata_db']
-        self.image_metadata_dao = ImageMetadataDao()
-        self.image_metadata_dao.set_config(user, password, db_host, metadata_db)
-        self.staticdata_dao = StaticDataDao()
-        self.staticdata_dao.set_config(user, password, db_host, config['couchdb']['static_data_db'])
+        self.image_metadata_dao = image_metadata_dao
+        self.staticdata_dao = static_data_dao
 
     def execute(self):
         self.clean_input()
