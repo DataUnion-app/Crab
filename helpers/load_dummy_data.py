@@ -90,7 +90,8 @@ class DummyDataLoader:
                 print("Image upload failed with response code [{}]".format(response.status_code))
                 return None
 
-    def generate_image(self, x_size, y_size, path):
+    @staticmethod
+    def generate_image(x_size, y_size, path):
         image_array = numpy.random.rand(x_size, y_size, 3) * 255
         im = Image.fromarray(image_array.astype('uint8')).convert('RGBA')
         im.save(path)
@@ -155,7 +156,6 @@ class DummyDataLoader:
             os.remove(file_path)
 
             if image_id is not None:
-                image_ids.append(image_id)
                 idx2 = random.randint(0, len(accts) - 1)
                 image_ids.append(image_id)
                 self.upload_metadata(tokens[idx2], accts[idx2], image_id, self.get_dummy_metadata(image_id))

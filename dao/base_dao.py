@@ -10,6 +10,13 @@ class BaseDao(metaclass=abc.ABCMeta):
     db_host = None
     db_name = None
 
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(BaseDao, cls).__new__(cls, *args, **kwargs)
+        return cls._instance
+
     def __init__(self):
         self.page_size = 100
 
@@ -119,3 +126,18 @@ class BaseDao(metaclass=abc.ABCMeta):
         if response.status_code == 200:
             return True
         return False
+
+    def query_all(self, selector):
+        skip = 0
+        limit = self.page_size
+        docs = []
+        while True:
+            selector['skip'] = skip
+            selector['limit'] = limit
+            result = self.query_data(selector)['result']
+            docs = docs + result
+            if len(result) == 0:
+                break
+            skip = skip + limit
+
+        return docs

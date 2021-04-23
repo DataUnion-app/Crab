@@ -1,7 +1,7 @@
 from datetime import datetime
 from commands.base_command import BaseCommand
 from config import config
-from dao.image_metadata_dao import ImageMetadataDao
+from dao.image_metadata_dao import image_metadata_dao
 from models.ImageStatus import ImageStatus
 from qrcode import make as make_qr
 from PIL import Image
@@ -13,12 +13,7 @@ from security.hashing import hash_image
 class AddNewImageCommand(BaseCommand):
     def __init__(self):
         super().__init__()
-        user = config['couchdb']['user']
-        password = config['couchdb']['password']
-        db_host = config['couchdb']['db_host']
-        metadata_db = config['couchdb']['metadata_db']
-        self.image_metadata_dao = ImageMetadataDao()
-        self.image_metadata_dao.set_config(user, password, db_host, metadata_db)
+        self.image_metadata_dao = image_metadata_dao
 
     def execute(self):
         doc_id = self.input['doc_id']
@@ -64,7 +59,10 @@ class AddNewImageCommand(BaseCommand):
         data_to_save["dimensions"] = [w, h]
         data_to_save["verified"] = []
         data_to_save["tag_data"] = []
+        data_to_save["image_path"] = image_path
+        data_to_save["qr_code_image_path"] = qr_code_image_path
+
         # Save metadata
-        doc_id = self.image_metadata_dao.save(doc_id, data_to_save)["id"]
+        self.image_metadata_dao.save(doc_id, data_to_save)["id"]
 
         self.successful = True

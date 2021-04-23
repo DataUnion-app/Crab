@@ -1,3 +1,4 @@
+from config import config
 from dao.base_dao import BaseDao
 from datetime import datetime
 from utils.get_random_string import get_random_string
@@ -59,3 +60,8 @@ class StaticDataDao(BaseDao):
             return []
         else:
             return documents[0]['words']
+
+
+static_data_dao = StaticDataDao()
+static_data_dao.set_config(config['couchdb']['user'], config['couchdb']['password'], config['couchdb']['db_host'],
+                    config['couchdb']['users_db'])
