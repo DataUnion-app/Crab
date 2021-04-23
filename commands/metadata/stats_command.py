@@ -18,8 +18,6 @@ class StatsCommand(BaseCommand):
             self.successful = False
             return
 
-        page_size = 100
-
         selector = {
             "selector": {
                 "_id": {
@@ -39,22 +37,12 @@ class StatsCommand(BaseCommand):
                 "tag_data",
                 "_id"
             ],
-            "limit": page_size,
-            "skip": 0,
             "sort": [
                 "uploaded_at"
             ]
         }
 
-        all_data = []
-
-        while True:
-            result = self.image_metadata_dao.query_data(selector)["result"]
-            if result is not None:
-                all_data = all_data + result
-            selector["skip"] = selector["skip"] + page_size
-            if len(result) < page_size:
-                break
+        all_data = self.image_metadata_dao.query_all(selector)
 
         data = dict({})
 
@@ -69,6 +57,13 @@ class StatsCommand(BaseCommand):
                         tags_set.add(tag)
                 data[row['_id']]['tags'] = tags_set
         d = pd.DataFrame.from_dict(data, orient='index')
+
+        if 'time' not in d:
+            d['time'] = None
+
+        if 'tags' not in d:
+            d['tags'] = {}
+
         d['time'] = pd.to_datetime(d['time'])
 
         # Interval in hours
