@@ -19,6 +19,7 @@ from commands.metadata.verify_image_command import VerifyImageCommand
 from commands.metadata.stats_command import StatsCommand
 from commands.metadata.tags_stats_command import TagStatsCommand
 from commands.metadata.my_tag_stats_command import MyTagStatsCommand
+from commands.metadata.my_tag_stats_by_time_command import MyTagStatsByTimeCommand
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -442,6 +443,24 @@ def get_my_tag_stats():
         return jsonify({'status': 'failed', 'messages': get_my_tag_stats_command.messages}), 400
 
 
+@metadata_routes.route('/api/v1/my-tag-count', methods=["GET"])
+@jwt_required
+def get_my_tag_stats2():
+    args = request.args
+    get_my_tag_stats_by_time_command = MyTagStatsByTimeCommand()
+    get_my_tag_stats_by_time_command.input = {
+        'public_address': get_jwt_identity(),
+        'start_time': float(args.get('start_time')),
+        'end_time': float(args.get('end_time')),
+        'interval': int(args['interval'])
+    }
+    result = get_my_tag_stats_by_time_command.execute()
+    if get_my_tag_stats_by_time_command.successful:
+        return jsonify({'status': 'success', 'result': result}), 200
+    else:
+        return jsonify({'status': 'failed', 'messages': get_my_tag_stats_by_time_command.messages}), 400
+
+
 @metadata_routes.route('/api/v1/my-stats', methods=["GET"])
 @jwt_required
 def get_my_stats():
@@ -458,7 +477,8 @@ def get_my_stats():
             'public_address': public_address,
             'group_by': int(args.get('group_by', 24)),
             'start_time': float(args['start_time']),
-            'end_time': float(args['end_time'])
+            'end_time': float(args['end_time']),
+            'interval': int(args['interval'])
         }
         response = my_stats_command.execute()
     except ValueError:
