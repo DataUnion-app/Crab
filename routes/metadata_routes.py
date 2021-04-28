@@ -10,7 +10,6 @@ from utils.get_random_string import get_random_string
 from werkzeug.utils import secure_filename
 import logging
 from security.hashing import hash_image
-from models.ImageStatus import ImageStatus
 import shutil
 from commands.metadata.query_metadata_command import QueryMetadataCommand
 from commands.metadata.add_new_image_command import AddNewImageCommand

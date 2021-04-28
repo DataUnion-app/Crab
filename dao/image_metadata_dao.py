@@ -375,7 +375,7 @@ class ImageMetadataDao(BaseDao):
 
             result.append({'image_id': doc['_id'], 'tags_up_votes': tags_up_votes,
                            'tags_down_votes': tags_down_votes, 'descriptions_up_votes': descriptions_up_votes,
-                           'descriptions_down_votes': descriptions_down_votes})
+                           'descriptions_down_votes': descriptions_down_votes, 'time': verification['time'])}
         return result
 
 
