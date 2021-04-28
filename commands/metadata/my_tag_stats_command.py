@@ -1,3 +1,4 @@
+from datetime import datetime
 from commands.base_command import BaseCommand
 from dao.image_metadata_dao import image_metadata_dao
 
@@ -13,7 +14,7 @@ class MyTagStatsCommand(BaseCommand):
             self.successful = False
             return
 
-        result = self.imageMetadataDao.my_tags(self.input['public_address'])
+        result = self.imageMetadataDao.my_tags(self.input['public_address'], 0, datetime.timestamp(datetime.now()))
         total_images = len(result)
         total_tag_up_votes = 0
         total_tag_down_votes = 0

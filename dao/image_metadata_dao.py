@@ -340,7 +340,7 @@ class ImageMetadataDao(BaseDao):
         else:
             return data[0]['value']
 
-    def my_tags(self, public_address):
+    def my_tags(self, public_address:str, start_time: float, end_time: float):
         selector = {
             "selector": {
                 "type": "image",
@@ -350,7 +350,27 @@ class ImageMetadataDao(BaseDao):
                             "$eq": public_address
                         }
                     }
-                }
+                },
+                "$and": [
+                    {
+                        "verified": {
+                            "$elemMatch": {
+                                "time": {
+                                    "$gte": start_time
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "verified": {
+                            "$elemMatch": {
+                                "time": {
+                                    "$lte": end_time
+                                }
+                            }
+                        }
+                    }
+                ]
             },
             "sort": [
                 {
@@ -375,7 +395,9 @@ class ImageMetadataDao(BaseDao):
 
             result.append({'image_id': doc['_id'], 'tags_up_votes': tags_up_votes,
                            'tags_down_votes': tags_down_votes, 'descriptions_up_votes': descriptions_up_votes,
-                           'descriptions_down_votes': descriptions_down_votes})
+                           'descriptions_down_votes': descriptions_down_votes, 'time': verification['time']})
+
+        result.sort(key= lambda x: x['time'])
         return result
 
 
