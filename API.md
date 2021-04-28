@@ -214,13 +214,13 @@ Supported HTTP REST apis
             "status": "success"
                }
     ```
-
+    
 - **GET** `/api/v1/my-tag-stats`
   - Parameters:
     - None
   - Example:
     ```bash
-    curl --location --request GET 'https://<hostname>/api/v1/my-tag-stats' --header 'Authorization: Bearer <token>'
+    curl --location --request GET 'https://localhost:8080/api/v1/my-tag-stats' --header 'Authorization: Bearer <token>'
     ```
   - Response:
     ```JSON
@@ -235,6 +235,34 @@ Supported HTTP REST apis
         "status": "success"
     }
     ```
+
+### Group user verifications by the time interval.
+
+- **GET** `/api/v1/my-tag-count`
+  - Parameters:
+    - `start_time`: required - `float`
+    - `end_time`: required - `float`
+    - `interval`: required - `int` (in hours)
+  - Example:
+    ```bash
+    curl --location --request GET 'http://localhost:8080/api/v1/my-tag-count?start_time=1619641680&end_time=1619641690&interval=24' --header 'Authorization: Bearer <token>'
+    ```
+  - Response:
+    ```JSON
+    {
+        "result": [
+            {
+                "descriptions_down_votes": 2,
+                "descriptions_up_votes": 6,
+                "tags_down_votes": 4,
+                "tags_up_votes": 2,
+                "time": 1619568000.0
+            }
+        ],
+        "status": "success"
+    }
+    ```
+
 
 ***
 
