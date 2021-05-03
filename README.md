@@ -58,7 +58,7 @@ For windows install [Visual studio build tools](https://visualstudio.microsoft.c
 # Helper scripts
 
 ### Obtain access token
-`python -m helpers.login [--login or --register]`
+`python -m helpers.login`
 
 ### Load dummy data
 
