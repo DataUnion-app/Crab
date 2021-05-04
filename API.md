@@ -187,51 +187,100 @@ Supported HTTP REST apis
 
 ## Stats
 
-- **GET** `/api/vi/my-stats`
+- **GET** `/api/v1/stats`
   - Parameters:
-      - None
+    - start_time
+    - end_time
+    - interval
+
   - Example:
     ```bash
-    curl --location --request GET 'https://<hostname>/api/v1/my-stats' --header 'Authorization: Bearer <token>'
-    ```
+    curl --location --request GET 'http://localhost:8080/api/v1/stats?start_time=1&end_time=1719175642097&interval=24'
+    ```  
   - Response:
+    ```JSON
+     {
+        "result": {
+            "data": [],
+            "initial_images": 0
+        },
+        "status": "success"
+     }
     ```
-           {
-            "result": {[
-            {
-              "num_images": 13,
-              "time": 1614124800000
-            },
-            {
-              "num_images": 0,
-              "time": 1614128400000
-            },
-            {
-              "num_images": 0,
-              "time": 1614132000000
-            }...
-            ],
-            "status": "success"
-               }
-    ```
-    
-- **GET** `/api/v1/my-tag-stats`
+
+- **GET** `/api/v1/stats/tags`
   - Parameters:
     - None
   - Example:
     ```bash
-    curl --location --request GET 'https://localhost:8080/api/v1/my-tag-stats' --header 'Authorization: Bearer <token>'
+    curl --location --request GET 'http://localhost:8080/api/v1/stats/tags'
+    ```  
+  - Response:
+    ```JSON
+     {
+      "result": {
+          "desc_down_votes": 0,
+          "desc_up_votes": 0,
+          "tags_down_votes": 0,
+          "tags_up_votes": 0
+      },
+      "status": "success"
+    }
+    ```
+
+- **GET** `/api/v1/stats/user-tags`
+  - Parameters:
+    - start_time
+    - end_time
+    - interval
+  - Example:
+    ```bash
+    curl --location --request GET 'http://localhost:8080/api/v1/stats/user-tags?start_time=0&end_time=1719175642097&interval=24' --header 'Authorization: Bearer <access_token>'
+    ```  
+  - Response:
+    ```JSON
+    {
+    "result": {
+      "total_description_down_votes": 0,
+      "total_description_up_votes": 0,
+      "total_images_verified": 0,
+      "total_tag_down_votes": 0,
+      "total_tag_up_votes": 0
+    },
+    "status": "success"
+    }
+    ```
+
+- **GET** `/api/v1/stats/user-tag-count`
+  - Parameters:
+    - start_time
+    - end_time
+    - interval
+  - Example:
+    ```bash
+    curl --location --request GET 'http://localhost:8080/api/v1/stats/user-tag-count?start_time=0&end_time=1700000000000&interval=24' --header 'Authorization: Bearer <access_token>'
+    ```
+  - Response:
+    ```
+    {
+        "result": [],
+        "status": "success"
+    }
+    ```
+    
+- **GET** `/api/v1/stats/user-stats`
+  - Parameters:
+    - start_time
+    - end_time
+    - interval
+  - Example:
+    ```bash
+    curl --location --request GET 'http://localhost:8080/api/v1/stats/user-stats?start_time=1619641680&end_time=1619641690&interval=24' --header 'Authorization: Bearer <access_token>'
     ```
   - Response:
     ```JSON
     {
-        "result": {
-            "total_description_down_votes": 2,
-            "total_description_up_votes": 0,
-            "total_images": 2,
-            "total_tag_down_votes": 2,
-            "total_tag_up_votes": 1
-        },
+        "result": [],
         "status": "success"
     }
     ```

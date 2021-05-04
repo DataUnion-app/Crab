@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from app import jwt_required
 from commands.metadata.my_stats_command import MyStatsCommand
 from commands.metadata.my_tag_stats_by_time_command import MyTagStatsByTimeCommand
 from commands.metadata.my_tag_stats_command import MyTagStatsCommand
@@ -38,7 +37,7 @@ def get_stats():
         return jsonify({'status': 'failed', 'messages': ['Value error.']}), 400
 
 
-@stats_routes.route('/tag-stats', methods=["GET"])
+@stats_routes.route('/tags', methods=["GET"])
 def get_tag_stats():
     get_tag_stats_command = TagStatsCommand()
     result = get_tag_stats_command.execute()
@@ -48,7 +47,7 @@ def get_tag_stats():
         return jsonify({'status': 'failed', 'messages': get_tag_stats_command.messages}), 400
 
 
-@stats_routes.route('/my-tag-stats', methods=["GET"])
+@stats_routes.route('/user-tags', methods=["GET"])
 @jwt_required
 def get_my_tag_stats():
     get_my_tag_stats_command = MyTagStatsCommand()
@@ -62,7 +61,7 @@ def get_my_tag_stats():
         return jsonify({'status': 'failed', 'messages': get_my_tag_stats_command.messages}), 400
 
 
-@stats_routes.route('/my-tag-count', methods=["GET"])
+@stats_routes.route('/user-tag-count', methods=["GET"])
 @jwt_required
 def get_my_tag_stats2():
     args = request.args
@@ -80,7 +79,7 @@ def get_my_tag_stats2():
         return jsonify({'status': 'failed', 'messages': get_my_tag_stats_by_time_command.messages}), 400
 
 
-@stats_routes.route('/my-stats', methods=["GET"])
+@stats_routes.route('/user-stats', methods=["GET"])
 @jwt_required
 def get_my_stats():
     args = request.args
