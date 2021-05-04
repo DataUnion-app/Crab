@@ -21,7 +21,7 @@ class TestMetadata(TestBase):
 
         token = self.get_token()
         headers = {'Authorization': 'Bearer {0}'.format(token)}
-        api_url = self.url + "/api/v1/my-tag-stats"
+        api_url = self.url + "/api/v1/stats/user-tag-stats"
         response = requests.request("GET", api_url, headers=headers, data=json.dumps({}))
         self.assertEqual(200, response.status_code)
         data = json.loads(response.text)

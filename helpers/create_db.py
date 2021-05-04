@@ -107,10 +107,10 @@ class InitiateDB:
         self.create_view(static_data_db)
 
         root = get_project_root()
-        file_path1 = os.path.join(root, "helpers", "data", "staticdata", "banned_words.txt")
+        file_path1 = os.path.join(root, "helpers", "db_setup", "staticdata", "banned_words.txt")
         load_words_from_file(file_path1, WordTypes.BANNED_WORDS)
 
-        file_path2 = os.path.join(root, "helpers", "data", "staticdata", "recommended_words.txt")
+        file_path2 = os.path.join(root, "helpers", "db_setup", "staticdata", "recommended_words.txt")
         load_words_from_file(file_path2, WordTypes.RECOMMENDED_WORDS)
 
     def create_view(self, db_name):

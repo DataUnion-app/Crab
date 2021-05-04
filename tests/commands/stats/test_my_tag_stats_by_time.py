@@ -1,7 +1,7 @@
 from datetime import datetime
 from helpers.load_dummy_data import DummyDataLoader
 from tests.test_base import TestBase
-from commands.metadata.my_tag_stats_by_time_command import MyTagStatsByTimeCommand
+from commands.stasts.my_tag_stats_by_time_command import MyTagStatsByTimeCommand
 from tests.metadata_helper import MetadataHelper
 
 

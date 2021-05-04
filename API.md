@@ -187,82 +187,125 @@ Supported HTTP REST apis
 
 ## Stats
 
-- **GET** `/api/vi/my-stats`
+- **GET** `/api/v1/stats`
   - Parameters:
-      - None
+    - start_time
+    - end_time
+
   - Example:
     ```bash
-    curl --location --request GET 'https://<hostname>/api/v1/my-stats' --header 'Authorization: Bearer <token>'
-    ```
+    curl --location --request GET 'http://localhost:8080/api/v1/stats?start_time=1&end_time=1719175642097'
+    ```  
   - Response:
+    ```JSON
+    {
+      "result": {
+          "data": [
+              {
+                  "num_images": 10,
+                  "tags": [
+                      {
+                          "name": "tag4",
+                          "value": 10
+                      },
+                      {
+                          "name": "fluctuability",
+                          "value": 1
+                      },
+                      {
+                          "name": "telestereoscope",
+                          "value": 1
+                      }
+                  ],
+                  "time": 1620086400.0
+              }
+          ],
+          "initial_images": 10
+      },
+      "status": "success"
+    }
     ```
-           {
-            "result": {[
-            {
-              "num_images": 13,
-              "time": 1614124800000
-            },
-            {
-              "num_images": 0,
-              "time": 1614128400000
-            },
-            {
-              "num_images": 0,
-              "time": 1614132000000
-            }...
-            ],
-            "status": "success"
-               }
-    ```
-    
-- **GET** `/api/v1/my-tag-stats`
+
+- **GET** `/api/v1/stats/summary/tags`
   - Parameters:
     - None
   - Example:
     ```bash
-    curl --location --request GET 'https://localhost:8080/api/v1/my-tag-stats' --header 'Authorization: Bearer <token>'
-    ```
+    curl --location --request GET 'http://localhost:8080/api/v1/stats/tags'
+    ```  
   - Response:
     ```JSON
-    {
-        "result": {
-            "total_description_down_votes": 2,
-            "total_description_up_votes": 0,
-            "total_images": 2,
-            "total_tag_down_votes": 2,
-            "total_tag_up_votes": 1
-        },
-        "status": "success"
+     {
+      "result": {
+          "desc_down_votes": 0,
+          "desc_up_votes": 0,
+          "tags_down_votes": 0,
+          "tags_up_votes": 0
+      },
+      "status": "success"
     }
     ```
 
-### Group user verifications by the time interval.
-
-- **GET** `/api/v1/my-tag-count`
+- **GET** `/api/v1/stats/summary/summary/user`
   - Parameters:
-    - `start_time`: required - `float`
-    - `end_time`: required - `float`
-    - `interval`: required - `int` (in hours)
+    - None
   - Example:
     ```bash
-    curl --location --request GET 'http://localhost:8080/api/v1/my-tag-count?start_time=1619641680&end_time=1619641690&interval=24' --header 'Authorization: Bearer <token>'
+    curl --location --request GET 'http://localhost:8080/api/v1/stats/user-tags --header 'Authorization: Bearer <access_token>'
+    ```  
+  - Response:
+    ```JSON
+    {
+    "result": {
+      "total_description_down_votes": 0,
+      "total_description_up_votes": 0,
+      "total_images_verified": 0,
+      "total_tag_down_votes": 0,
+      "total_tag_up_votes": 0
+    },
+    "status": "success"
+    }
+    ```
+
+- **GET** `/api/v1/stats/user-tag-count`
+  - Parameters:
+    - start_time
+    - end_time
+  - Example:
+    ```bash
+    curl --location --request GET 'http://localhost:8080/api/v1/stats/user-tag-count?start_time=0&end_time=1700000000000' --header 'Authorization: Bearer <access_token>'
+    ```
+  - Response:
+    ```
+    {
+      "result": [
+          {
+              "descriptions_down_votes": 1,
+              "descriptions_up_votes": 0,
+              "tags_down_votes": 1,
+              "tags_up_votes": 1,
+              "time": 1620086400.0
+          }
+      ],
+      "status": "success"
+    }
+    ```
+    
+- **GET** `/api/v1/stats/user-stats`
+  - Parameters:
+    - start_time
+    - end_time
+  - Example:
+    ```bash
+    curl --location --request GET 'http://localhost:8080/api/v1/stats/user-stats?start_time=1619641680&end_time=1619641690&interval=24' --header 'Authorization: Bearer <access_token>'
     ```
   - Response:
     ```JSON
     {
-        "result": [
-            {
-                "descriptions_down_votes": 2,
-                "descriptions_up_votes": 6,
-                "tags_down_votes": 4,
-                "tags_up_votes": 2,
-                "time": 1619568000.0
-            }
-        ],
+        "result": [],
         "status": "success"
     }
     ```
-
 
 ***
 

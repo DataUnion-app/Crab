@@ -111,6 +111,6 @@ class StatsCommand(BaseCommand):
             self.messages.append("Missing end_time")
             return False
 
-        if self.input.get('interval') is None:
-            self.messages.append("Missing interval")
+        if not isinstance(self.input.get('interval'), int):
+            self.messages.append("Missing or invalid input type 'interval'")
             return False
