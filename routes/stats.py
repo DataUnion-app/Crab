@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from commands.metadata.my_stats_command import MyStatsCommand
-from commands.metadata.my_tag_stats_by_time_command import MyTagStatsByTimeCommand
-from commands.metadata.my_tag_stats_command import MyTagStatsCommand
-from commands.metadata.stats_command import StatsCommand
-from commands.metadata.tags_stats_command import TagStatsCommand
+from commands.stats.my_stats_command import MyStatsCommand
+from commands.stats.my_tag_stats_by_time_command import MyTagStatsByTimeCommand
+from commands.stats.my_tag_stats_command import MyTagStatsCommand
+from commands.stats.stats_command import StatsCommand
+from commands.stats.tags_stats_command import TagStatsCommand
 
 stats_routes = Blueprint('stats_routes', __name__)
 
@@ -13,7 +13,7 @@ stats_routes = Blueprint('stats_routes', __name__)
 @stats_routes.route('/', methods=["GET"])
 def get_stats():
     args = request.args
-    required_params = {'start_time', 'end_time', 'interval'}
+    required_params = {'start_time', 'end_time'}
 
     if not all(elem in args.keys() for elem in required_params):
         return jsonify(
@@ -24,7 +24,7 @@ def get_stats():
         stats_command.input = {
             'start_time': float(args.get('start_time')),
             'end_time': float(args.get('end_time')),
-            'interval': float(args.get('interval'))
+            'interval': 24
         }
 
         result = stats_command.execute()
@@ -37,7 +37,7 @@ def get_stats():
         return jsonify({'status': 'failed', 'messages': ['Value error.']}), 400
 
 
-@stats_routes.route('/tags', methods=["GET"])
+@stats_routes.route('/summary/tags', methods=["GET"])
 def get_tag_stats():
     get_tag_stats_command = TagStatsCommand()
     result = get_tag_stats_command.execute()
@@ -47,7 +47,7 @@ def get_tag_stats():
         return jsonify({'status': 'failed', 'messages': get_tag_stats_command.messages}), 400
 
 
-@stats_routes.route('/user-tags', methods=["GET"])
+@stats_routes.route('/summary/user', methods=["GET"])
 @jwt_required
 def get_my_tag_stats():
     get_my_tag_stats_command = MyTagStatsCommand()
@@ -70,7 +70,7 @@ def get_my_tag_stats2():
         'public_address': get_jwt_identity(),
         'start_time': float(args.get('start_time')),
         'end_time': float(args.get('end_time')),
-        'interval': int(args['interval'])
+        'interval': 24
     }
     result = get_my_tag_stats_by_time_command.execute()
     if get_my_tag_stats_by_time_command.successful:
@@ -96,7 +96,7 @@ def get_my_stats():
             'group_by': int(args.get('group_by', 24)),
             'start_time': float(args['start_time']),
             'end_time': float(args['end_time']),
-            'interval': int(args['interval'])
+            'interval': 24
         }
         response = my_stats_command.execute()
     except ValueError:
