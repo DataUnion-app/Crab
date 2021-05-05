@@ -332,6 +332,35 @@ class ImageMetadataDao(BaseDao):
             result.append({'image_id': document['_id'], 'success': True})
         return result
 
+    def mark_image_as_verified(self, image_id, data, public_address: str):
+
+        document = self.get_doc_by_id(image_id)
+
+        result = None
+        if document['status'] not in [ImageStatus.VERIFIABLE.name, ImageStatus.VERIFIED.name]:
+            result = {'image_id': document['_id'], 'success': False}
+            return result
+
+        verified = document.get("verified")
+
+        tag_up_votes = data['tags'].get('up_votes')
+        tag_down_votes = data['tags'].get('down_votes')
+        description_up_votes = data['descriptions'].get('up_votes')
+        description_down_votes = data['descriptions'].get('down_votes')
+
+        verified_data = {"by": public_address, "time": datetime.timestamp(datetime.now()),
+                         'tags': {'up_votes': tag_up_votes, 'down_votes': tag_down_votes},
+                         'descriptions': {'up_votes': description_up_votes, 'down_votes': description_down_votes}}
+
+        if not verified:
+            document["verified"] = [verified_data]
+        elif len([v for v in verified if v["by"] == public_address]) == 0:
+            document["verified"].append(verified_data)
+
+        self.update_doc(document["_id"], document)
+        result = {'success': True}
+        return result
+
     def exists(self, doc_id):
         selector = {
             "selector": {
