@@ -69,38 +69,38 @@ class VerifyImageCommand(BaseCommand):
         return "".join(ch for ch in tag if unicodedata.category(ch)[0] != "C")
 
     def has_banned_words(self):
-        # banned_words = self.staticdata_dao.get_words_by_type(WordTypes.BANNED_WORDS.name)
-        # for index, row in enumerate(self.input['data']):
-        #     tags_lower_case = []
-        #     tags_lower_case = tags_lower_case + list(map(lambda x: x.lower(), row['tags']['up_votes']))
-        #     tags_lower_case = tags_lower_case + list(map(lambda x: x.lower(), row['tags']['down_votes']))
-        #     tags_lower_case = tags_lower_case + list(map(lambda x: x.lower(), row['descriptions']['up_votes']))
-        #     tags_lower_case = tags_lower_case + list(map(lambda x: x.lower(), row['descriptions']['down_votes']))
-        #     banned_words_in_input = list(set(tags_lower_case) & set(banned_words))
-        #     if len(banned_words_in_input) > 0:
-        #         return True
+        banned_words = self.staticdata_dao.get_words_by_type(WordTypes.BANNED_WORDS.name)
+        tags_lower_case = []
+        tags_lower_case = tags_lower_case + list(map(lambda x: x.lower(), self.input['data']['tags']['up_votes']))
+        tags_lower_case = tags_lower_case + list(map(lambda x: x.lower(), self.input['data']['tags']['down_votes']))
+        tags_lower_case = tags_lower_case + list(
+            map(lambda x: x.lower(), self.input['data']['descriptions']['up_votes']))
+        tags_lower_case = tags_lower_case + list(
+            map(lambda x: x.lower(), self.input['data']['descriptions']['down_votes']))
+        banned_words_in_input = list(set(tags_lower_case) & set(banned_words))
+        if len(banned_words_in_input) > 0:
+            return True
         return False
 
     def has_valid_tag_length(self):
-        # for index, row in enumerate(self.input['data']):
-        #     tags = row['tags']['up_votes'] + row['tags']['down_votes']
-        #     all_tags_in_limit = all(
-        #         [len(tag) <= VerifyImageCommand.MAX_TAG_LENGTH for tag in tags])
-        #
-        #     if not all_tags_in_limit:
-        #         self.messages.append(
-        #             "Length of tag(s) exceeds limit of [{0}] characters.".format(VerifyImageCommand.MAX_TAG_LENGTH))
-        #         return False
-        #
-        #     descriptions = row['descriptions']['up_votes'] + row['descriptions']['down_votes']
-        #     all_descriptions_in_limit = all(
-        #         [len(description) <= VerifyImageCommand.MAX_DESCRIPTION_LENGTH for description in descriptions])
-        #
-        #     if not all_descriptions_in_limit:
-        #         self.messages.append(
-        #             "Length of description(s) exceeds limit of [{0}] characters.".format(
-        #                 VerifyImageCommand.MAX_DESCRIPTION_LENGTH))
-        #         return False
+        tags = self.input['data']['tags']['up_votes'] + self.input['data']['tags']['down_votes']
+        all_tags_in_limit = all(
+            [len(tag) <= VerifyImageCommand.MAX_TAG_LENGTH for tag in tags])
+
+        if not all_tags_in_limit:
+            self.messages.append(
+                "Length of tag(s) exceeds limit of [{0}] characters.".format(VerifyImageCommand.MAX_TAG_LENGTH))
+            return False
+
+        descriptions = self.input['data']['descriptions']['up_votes'] + self.input['data']['descriptions']['down_votes']
+        all_descriptions_in_limit = all(
+            [len(description) <= VerifyImageCommand.MAX_DESCRIPTION_LENGTH for description in descriptions])
+
+        if not all_descriptions_in_limit:
+            self.messages.append(
+                "Length of description(s) exceeds limit of [{0}] characters.".format(
+                    VerifyImageCommand.MAX_DESCRIPTION_LENGTH))
+            return False
 
         return True
 
