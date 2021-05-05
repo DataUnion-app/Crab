@@ -150,7 +150,7 @@ Supported HTTP REST apis
            {"status": "success"}
 ```
 
-- /api/v1/verify-images
+- /api/v1/verify-image
 
   - method: POST
 
@@ -159,23 +159,25 @@ Supported HTTP REST apis
   - body:
       - data: (required) 
       - e.g.
-        ```
+        ```JSON
         {
-            "data" :[
-                {
-                    "image_id" :"fdf7c301000181e8",
-                    "tags":{
-                        "up_votes":["test"],
-                        "down_votes":[]
-                    },
-                    "descriptions":{
-                        "up_votes":["test_Description 1"],
-                        "down_votes":["test_Description 2"]
-                    }
-                }
-            ]
+          "image_id" :"6404e078ddb331f2",
+          "verification" :{
+            "tags":{
+                "up_votes":["t1"],
+                "down_votes":["my own down vote"]
+            },
+            "descriptions":{
+                "up_votes":[],
+                "down_votes":["test_sDescription 2"]
+            }  
+          },
+          "annotation" :{
+            "tags":["tag1","tag2"],
+            "description":"sample text"
+          }
         }
-    ```
+        ```
 
   - Response:
       - 200
