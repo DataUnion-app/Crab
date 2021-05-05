@@ -11,7 +11,7 @@ class VerifyImageCommand(BaseCommand):
 
     def __init__(self):
         super().__init__()
-        self.imageMetadataDao = image_metadata_dao
+        self.image_metadata_dao = image_metadata_dao
         self.staticdata_dao = static_data_dao
 
     def execute(self):
@@ -32,11 +32,11 @@ class VerifyImageCommand(BaseCommand):
             self.successful = False
             return
 
-        results = self.imageMetadataDao.mark_as_verified(self.input['data'], self.input['public_address'])
+        results = self.image_metadata_dao.mark_as_verified(self.input['data'], self.input['public_address'])
 
         for result in results:
             if result['success']:
-                self.imageMetadataDao.move_to_verified_if_possible(result['image_id'])
+                self.image_metadata_dao.move_to_verified_if_possible(result['image_id'])
 
         if all(result['success'] is True for result in results):
             self.successful = True
@@ -48,6 +48,7 @@ class VerifyImageCommand(BaseCommand):
         if not self.input:
             self.messages.append("Empty input body.")
             return False
+
         if not isinstance(self.input['data'], list):
             self.messages.append('"data" is not a list.')
             return False

@@ -78,36 +78,62 @@ class ImageMetadataDao(BaseDao):
         # TODO
         pass
 
-    def add_metadata_for_image(self, public_address, photo_id, tags, description):
-        document = self.get_doc_by_id(photo_id)
+    def add_description_for_image(self, public_address: str, image_id: str, description: str):
+        document = self.get_doc_by_id(image_id)
         document["updated_at"] = datetime.timestamp(datetime.now())
 
-        user_tags = document.get("tag_data")
+        text_annotations = document.get("text_annotations")
+
+        text_data = {"text": description,
+                     "uploaded_by": public_address,
+                     "created_at": datetime.timestamp(datetime.now()),
+                     "updated_at": datetime.timestamp(datetime.now())}
+
+        if text_annotations is not None:
+            found_index = -1
+            for index, user_text in enumerate(text_annotations):
+                if user_text.get("uploaded_by") == public_address:
+                    found_index = index
+            if found_index == -1:
+                document["text_annotations"].append(text_data)
+            else:
+                document["text_annotations"][found_index]["text"] = description
+                document["text_annotations"][found_index]["updated_at"] = datetime.timestamp(datetime.now())
+
+        else:
+            document["text_annotations"] = [text_data]
+
+        document["updated_at"] = datetime.timestamp(datetime.now())
+        result = self.update_doc(image_id, document)
+        return result
+
+    def add_tags_for_image(self, public_address: str, image_id: str, tags: [str]):
+        document = self.get_doc_by_id(image_id)
+        document["updated_at"] = datetime.timestamp(datetime.now())
+
+        tags_annotations = document.get("tags_annotations")
 
         tag_data = {"tags": tags,
                     "uploaded_by": public_address,
                     "created_at": datetime.timestamp(datetime.now()),
-                    "description": description,
                     "updated_at": datetime.timestamp(datetime.now())}
 
-        if user_tags is not None:
+        if tags_annotations is not None:
             found_index = -1
-            for index, user_tag in enumerate(user_tags):
+            for index, user_tag in enumerate(tags_annotations):
                 if user_tag.get("uploaded_by") == public_address:
                     found_index = index
             if found_index == -1:
-                document["tag_data"].append(tag_data)
+                document["tags_annotations"].append(tag_data)
             else:
-                document["tag_data"][found_index]["tags"] = tags
-                document["tag_data"][found_index]["updated_at"] = datetime.timestamp(datetime.now())
+                document["tags_annotations"][found_index]["tags"] = tags
+                document["tags_annotations"][found_index]["updated_at"] = datetime.timestamp(datetime.now())
 
         else:
-            document["tag_data"] = [tag_data]
+            document["tags_annotations"] = [tag_data]
 
         document["updated_at"] = datetime.timestamp(datetime.now())
-        document["status"] = ImageStatus.VERIFIABLE.name
-        document["status_description"] = "Metadata saved"
-        result = self.update_doc(photo_id, document)
+        result = self.update_doc(image_id, document)
         return result
 
     def move_to_verifiable_if_possible(self, photo_id):
@@ -267,7 +293,7 @@ class ImageMetadataDao(BaseDao):
             })
         return {"result": result, "page": page, "page_size": self.page_size}
 
-    def mark_as_verified(self, data, public_address):
+    def mark_as_verified(self, data, public_address: str):
         image_ids = [row['image_id'] for row in data]
         query = {"selector": {"_id": {"$in": image_ids}}, "limit": len(image_ids)}
         url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
@@ -340,7 +366,7 @@ class ImageMetadataDao(BaseDao):
         else:
             return data[0]['value']
 
-    def my_tags(self, public_address:str, start_time: float, end_time: float):
+    def my_tags(self, public_address: str, start_time: float, end_time: float):
         selector = {
             "selector": {
                 "type": "image",
@@ -397,7 +423,7 @@ class ImageMetadataDao(BaseDao):
                            'tags_down_votes': tags_down_votes, 'descriptions_up_votes': descriptions_up_votes,
                            'descriptions_down_votes': descriptions_down_votes, 'time': verification['time']})
 
-        result.sort(key= lambda x: x['time'])
+        result.sort(key=lambda x: x['time'])
         return result
 
 
