@@ -424,6 +424,64 @@ class ImageMetadataDao(BaseDao):
         result.sort(key=lambda x: x['time'])
         return result
 
+    def get_user_stats(self, public_address: str, start_date: datetime, end_date: datetime):
+        start_key = f'["{public_address}",{start_date.year},{start_date.month},{start_date.day}]'
+        end_key = f'["{public_address}",{end_date.year},{end_date.month},{end_date.day},{{}}]'
+
+        query_url = f'/_design/stats/_view/user-stats-view?start_key={start_key}&end_key={end_key}&group_level=5'
+
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_url)
+        headers = {'Content-Type': 'application/json'}
+        payload = {}
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        data = json.loads(response.text)
+        result = {}
+        for row in data['rows']:
+            year = row['key'][1]
+            month = row['key'][2]
+            date = row['key'][3]
+            op_type = row['key'][4]
+
+            if op_type not in result:
+                result[op_type] = []
+
+            value = row['value']
+            result[op_type].append({
+                'date': f'{date}-{month}-{year}',
+                'value': value
+            })
+        return result
+
+    def get_overall_stats(self, start_date: datetime, end_date: datetime):
+        start_key = f'[{start_date.year},{start_date.month},{start_date.day}]'
+        end_key = f'[{end_date.year},{end_date.month},{end_date.day},{{}}]'
+
+        query_url = f'/_design/stats/_view/overall-stats-view?start_key={start_key}&end_key={end_key}&group_level=4'
+
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_url)
+        headers = {'Content-Type': 'application/json'}
+        payload = {}
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        data = json.loads(response.text)
+        result = {}
+        for row in data['rows']:
+            year = row['key'][0]
+            month = row['key'][1]
+            date = row['key'][2]
+            op_type = row['key'][3]
+
+            if op_type not in result:
+                result[op_type] = []
+
+            value = row['value']
+            result[op_type].append({
+                'date': f'{date}-{month}-{year}',
+                'value': value
+            })
+        return result
+
 
 image_metadata_dao = ImageMetadataDao()
 image_metadata_dao.set_config(config['couchdb']['user'], config['couchdb']['password'], config['couchdb']['db_host'],

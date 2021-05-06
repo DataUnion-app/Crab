@@ -139,7 +139,7 @@ Supported HTTP REST apis
     - response
         - 200
         ```JSON
-                   {"status": "success"}
+        {"status": "success"}
         ```
 
 - /api/v1/verify-image
@@ -159,7 +159,7 @@ Supported HTTP REST apis
                   "up_votes":["t1"],
                   "down_votes":["my own down vote"]
               },
-              "descriptions":{
+            "descriptions":{
                   "up_votes":[],
                   "down_votes":["test_sDescription 2"]
               }  
@@ -181,125 +181,91 @@ Supported HTTP REST apis
 
 ## Stats
 
-- **GET** `/api/v1/stats`
-    - Parameters:
-        - start_time
-        - end_time
 
-    - Example:
-      ```bash
-      curl --location --request GET 'http://localhost:8080/api/v1/stats?start_time=1&end_time=1719175642097'
-      ```  
-    - Response:
-      ```JSON
-      {
-        "result": {
-            "data": [
-                {
-                    "num_images": 10,
-                    "tags": [
-                        {
-                            "name": "tag4",
-                            "value": 10
-                        },
-                        {
-                            "name": "fluctuability",
-                            "value": 1
-                        },
-                        {
-                            "name": "telestereoscope",
-                            "value": 1
-                        }
-                    ],
-                    "time": 1620086400.0
-                }
-            ],
-            "initial_images": 10
-        },
-        "status": "success"
-      }
-      ```
-
-- **GET** `/api/v1/stats/summary/tags`
-    - Parameters:
-        - None
-    - Example:
-      ```bash
-      curl --location --request GET 'http://localhost:8080/api/v1/stats/tags'
-      ```  
-    - Response:
-      ```JSON
-       {
-        "result": {
-            "desc_down_votes": 0,
-            "desc_up_votes": 0,
-            "tags_down_votes": 0,
-            "tags_up_votes": 0
-        },
-        "status": "success"
-      }
-      ```
-
-- **GET** `/api/v1/stats/summary/summary/user`
-    - Parameters:
-        - None
-    - Example:
-      ```bash
-      curl --location --request GET 'http://localhost:8080/api/v1/stats/user-tags --header 'Authorization: Bearer <access_token>'
-      ```  
-    - Response:
-      ```JSON
-      {
-      "result": {
-        "total_description_down_votes": 0,
-        "total_description_up_votes": 0,
-        "total_images_verified": 0,
-        "total_tag_down_votes": 0,
-        "total_tag_up_votes": 0
-      },
-      "status": "success"
-      }
-      ```
-
-- **GET** `/api/v1/stats/user-tag-count`
-    - Parameters:
-        - start_time
-        - end_time
-    - Example:
-      ```bash
-      curl --location --request GET 'http://localhost:8080/api/v1/stats/user-tag-count?start_time=0&end_time=1700000000000' --header 'Authorization: Bearer <access_token>'
-      ```
-    - Response:
-      ```
-      {
-        "result": [
-            {
-                "descriptions_down_votes": 1,
-                "descriptions_up_votes": 0,
-                "tags_down_votes": 1,
-                "tags_up_votes": 1,
-                "time": 1620086400.0
-            }
-        ],
-        "status": "success"
-      }
-      ```
 
 - **GET** `/api/v1/stats/user-stats`
     - Parameters:
-        - start_time
-        - end_time
+        - start_date: Date in 'dd-mm-yyyy' format
+        - end_date: Date in 'dd-mm-yyyy' format
     - Example:
       ```bash
-      curl --location --request GET 'http://localhost:8080/api/v1/stats/user-stats?start_time=1619641680&end_time=1619641690&interval=24' --header 'Authorization: Bearer <access_token>'
+        curl --location --request GET 'http://localhost:8080/api/v1/stats/user-stats?start_date=01-01-2018&end_date=06-06-2021' --header 'Authorization: Bearer <access_token>'
       ```
     - Response:
-      ```JSON
-      {
-          "result": [],
-          "status": "success"
-      }
+        - 200
+        ```JSON
+           {
+            "result": {
+                "tag_annotations": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 18
+                    }
+                ],
+                "text_annotations": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 5
+                    }
+                ],
+                "uploads": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 1
+                    }
+                ],
+                "verifications": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 6
+                    }
+                ]
+            },
+            "status": "success"
+        }
+        ```
+
+- **GET** `/api/v1/stats/overall-stats`
+    - Parameters:
+        - start_date: Date in 'dd-mm-yyyy' format
+        - end_date: Date in 'dd-mm-yyyy' format
+    - Example:
+      ```bash
+        curl --location --request GET 'http://localhost:8080/api/v1/stats/overall-stats?start_date=01-01-2018&end_date=06-06-2021' --header 'Authorization: Bearer <access_token>'
       ```
+    - Response:
+        - 200
+        ```JSON
+           {
+            "result": {
+                "tag_annotations": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 18
+                    }
+                ],
+                "text_annotations": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 5
+                    }
+                ],
+                "uploads": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 1
+                    }
+                ],
+                "verifications": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 6
+                    }
+                ]
+            },
+            "status": "success"
+        }
+        ```
 
 ***
 
