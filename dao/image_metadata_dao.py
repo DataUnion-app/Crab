@@ -451,6 +451,19 @@ class ImageMetadataDao(BaseDao):
                 'date': f'{date}-{month}-{year}',
                 'value': value
             })
+
+        if "tag_annotations" not in result:
+            result["tag_annotations"] = []
+
+        if "text_annotations" not in result:
+            result["text_annotations"] = []
+
+        if "uploads" not in result:
+            result["uploads"] = []
+
+        if "verifications" not in result:
+            result["verifications"] = []
+
         return result
 
     def get_overall_stats(self, start_date: datetime, end_date: datetime):
@@ -480,6 +493,19 @@ class ImageMetadataDao(BaseDao):
                 'date': f'{date}-{month}-{year}',
                 'value': value
             })
+
+        if "tag_annotations" not in result:
+            result["tag_annotations"] = []
+
+        if "text_annotations" not in result:
+            result["text_annotations"] = []
+
+        if "uploads" not in result:
+            result["uploads"] = []
+
+        if "verifications" not in result:
+            result["verifications"] = []
+
         return result
 
 
