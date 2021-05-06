@@ -183,13 +183,13 @@ Supported HTTP REST apis
 
 
 
-- **GET** `/api/v1/stats/user-stats`
+- **GET** `/api/v1/stats/user`
     - Parameters:
         - start_date: Date in 'dd-mm-yyyy' format
         - end_date: Date in 'dd-mm-yyyy' format
     - Example:
       ```bash
-        curl --location --request GET 'http://localhost:8080/api/v1/stats/user-stats?start_date=01-01-2018&end_date=06-06-2021' --header 'Authorization: Bearer <access_token>'
+        curl --location --request GET 'http://localhost:8080/api/v1/stats/user?start_date=01-01-2018&end_date=06-06-2021' --header 'Authorization: Bearer <access_token>'
       ```
     - Response:
         - 200
@@ -225,13 +225,13 @@ Supported HTTP REST apis
         }
         ```
 
-- **GET** `/api/v1/stats/overall-stats`
+- **GET** `/api/v1/stats/overall`
     - Parameters:
         - start_date: Date in 'dd-mm-yyyy' format
         - end_date: Date in 'dd-mm-yyyy' format
     - Example:
       ```bash
-        curl --location --request GET 'http://localhost:8080/api/v1/stats/overall-stats?start_date=01-01-2018&end_date=06-06-2021' --header 'Authorization: Bearer <access_token>'
+        curl --location --request GET 'http://localhost:8080/api/v1/stats/overall?start_date=01-01-2018&end_date=06-06-2021''
       ```
     - Response:
         - 200
