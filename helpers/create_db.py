@@ -19,8 +19,9 @@ class InitiateDB:
         self.create_metadata_db()
         self.create_static_data_db()
         self.create_taxonomy_db()
+        self.create_challenges_db()
 
-        self.create_db(config['couchdb']['challenges_db'])
+        # self.create_db(config['couchdb']['challenges_db'])
         self.create_db("_users")
         self.create_db("_session")
 
@@ -112,6 +113,11 @@ class InitiateDB:
 
         file_path2 = os.path.join(root, "helpers", "data", "staticdata", "recommended_words.txt")
         load_words_from_file(file_path2, WordTypes.RECOMMENDED_WORDS)
+
+    def create_challenges_db(self):
+        challenges_db = config['couchdb']['challenges_db']
+        self.create_db(challenges_db)
+        self.create_view(static_data_db)
 
     def create_view(self, db_name):
         print("Creating all-docs view for [{0}]".format(db_name))
