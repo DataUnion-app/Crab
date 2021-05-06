@@ -23,4 +23,4 @@ class ChallengesDao(BaseDao):
 
 challenges_dao = ChallengesDao()
 challenges_dao.set_config(config['couchdb']['user'], config['couchdb']['password'], config['couchdb']['db_host'],
-                          config['couchdb']['challenges_dao'])
+                          config['couchdb']['challenges_db'])

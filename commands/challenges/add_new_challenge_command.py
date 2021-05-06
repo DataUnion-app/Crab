@@ -8,13 +8,7 @@ class AddNewChallengeCommand(BaseCommand):
 
     def __init__(self):
         super().__init__()
-
-        user = config['couchdb']['user']
-        password = config['couchdb']['password']
-        db_host = config['couchdb']['db_host']
-        metadata_db = config['couchdb']['challenges_dao']
         self.challenges_dao = challenges_dao
-        self.challenges_dao.set_config(user, password, db_host, metadata_db)
 
     def execute(self):
         if not self.validate_input():
