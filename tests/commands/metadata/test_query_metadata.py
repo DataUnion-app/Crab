@@ -8,12 +8,12 @@ class TestQueryMetadataCommand(TestBase):
 
     def test_query_metadata_1(self):
         dummy_data_loader = DummyDataLoader()
-        dummy_data_loader.load_random_data2(10, 4, 10, 10)
+        dummy_data_loader.load_random_data2(2, 1, 10, 10)
 
         query_metadata_command = QueryMetadataCommand()
         query_metadata_command.input = {
             'status': ImageStatus.VERIFIABLE.name,
-            'public_address': '',
+            'public_address': self.acct.address,
             'page': 1,
             'fields': ["image_id"]
         }
@@ -22,4 +22,4 @@ class TestQueryMetadataCommand(TestBase):
 
         self.assertTrue(query_metadata_command.successful)
         self.assertIsNotNone(result)
-        self.assertEqual(10, len(result.get('result')))
+        self.assertEqual(2, len(result.get('result')))

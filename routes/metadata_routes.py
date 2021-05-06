@@ -14,12 +14,7 @@ import shutil
 from commands.metadata.query_metadata_command import QueryMetadataCommand
 from commands.metadata.add_new_image_command import AddNewImageCommand
 from commands.metadata.add_new_metadata_command import AddNewMetadataCommand
-from commands.metadata.my_stats_command import MyStatsCommand
 from commands.metadata.verify_image_command import VerifyImageCommand
-from commands.metadata.stats_command import StatsCommand
-from commands.metadata.tags_stats_command import TagStatsCommand
-from commands.metadata.my_tag_stats_command import MyTagStatsCommand
-from commands.metadata.my_tag_stats_by_time_command import MyTagStatsByTimeCommand
 
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
@@ -42,7 +37,7 @@ def allowed_file(filename):
 @metadata_routes.route('/api/v1/upload', methods=["POST"])
 @jwt_required
 def upload_metadata():
-    required_params = ["timestamp", "photo_id", "tags"]
+    required_params = ["image_id"]
     data = json.loads(request.data)
     public_address = get_jwt_identity()
 
@@ -53,7 +48,7 @@ def upload_metadata():
     add_new_metadata_command = AddNewMetadataCommand()
     add_new_metadata_command.input = {
         "public_address": public_address,
-        "photo_id": data.get("photo_id"),
+        "image_id": data.get("image_id"),
         "tags": data.get("tags"),
         "description": data.get("description", None),
     }
@@ -314,22 +309,37 @@ def report_images():
             {"status": "failed", "message": "Invalid input body."}), 400
 
 
-@metadata_routes.route('/api/v1/verify-images', methods=["POST"])
+@metadata_routes.route('/api/v1/verify-image', methods=["POST"])
 @jwt_required
-def verify_images():
+def verify_image():
     data = json.loads(request.data)
     public_address = get_jwt_identity()
 
-    verify_image = VerifyImageCommand()
-    verify_image.input = {
-        "public_address": public_address,
-        "data": data.get("data")
-    }
-    verify_image.execute()
-    if verify_image.successful:
-        return jsonify({"status": "success"}), 200
-    else:
-        return jsonify({"status": "failed", "messages": verify_image.messages}), 400
+    if data.get('verification'):
+        verify_image_c = VerifyImageCommand()
+        verify_image_c.input = {
+            "public_address": public_address,
+            "data": data.get("verification"),
+            "image_id": data.get("image_id")
+        }
+        verify_image_c.execute()
+        if not verify_image_c.successful:
+            return jsonify({"status": "failed", "messages": ["Error in verification"] + verify_image_c.messages}), 400
+
+    if data.get('annotation'):
+        add_annotation = AddNewMetadataCommand()
+        add_annotation.input = {
+            "public_address": public_address,
+            "tags": data["annotation"].get("tags"),
+            "description": data["annotation"].get("description"),
+            "image_id": data.get('image_id')
+
+        }
+        add_annotation.execute()
+        if not add_annotation.successful:
+            return jsonify({"status": "failed", "messages": ["Error in annotation"] + add_annotation.messages}), 400
+
+    return jsonify({"status": "success"}), 200
 
 
 @metadata_routes.route('/api/v1/get-image-by-id', methods=["GET"])
@@ -390,100 +400,3 @@ def query_metadata():
         return result, 200
     else:
         return jsonify({'status': 'failed', 'messages': query_metadata_command.messages}), 400
-
-
-@metadata_routes.route('/api/v1/stats', methods=["GET"])
-def get_stats():
-    args = request.args
-    required_params = {'start_time', 'end_time', 'interval'}
-
-    if not all(elem in args.keys() for elem in required_params):
-        return jsonify(
-            {"status": "failed",
-             "message": "Invalid input body. Expected query parameters :{0}".format(required_params)}), 400
-    try:
-        stats_command = StatsCommand()
-        stats_command.input = {
-            'start_time': float(args.get('start_time')),
-            'end_time': float(args.get('end_time')),
-            'interval': float(args.get('interval'))
-        }
-
-        result = stats_command.execute()
-        if stats_command.successful:
-            response = jsonify(result)
-            return response, 200
-        else:
-            return jsonify({'status': 'failed', 'messages': stats_command.messages}), 400
-    except ValueError:
-        return jsonify({'status': 'failed', 'messages': ['Value error.']}), 400
-
-
-@metadata_routes.route('/api/v1/tag-stats', methods=["GET"])
-def get_tag_stats():
-    get_tag_stats_command = TagStatsCommand()
-    result = get_tag_stats_command.execute()
-    if get_tag_stats_command.successful:
-        return jsonify({'status': 'success', 'result': result}), 200
-    else:
-        return jsonify({'status': 'failed', 'messages': get_tag_stats_command.messages}), 400
-
-
-@metadata_routes.route('/api/v1/my-tag-stats', methods=["GET"])
-@jwt_required
-def get_my_tag_stats():
-    get_my_tag_stats_command = MyTagStatsCommand()
-    get_my_tag_stats_command.input = {
-        'public_address': get_jwt_identity()
-    }
-    result = get_my_tag_stats_command.execute()
-    if get_my_tag_stats_command.successful:
-        return jsonify({'status': 'success', 'result': result}), 200
-    else:
-        return jsonify({'status': 'failed', 'messages': get_my_tag_stats_command.messages}), 400
-
-
-@metadata_routes.route('/api/v1/my-tag-count', methods=["GET"])
-@jwt_required
-def get_my_tag_stats2():
-    args = request.args
-    get_my_tag_stats_by_time_command = MyTagStatsByTimeCommand()
-    get_my_tag_stats_by_time_command.input = {
-        'public_address': get_jwt_identity(),
-        'start_time': float(args.get('start_time')),
-        'end_time': float(args.get('end_time')),
-        'interval': int(args['interval'])
-    }
-    result = get_my_tag_stats_by_time_command.execute()
-    if get_my_tag_stats_by_time_command.successful:
-        return jsonify({'status': 'success', 'result': result}), 200
-    else:
-        return jsonify({'status': 'failed', 'messages': get_my_tag_stats_by_time_command.messages}), 400
-
-
-@metadata_routes.route('/api/v1/my-stats', methods=["GET"])
-@jwt_required
-def get_my_stats():
-    args = request.args
-    required_params = {'start_time', 'end_time'}
-    public_address = get_jwt_identity()
-    if not all(elem in args.keys() for elem in required_params):
-        return jsonify(
-            {"status": "failed",
-             "message": "Invalid input body. Expected query parameters :{0}".format(required_params)}), 400
-    my_stats_command = MyStatsCommand()
-    try:
-        my_stats_command.input = {
-            'public_address': public_address,
-            'group_by': int(args.get('group_by', 24)),
-            'start_time': float(args['start_time']),
-            'end_time': float(args['end_time']),
-            'interval': int(args['interval'])
-        }
-        response = my_stats_command.execute()
-    except ValueError:
-        return jsonify({"status": "failed", "messages": ["Value error: Please check if input is correct"]}), 400
-    except:
-        return jsonify({"status": "failed", "messages": ["Please contact support team."]}), 400
-
-    return response, 200

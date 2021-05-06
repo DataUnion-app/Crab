@@ -31,17 +31,15 @@ class AddNewMetadataCommand(BaseCommand):
             self.successful = False
             return {"status": "failed"}
 
-        result = self.image_metadata_dao.add_metadata_for_image(self.input["public_address"], self.input["photo_id"],
-                                                                self.input["tags"],
-                                                                self.input.get("description", None))
+        if self.input.get("tags"):
+            self.image_metadata_dao.add_tags_for_image(self.input["public_address"], self.input["image_id"],
+                                                       self.input["tags"])
+        if self.input.get("description"):
+            self.image_metadata_dao.add_description_for_image(self.input["public_address"], self.input["image_id"],
+                                                              self.input["description"])
 
-        if result.get('ok') is True:
-            # self.image_metadata_dao.move_to_verifiable_if_possible(self.input["photo_id"])
-            self.successful = True
-            return {"status": "success"}
-
-        self.successful = False
-        return {"status": "failed"}
+        self.successful = True
+        return {"status": "success"}
 
     def clean_input(self):
         self.input['tags'] = list(map(str.strip, self.input.get("tags")))
@@ -52,6 +50,10 @@ class AddNewMetadataCommand(BaseCommand):
         return "".join(ch for ch in tag if unicodedata.category(ch)[0] != "C")
 
     def validate_input(self):
+        if not isinstance(self.input.get('image_id'), str):
+            self.messages.append("Missing parameter 'image_id'")
+            return False
+
         if self.input.get("description") is not None:
             if len(self.input.get("description")) > AddNewMetadataCommand.MAX_DESCRIPTION_LENGTH:
                 self.messages.append(

@@ -35,7 +35,7 @@ class TestMarkAsVerified(TestBase):
         add_new_metadata_command1.input = {
             'public_address': acct1.address,
             'tags': ["abc", "tag2"],
-            'photo_id': image_ids[0]
+            'image_id': image_ids[0]
         }
         add_new_metadata_command1.execute()
 
@@ -44,7 +44,7 @@ class TestMarkAsVerified(TestBase):
         add_new_metadata_command2.input = {
             'public_address': acct2.address,
             'tags': ["abc", "tag2"],
-            'photo_id': image_ids[0]
+            'image_id': image_ids[0]
         }
         add_new_metadata_command2.execute()
 
@@ -80,10 +80,12 @@ class TestMarkAsVerified(TestBase):
 
         acct = Account.create()
         verify_image_command = VerifyImageCommand()
-        data = [{'image_id': image_id, 'tags': {'up_votes': ['1' * 1000], 'down_votes': []}}]
+        data = {'tags': {'up_votes': ['1' * 1000], 'down_votes': []},
+                'descriptions': {'up_votes': [], 'down_votes': []}}
         verify_image_command.input = {
             'public_address': acct.address,
-            'data': data
+            'data': data,
+            'image_id': image_id
         }
         verify_image_command.execute()
         self.assertFalse(verify_image_command.successful)
@@ -91,11 +93,12 @@ class TestMarkAsVerified(TestBase):
 
         verify_image_command2 = VerifyImageCommand()
 
-        data = [{'image_id': image_id, 'tags': {'up_votes': [], 'down_votes': []},
-                 'descriptions': {'up_votes': ['1' * 2001], 'down_votes': []}}]
+        data = {'tags': {'up_votes': [], 'down_votes': []},
+                'descriptions': {'up_votes': ['1' * 2001], 'down_votes': []}}
         verify_image_command2.input = {
             'public_address': acct.address,
-            'data': data
+            'data': data,
+            'image_id': image_id
         }
 
         verify_image_command2.execute()
@@ -116,10 +119,11 @@ class TestMarkAsVerified(TestBase):
 
         acct = Account.create()
         verify_image_command = VerifyImageCommand()
-        data = [{'image_id': image_id, 'tags': {'up_votes': ['a55'], 'down_votes': []}}]
+        data = {'tags': {'up_votes': ['a55'], 'down_votes': []}, 'descriptions': {'up_votes': [], 'down_votes': []}}
         verify_image_command.input = {
             'public_address': acct.address,
-            'data': data
+            'data': data,
+            'image_id': image_id
         }
         verify_image_command.execute()
         self.assertFalse(verify_image_command.successful)
@@ -129,14 +133,16 @@ class TestMarkAsVerified(TestBase):
     @staticmethod
     def mark_as_verified(image_ids, tag_up_votes: list[str], tag_down_votes: list[str], desc_up_votes: list[str],
                          desc_down_votes: list[str]):
-        acct = Account.create()
-        verify_image_command = VerifyImageCommand()
-        data = [{'image_id': image_id, 'tags': {'up_votes': tag_up_votes, 'down_votes': tag_down_votes},
-                 'descriptions': {'up_votes': desc_up_votes, 'down_votes': desc_down_votes}} for image_id in
-                image_ids]
-        verify_image_command.input = {
-            'public_address': acct.address,
-            'data': data
-        }
 
-        verify_image_command.execute()
+        for i in image_ids:
+            acct = Account.create()
+            verify_image_command = VerifyImageCommand()
+            data = {'tags': {'up_votes': tag_up_votes, 'down_votes': tag_down_votes},
+                    'descriptions': {'up_votes': desc_up_votes, 'down_votes': desc_down_votes}}
+            verify_image_command.input = {
+                'public_address': acct.address,
+                'data': data,
+                'image_id': i
+            }
+
+            verify_image_command.execute()

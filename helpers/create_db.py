@@ -23,7 +23,6 @@ class InitiateDB:
 
         # self.create_db(config['couchdb']['challenges_db'])
         self.create_db("_users")
-        self.create_db("_session")
 
     def create_db(self, db_name):
         print("Creating [{0}] db".format(db_name))
@@ -108,10 +107,10 @@ class InitiateDB:
         self.create_view(static_data_db)
 
         root = get_project_root()
-        file_path1 = os.path.join(root, "helpers", "data", "staticdata", "banned_words.txt")
+        file_path1 = os.path.join(root, "helpers", "db_setup", "staticdata", "banned_words.txt")
         load_words_from_file(file_path1, WordTypes.BANNED_WORDS)
 
-        file_path2 = os.path.join(root, "helpers", "data", "staticdata", "recommended_words.txt")
+        file_path2 = os.path.join(root, "helpers", "db_setup", "staticdata", "recommended_words.txt")
         load_words_from_file(file_path2, WordTypes.RECOMMENDED_WORDS)
 
     def create_challenges_db(self):

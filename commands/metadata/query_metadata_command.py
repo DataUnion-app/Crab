@@ -49,7 +49,7 @@ class QueryMetadataCommand(BaseCommand):
             self.messages.append("Invalid input body. Expected `fields` to be a list")
             return False
         else:
-            probable_fields = ["image_id", "descriptions", "tag_data"]
+            probable_fields = ["image_id", "descriptions", "tags"]
             self.input["fields"] = list(set(self.input.get('fields')) & set(probable_fields))
 
         return True

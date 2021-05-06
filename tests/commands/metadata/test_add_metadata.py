@@ -18,7 +18,7 @@ class TestMarkAsVerified(TestBase):
         add_new_metadata_command.input = {
             'public_address': acct.address,
             'tags': ["abc", "tag2"],
-            'photo_id': image_ids[0]
+            'image_id': image_ids[0]
         }
 
         add_new_metadata_command.execute()
@@ -31,7 +31,7 @@ class TestMarkAsVerified(TestBase):
         add_new_metadata_command2.input = {
             'public_address': acct2.address,
             'tags': ["abc", "tag2"],
-            'photo_id': image_ids[0]
+            'image_id': image_ids[0]
         }
 
         add_new_metadata_command2.execute()
@@ -49,7 +49,7 @@ class TestMarkAsVerified(TestBase):
         add_new_metadata_command.input = {
             'public_address': acct.address,
             'tags': ["a55", "tag2"],
-            'photo_id': image_ids[0]
+            'image_id': image_ids[0]
         }
 
         add_new_metadata_command.execute()
@@ -66,7 +66,7 @@ class TestMarkAsVerified(TestBase):
         add_new_metadata_command.input = {
             'public_address': acct.address,
             'tags': ["1" * 201, "tag2"],
-            'photo_id': image_ids[0]
+            'image_id': image_ids[0]
         }
 
         result = add_new_metadata_command.execute()
@@ -77,7 +77,7 @@ class TestMarkAsVerified(TestBase):
         add_new_metadata_command2.input = {
             'public_address': acct.address,
             'tags': ["1", "tag2"],
-            'photo_id': image_ids[0],
+            'image_id': image_ids[0],
             'description': "1" * 2001
         }
 

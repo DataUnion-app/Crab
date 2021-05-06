@@ -28,7 +28,7 @@ class MyTagStatsCommand(BaseCommand):
             total_description_down_votes = total_description_down_votes + len(row['descriptions_down_votes'])
 
         self.successful = True
-        return {'total_images': total_images, 'total_tag_up_votes': total_tag_up_votes,
+        return {'total_images_verified': total_images, 'total_tag_up_votes': total_tag_up_votes,
                 'total_tag_down_votes': total_tag_down_votes,
                 'total_description_up_votes': total_description_up_votes,
                 'total_description_down_votes': total_description_down_votes}

@@ -1,4 +1,4 @@
-from commands.metadata.stats_command import StatsCommand
+from commands.stasts.stats_command import StatsCommand
 from datetime import datetime
 import unittest
 from helpers.load_dummy_data import DummyDataLoader
