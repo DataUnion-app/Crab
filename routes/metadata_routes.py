@@ -16,7 +16,6 @@ from commands.metadata.add_new_image_command import AddNewImageCommand
 from commands.metadata.add_new_metadata_command import AddNewMetadataCommand
 from commands.metadata.verify_image_command import VerifyImageCommand
 
-
 if not config['application'].getboolean('jwt_on'): jwt_required = lambda fn: fn
 
 user = config['couchdb']['user']
@@ -38,7 +37,7 @@ def allowed_file(filename):
 @metadata_routes.route('/api/v1/upload', methods=["POST"])
 @jwt_required
 def upload_metadata():
-    required_params = ["timestamp", "photo_id", "tags"]
+    required_params = ["image_id"]
     data = json.loads(request.data)
     public_address = get_jwt_identity()
 
@@ -49,7 +48,7 @@ def upload_metadata():
     add_new_metadata_command = AddNewMetadataCommand()
     add_new_metadata_command.input = {
         "public_address": public_address,
-        "photo_id": data.get("photo_id"),
+        "image_id": data.get("image_id"),
         "tags": data.get("tags"),
         "description": data.get("description", None),
     }
@@ -310,22 +309,37 @@ def report_images():
             {"status": "failed", "message": "Invalid input body."}), 400
 
 
-@metadata_routes.route('/api/v1/verify-images', methods=["POST"])
+@metadata_routes.route('/api/v1/verify-image', methods=["POST"])
 @jwt_required
-def verify_images():
+def verify_image():
     data = json.loads(request.data)
     public_address = get_jwt_identity()
 
-    verify_image = VerifyImageCommand()
-    verify_image.input = {
-        "public_address": public_address,
-        "data": data.get("data")
-    }
-    verify_image.execute()
-    if verify_image.successful:
-        return jsonify({"status": "success"}), 200
-    else:
-        return jsonify({"status": "failed", "messages": verify_image.messages}), 400
+    if data.get('verification'):
+        verify_image_c = VerifyImageCommand()
+        verify_image_c.input = {
+            "public_address": public_address,
+            "data": data.get("verification"),
+            "image_id": data.get("image_id")
+        }
+        verify_image_c.execute()
+        if not verify_image_c.successful:
+            return jsonify({"status": "failed", "messages": ["Error in verification"] + verify_image_c.messages}), 400
+
+    if data.get('annotation'):
+        add_annotation = AddNewMetadataCommand()
+        add_annotation.input = {
+            "public_address": public_address,
+            "tags": data["annotation"].get("tags"),
+            "description": data["annotation"].get("description"),
+            "image_id": data.get('image_id')
+
+        }
+        add_annotation.execute()
+        if not add_annotation.successful:
+            return jsonify({"status": "failed", "messages": ["Error in annotation"] + add_annotation.messages}), 400
+
+    return jsonify({"status": "success"}), 200
 
 
 @metadata_routes.route('/api/v1/get-image-by-id', methods=["GET"])
@@ -386,4 +400,3 @@ def query_metadata():
         return result, 200
     else:
         return jsonify({'status': 'failed', 'messages': query_metadata_command.messages}), 400
-

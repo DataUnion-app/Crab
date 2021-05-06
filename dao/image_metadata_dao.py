@@ -78,36 +78,62 @@ class ImageMetadataDao(BaseDao):
         # TODO
         pass
 
-    def add_metadata_for_image(self, public_address, photo_id, tags, description):
-        document = self.get_doc_by_id(photo_id)
+    def add_description_for_image(self, public_address: str, image_id: str, description: str):
+        document = self.get_doc_by_id(image_id)
         document["updated_at"] = datetime.timestamp(datetime.now())
 
-        user_tags = document.get("tag_data")
+        text_annotations = document.get("text_annotations")
+
+        text_data = {"text": description,
+                     "uploaded_by": public_address,
+                     "created_at": datetime.timestamp(datetime.now()),
+                     "updated_at": datetime.timestamp(datetime.now())}
+
+        if text_annotations is not None:
+            found_index = -1
+            for index, user_text in enumerate(text_annotations):
+                if user_text.get("uploaded_by") == public_address:
+                    found_index = index
+            if found_index == -1:
+                document["text_annotations"].append(text_data)
+            else:
+                document["text_annotations"][found_index]["text"] = description
+                document["text_annotations"][found_index]["updated_at"] = datetime.timestamp(datetime.now())
+
+        else:
+            document["text_annotations"] = [text_data]
+
+        document["updated_at"] = datetime.timestamp(datetime.now())
+        result = self.update_doc(image_id, document)
+        return result
+
+    def add_tags_for_image(self, public_address: str, image_id: str, tags: [str]):
+        document = self.get_doc_by_id(image_id)
+        document["updated_at"] = datetime.timestamp(datetime.now())
+
+        tags_annotations = document.get("tags_annotations")
 
         tag_data = {"tags": tags,
                     "uploaded_by": public_address,
                     "created_at": datetime.timestamp(datetime.now()),
-                    "description": description,
                     "updated_at": datetime.timestamp(datetime.now())}
 
-        if user_tags is not None:
+        if tags_annotations is not None:
             found_index = -1
-            for index, user_tag in enumerate(user_tags):
+            for index, user_tag in enumerate(tags_annotations):
                 if user_tag.get("uploaded_by") == public_address:
                     found_index = index
             if found_index == -1:
-                document["tag_data"].append(tag_data)
+                document["tags_annotations"].append(tag_data)
             else:
-                document["tag_data"][found_index]["tags"] = tags
-                document["tag_data"][found_index]["updated_at"] = datetime.timestamp(datetime.now())
+                document["tags_annotations"][found_index]["tags"] = tags
+                document["tags_annotations"][found_index]["updated_at"] = datetime.timestamp(datetime.now())
 
         else:
-            document["tag_data"] = [tag_data]
+            document["tags_annotations"] = [tag_data]
 
         document["updated_at"] = datetime.timestamp(datetime.now())
-        document["status"] = ImageStatus.VERIFIABLE.name
-        document["status_description"] = "Metadata saved"
-        result = self.update_doc(photo_id, document)
+        result = self.update_doc(image_id, document)
         return result
 
     def move_to_verifiable_if_possible(self, photo_id):
@@ -199,6 +225,7 @@ class ImageMetadataDao(BaseDao):
         selector = {
             "selector": {
                 "status": status,
+                "type": 'image',
                 "$and": [
                     {
                         "$not": {
@@ -207,7 +234,18 @@ class ImageMetadataDao(BaseDao):
                     },
                     {
                         "$not": {
-                            "tag_data": {
+                            "verified": {
+                                "$elemMatch": {
+                                    "by": {
+                                        "$eq": public_address
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "$not": {
+                            "tags_annotations": {
                                 "$elemMatch": {
                                     "uploaded_by": {
                                         "$eq": public_address
@@ -218,9 +256,9 @@ class ImageMetadataDao(BaseDao):
                     },
                     {
                         "$not": {
-                            "verified": {
+                            "text_annotations": {
                                 "$elemMatch": {
-                                    "by": {
+                                    "uploaded_by": {
                                         "$eq": public_address
                                     }
                                 }
@@ -236,8 +274,8 @@ class ImageMetadataDao(BaseDao):
             ],
             "fields": [
                 "_id",
-                "tag_data",
-                "verified"
+                "tags_annotations",
+                "text_annotations"
             ],
             "limit": self.page_size,
             "skip": skip
@@ -248,18 +286,14 @@ class ImageMetadataDao(BaseDao):
         for row in data:
 
             tag_data = []
-            descriptions = []
-            for tagged_data in row['tag_data']:
-                if tagged_data['description']:
-                    descriptions.append(tagged_data['description'])
+
+            for tagged_data in row['tags_annotations']:
                 tag_data = tag_data + tagged_data['tags']
 
-            for verified in row['verified']:
-                tag_data = tag_data + verified['tags']['up_votes']
-                tag_data = tag_data + verified['tags']['down_votes']
-                if verified.get('descriptions'):
-                    descriptions = descriptions + verified['descriptions'].get('up_votes', [])
-                    descriptions = descriptions + verified['descriptions'].get('down_votes', [])
+            descriptions = []
+            for text_data in row['text_annotations']:
+                descriptions.append(text_data['text'])
+
             result.append({
                 'image_id': row['_id'],
                 'tag_data': list(set(tag_data)),
@@ -267,43 +301,33 @@ class ImageMetadataDao(BaseDao):
             })
         return {"result": result, "page": page, "page_size": self.page_size}
 
-    def mark_as_verified(self, data, public_address):
-        image_ids = [row['image_id'] for row in data]
-        query = {"selector": {"_id": {"$in": image_ids}}, "limit": len(image_ids)}
-        url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
-        headers = {'Content-Type': 'application/json'}
+    def mark_image_as_verified(self, image_id, data, public_address: str):
 
-        response = requests.request("POST", url, headers=headers, data=json.dumps(query))
-        documents = json.loads(response.text)["docs"]
-        result = []
-        for document in documents:
-            if document['status'] not in [ImageStatus.VERIFIABLE.name, ImageStatus.VERIFIED.name]:
-                result.append({'image_id': document['_id'], 'success': False})
-                continue
-            verified = document.get("verified")
+        document = self.get_doc_by_id(image_id)
 
-            tag_up_votes = []
-            tag_down_votes = []
-            description_up_votes = []
-            description_down_votes = []
-            for row in data:
-                if row['image_id'] == document['_id']:
-                    tag_up_votes = row['tags']['up_votes']
-                    tag_down_votes = row['tags']['down_votes']
-                    description_up_votes = row['descriptions']['up_votes']
-                    description_down_votes = row['descriptions']['down_votes']
-                    break
+        result = None
+        if document['status'] not in [ImageStatus.VERIFIABLE.name, ImageStatus.VERIFIED.name]:
+            result = {'image_id': document['_id'], 'success': False}
+            return result
 
-            verified_data = {"by": public_address, "time": datetime.timestamp(datetime.now()),
-                             'tags': {'up_votes': tag_up_votes, 'down_votes': tag_down_votes},
-                             'descriptions': {'up_votes': description_up_votes, 'down_votes': description_down_votes}}
+        verified = document.get("verified")
 
-            if not verified:
-                document["verified"] = [verified_data]
-            elif len([report for report in verified if report["by"] == public_address]) == 0:
-                document["verified"].append(verified_data)
-            self.update_doc(document["_id"], document)
-            result.append({'image_id': document['_id'], 'success': True})
+        tag_up_votes = data['tags'].get('up_votes')
+        tag_down_votes = data['tags'].get('down_votes')
+        description_up_votes = data['descriptions'].get('up_votes')
+        description_down_votes = data['descriptions'].get('down_votes')
+
+        verified_data = {"by": public_address, "time": datetime.timestamp(datetime.now()),
+                         'tags': {'up_votes': tag_up_votes, 'down_votes': tag_down_votes},
+                         'descriptions': {'up_votes': description_up_votes, 'down_votes': description_down_votes}}
+
+        if not verified:
+            document["verified"] = [verified_data]
+        elif len([v for v in verified if v["by"] == public_address]) == 0:
+            document["verified"].append(verified_data)
+
+        self.update_doc(document["_id"], document)
+        result = {'success': True}
         return result
 
     def exists(self, doc_id):
@@ -340,7 +364,7 @@ class ImageMetadataDao(BaseDao):
         else:
             return data[0]['value']
 
-    def my_tags(self, public_address:str, start_time: float, end_time: float):
+    def my_tags(self, public_address: str, start_time: float, end_time: float):
         selector = {
             "selector": {
                 "type": "image",
@@ -397,7 +421,65 @@ class ImageMetadataDao(BaseDao):
                            'tags_down_votes': tags_down_votes, 'descriptions_up_votes': descriptions_up_votes,
                            'descriptions_down_votes': descriptions_down_votes, 'time': verification['time']})
 
-        result.sort(key= lambda x: x['time'])
+        result.sort(key=lambda x: x['time'])
+        return result
+
+    def get_user_stats(self, public_address: str, start_date: datetime, end_date: datetime):
+        start_key = f'["{public_address}",{start_date.year},{start_date.month},{start_date.day}]'
+        end_key = f'["{public_address}",{end_date.year},{end_date.month},{end_date.day},{{}}]'
+
+        query_url = f'/_design/stats/_view/user-stats-view?start_key={start_key}&end_key={end_key}&group_level=5'
+
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_url)
+        headers = {'Content-Type': 'application/json'}
+        payload = {}
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        data = json.loads(response.text)
+        result = {}
+        for row in data['rows']:
+            year = row['key'][1]
+            month = row['key'][2]
+            date = row['key'][3]
+            op_type = row['key'][4]
+
+            if op_type not in result:
+                result[op_type] = []
+
+            value = row['value']
+            result[op_type].append({
+                'date': f'{date}-{month}-{year}',
+                'value': value
+            })
+        return result
+
+    def get_overall_stats(self, start_date: datetime, end_date: datetime):
+        start_key = f'[{start_date.year},{start_date.month},{start_date.day}]'
+        end_key = f'[{end_date.year},{end_date.month},{end_date.day},{{}}]'
+
+        query_url = f'/_design/stats/_view/overall-stats-view?start_key={start_key}&end_key={end_key}&group_level=4'
+
+        url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_url)
+        headers = {'Content-Type': 'application/json'}
+        payload = {}
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        data = json.loads(response.text)
+        result = {}
+        for row in data['rows']:
+            year = row['key'][0]
+            month = row['key'][1]
+            date = row['key'][2]
+            op_type = row['key'][3]
+
+            if op_type not in result:
+                result[op_type] = []
+
+            value = row['value']
+            result[op_type].append({
+                'date': f'{date}-{month}-{year}',
+                'value': value
+            })
         return result
 
 

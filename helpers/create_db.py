@@ -22,7 +22,6 @@ class InitiateDB:
 
         self.create_db(config['couchdb']['challenges_db'])
         self.create_db("_users")
-        self.create_db("_session")
 
     def create_db(self, db_name):
         print("Creating [{0}] db".format(db_name))
