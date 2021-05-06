@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from commands.stats.overall_stats_command import OverallStatsCommand
+from commands.stats.tags_stats_command import TagStatsCommand
 from commands.stats.user_stats_command import UserStatsCommand
 
 stats_routes = Blueprint('stats_routes', __name__)
@@ -31,14 +32,22 @@ def get_overall_stats():
     except Exception as e:
         return jsonify({"status": "failed", "messages": ["Please contact support team.", e.message]}), 400
 
-# @stats_routes.route('/summary/tags', methods=["GET"])
-# def get_tag_stats():
-#     get_tag_stats_command = TagStatsCommand()
-#     result = get_tag_stats_command.execute()
-#     if get_tag_stats_command.successful:
-#         return jsonify({'status': 'success', 'result': result}), 200
-#     else:
-#         return jsonify({'status': 'failed', 'messages': get_tag_stats_command.messages}), 400
+
+@stats_routes.route('/overall-tags', methods=["GET"])
+def get_tag_stats():
+    args = request.args
+
+    get_tag_stats_command = TagStatsCommand()
+    get_tag_stats_command.input = {
+        'start_date': args.get('start_date'),
+        'end_date': args.get('end_date'),
+    }
+    result = get_tag_stats_command.execute()
+
+    if get_tag_stats_command.successful:
+        return jsonify({'status': 'success', 'result': result}), 200
+    else:
+        return jsonify({'status': 'failed', 'messages': get_tag_stats_command.messages}), 400
 
 
 # @stats_routes.route('/summary/user', methods=["GET"])

@@ -350,19 +350,32 @@ class ImageMetadataDao(BaseDao):
             return False
         return True
 
-    def get_tag_stats(self):
-        query_url = '/_design/stats-verification/_view/stats-verification'
+    def get_tag_stats(self, start_date: datetime, end_date: datetime):
+        start_key = f'[{start_date.year},{start_date.month},{start_date.day}]'
+        end_key = f'[{end_date.year},{end_date.month},{end_date.day},{{}}]'
+        query_url = f'/_design/stats/_view/tags-stats-view?start_key={start_key}&end_key={end_key}&group_level=4'
 
         url = "http://{0}:{1}@{2}/{3}/{4}".format(self.user, self.password, self.db_host, self.db_name, query_url)
         headers = {'Content-Type': 'application/json'}
         response = requests.request("GET", url, headers=headers, data={})
         data = json.loads(response.text)['rows']
-        if len(data) == 0:
-            return {
-                "desc_down_votes": 0, "desc_up_votes": 0, "tags_down_votes": 0, "tags_up_votes": 0
-            }
-        else:
-            return data[0]['value']
+
+        result = {}
+        for row in data:
+            year = row['key'][0]
+            month = row['key'][1]
+            date = row['key'][2]
+            tag = row['key'][3]
+
+            if tag not in result:
+                result[tag] = []
+
+            value = row['value']
+            result[tag].append({
+                'date': f'{date}-{month}-{year}',
+                'value': value
+            })
+        return result
 
     def my_tags(self, public_address: str, start_time: float, end_time: float):
         selector = {
