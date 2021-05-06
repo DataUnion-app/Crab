@@ -27,6 +27,24 @@
         }
       },
       "language": "javascript"
+    },
+    {
+      "_id": "_design/stats",
+      "views": {
+        "user-stats-view": {
+          "map": "function (doc) {\n  if(doc['type']=='image') {\n    var a = new Date(doc['uploaded_at'] * 1000);\n    emit([doc['uploaded_by'], a.getFullYear(), a.getMonth() + 1,a.getDate(), 'uploads'], 1);\n    \n    if(doc['verified']) {\n      var verifications = doc['verified']\n      verifications.forEach((element)=> {\n        var v_time = new Date(element['time'] * 1000);\n        count = 0;\n        if(element[\"tags\"]){\n          count += element[\"tags\"][\"up_votes\"].length\n          count += element[\"tags\"][\"down_votes\"].length\n        }\n        if(element[\"descriptions\"]){\n          count += element[\"descriptions\"][\"up_votes\"].length\n          count += element[\"descriptions\"][\"down_votes\"].length\n        }\n        emit([element['by'], v_time.getFullYear(), v_time.getMonth() + 1, v_time.getDate(), 'verifications'], count);\n      })\n    }\n    \n    if(doc['text_annotations']) {\n      var text_annotations = doc['text_annotations']\n      text_annotations.forEach((element)=> {\n        var text_time = new Date(element['created_at'] * 1000);\n        emit([element['uploaded_by'], text_time.getFullYear(), text_time.getMonth() + 1, text_time.getDate(), 'text_annotations'], 1);\n      })\n    }\n    \n    if(doc['tags_annotations']) {\n      var tags_annotations = doc['tags_annotations']\n      tags_annotations.forEach((element)=> {\n        var tag_time = new Date(element['created_at'] * 1000);\n        emit([element['uploaded_by'], tag_time.getFullYear(), tag_time.getMonth() + 1, tag_time.getDate(), 'tag_annotations'], element['tags'].length);\n      })\n    }\n    \n  }\n}",
+          "reduce": "_sum"
+        },
+        "overall-stats-view": {
+          "reduce": "_sum",
+          "map": "function (doc) {\n  if(doc['type']=='image') {\n    var a = new Date(doc['uploaded_at'] * 1000);\n    emit([a.getFullYear(), a.getMonth() + 1,a.getDate(), 'uploads'], 1);\n    \n    if(doc['verified']) {\n      var verifications = doc['verified']\n      verifications.forEach((element)=> {\n        var v_time = new Date(element['time'] * 1000);\n        count = 0;\n        if(element[\"tags\"]){\n          count += element[\"tags\"][\"up_votes\"].length\n          count += element[\"tags\"][\"down_votes\"].length\n        }\n        if(element[\"descriptions\"]){\n          count += element[\"descriptions\"][\"up_votes\"].length\n          count += element[\"descriptions\"][\"down_votes\"].length\n        }\n        emit([v_time.getFullYear(), v_time.getMonth() + 1, v_time.getDate(), 'verifications'], count);\n      })\n    }\n    \n    if(doc['text_annotations']) {\n      var text_annotations = doc['text_annotations']\n      text_annotations.forEach((element)=> {\n        var text_time = new Date(element['created_at'] * 1000);\n        emit([text_time.getFullYear(), text_time.getMonth() + 1, text_time.getDate(), 'text_annotations'], 1);\n      })\n    }\n    \n    if(doc['tags_annotations']) {\n      var tags_annotations = doc['tags_annotations']\n      tags_annotations.forEach((element)=> {\n        var tag_time = new Date(element['created_at'] * 1000);\n        emit([tag_time.getFullYear(), tag_time.getMonth() + 1, tag_time.getDate(), 'tag_annotations'], element['tags'].length);\n      })\n    }\n    \n  }\n}"
+        },
+        "tags-stats-view": {
+          "map": "function (doc) {\n  \n  if(doc['type'] == 'image' && doc['tags_annotations']){\n    doc['tags_annotations'].forEach(({created_at, tags})=>{\n      var a = new Date(created_at * 1000);\n      var key = [a.getFullYear(), a.getMonth() + 1,a.getDate()]\n      tags.forEach((tag)=>{\n          emit(key.concat(tag), 1);\n      })\n    })\n  }\n}",
+          "reduce": "_sum"
+        }
+      },
+      "language": "javascript"
     }
   ],
   "index": []

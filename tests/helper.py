@@ -2,6 +2,7 @@ import json
 import requests
 from web3.auto import w3
 from eth_account.messages import defunct_hash_message, encode_defunct
+from dao.users_dao import user_dao
 import os
 
 
@@ -11,14 +12,10 @@ class Helper:
     @staticmethod
     def login(address, key):
         # Generate nonce
-        api_url = Helper.URL + "/register"
-        payload = json.dumps({"public_address": address})
-        headers = {'Content-Type': 'application/json'}
-        response = requests.request("POST", api_url, headers=headers, data=payload)
-        data = json.loads(response.text)
+        Helper.register(address)
 
         # Sign message
-        nonce = data["nonce"]
+        nonce = user_dao.get_nonce(address)
         private_key = key
         message = encode_defunct(text=str(nonce))
         signed_message = w3.eth.account.sign_message(message, private_key=private_key)
@@ -46,5 +43,3 @@ class Helper:
     @staticmethod
     def get_project_root():
         return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-

@@ -3,6 +3,8 @@ import json
 import os
 from config import config
 from commands.staticdata.add_words import AddWordsCommand, WordTypes
+from utils.get_project_dir import get_project_root
+from helpers.add_words import load_words_from_file
 
 
 class InitiateDB:
@@ -17,6 +19,10 @@ class InitiateDB:
         self.create_metadata_db()
         self.create_static_data_db()
         self.create_taxonomy_db()
+        self.create_challenges_db()
+
+        # self.create_db(config['couchdb']['challenges_db'])
+        self.create_db("_users")
 
     def create_db(self, db_name):
         print("Creating [{0}] db".format(db_name))
@@ -99,19 +105,18 @@ class InitiateDB:
         static_data_db = config['couchdb']['static_data_db']
         self.create_db(static_data_db)
         self.create_view(static_data_db)
-        add_recommended_words = AddWordsCommand()
-        add_recommended_words.input = {
-            'type': WordTypes.RECOMMENDED_WORDS.name,
-            'words': []
-        }
-        add_recommended_words.execute()
 
-        add_banned_words = AddWordsCommand()
-        add_banned_words.input = {
-            'type': WordTypes.BANNED_WORDS.name,
-            'words': []
-        }
-        add_banned_words.execute()
+        root = get_project_root()
+        file_path1 = os.path.join(root, "helpers", "db_setup", "staticdata", "banned_words.txt")
+        load_words_from_file(file_path1, WordTypes.BANNED_WORDS)
+
+        file_path2 = os.path.join(root, "helpers", "db_setup", "staticdata", "recommended_words.txt")
+        load_words_from_file(file_path2, WordTypes.RECOMMENDED_WORDS)
+
+    def create_challenges_db(self):
+        challenges_db = config['couchdb']['challenges_db']
+        self.create_db(challenges_db)
+        self.create_view(static_data_db)
 
     def create_view(self, db_name):
         print("Creating all-docs view for [{0}]".format(db_name))

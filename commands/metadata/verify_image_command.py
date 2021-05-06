@@ -11,7 +11,7 @@ class VerifyImageCommand(BaseCommand):
 
     def __init__(self):
         super().__init__()
-        self.imageMetadataDao = image_metadata_dao
+        self.image_metadata_dao = image_metadata_dao
         self.staticdata_dao = static_data_dao
 
     def execute(self):
@@ -32,63 +32,37 @@ class VerifyImageCommand(BaseCommand):
             self.successful = False
             return
 
-        results = self.imageMetadataDao.mark_as_verified(self.input['data'], self.input['public_address'])
+        result = self.image_metadata_dao.mark_image_as_verified(self.input['image_id'], self.input['data'],
+                                                                self.input['public_address'])
 
-        for result in results:
-            if result['success']:
-                self.imageMetadataDao.move_to_verified_if_possible(result['image_id'])
-
-        if all(result['success'] is True for result in results):
+        if result['success']:
+            self.image_metadata_dao.move_to_verified_if_possible(self.input['image_id'])
             self.successful = True
         else:
-            self.messages.append('Some or all images are not in verifiable state')
+            self.messages.append('Image could not be verified')
             self.successful = False
 
     def validate_input(self):
         if not self.input:
             self.messages.append("Empty input body.")
             return False
-        if not isinstance(self.input['data'], list):
-            self.messages.append('"data" is not a list.')
+
+        if not self.input.get('data'):
+            self.messages.append('"data" is empty.')
             return False
 
-        for index, row in enumerate(self.input['data']):
-            if not isinstance(row, dict):
-                self.messages.append('row in data not an object.')
-                return False
-            if not row.get('image_id'):
-                self.messages.append('missing "image_id" in data.')
-                return False
-            if not row.get('tags'):
-                self.messages.append('missing "tags" in data.')
-                return False
-            if not isinstance(row['tags'].get('up_votes'), list):
-                self.messages.append('"tags.up_votes" is not a list.')
-                return False
-            if not isinstance(row['tags'].get('down_votes'), list):
-                self.messages.append('"tags.down_votes" is not a list.')
-                return False
-            if not row.get('descriptions'):
-                self.input['data'][index]['descriptions'] = {
-                    'up_votes': [],
-                    'down_votes': []
-                }
-            if not isinstance(row['descriptions'].get('up_votes'), list):
-                self.messages.append('"descriptions.up_votes" is not a list.')
-                return False
-            if not isinstance(row['descriptions'].get('down_votes'), list):
-                self.messages.append('"descriptions.down_votes" is not a list.')
-                return False
+        if not isinstance(self.input.get('public_address'), str):
+            self.messages.append('"public_address" is not a string.')
+            return False
+
+        if not isinstance(self.input.get('image_id'), str):
+            self.messages.append('"image_id" is not a string.')
+            return False
+
         return True
 
     def clean_input(self):
-        for index, row in enumerate(self.input['data']):
-            self.input['data'][index]["tags"]['up_votes'] = list(map(str.strip, row["tags"]['up_votes']))
-            self.input['data'][index]["tags"]['down_votes'] = list(map(str.strip, row["tags"]['down_votes']))
-            self.input['data'][index]["descriptions"]['up_votes'] = list(
-                map(VerifyImageCommand.remove_control_characters, row["descriptions"]['up_votes']))
-            self.input['data'][index]["descriptions"]['down_votes'] = list(
-                map(str.strip, row["descriptions"]['down_votes']))
+        pass
 
     @staticmethod
     def remove_control_characters(tag):
@@ -96,37 +70,37 @@ class VerifyImageCommand(BaseCommand):
 
     def has_banned_words(self):
         banned_words = self.staticdata_dao.get_words_by_type(WordTypes.BANNED_WORDS.name)
-        for index, row in enumerate(self.input['data']):
-            tags_lower_case = []
-            tags_lower_case = tags_lower_case + list(map(lambda x: x.lower(), row['tags']['up_votes']))
-            tags_lower_case = tags_lower_case + list(map(lambda x: x.lower(), row['tags']['down_votes']))
-            tags_lower_case = tags_lower_case + list(map(lambda x: x.lower(), row['descriptions']['up_votes']))
-            tags_lower_case = tags_lower_case + list(map(lambda x: x.lower(), row['descriptions']['down_votes']))
-            banned_words_in_input = list(set(tags_lower_case) & set(banned_words))
-            if len(banned_words_in_input) > 0:
-                return True
+        tags_lower_case = []
+        tags_lower_case = tags_lower_case + list(map(lambda x: x.lower(), self.input['data']['tags']['up_votes']))
+        tags_lower_case = tags_lower_case + list(map(lambda x: x.lower(), self.input['data']['tags']['down_votes']))
+        tags_lower_case = tags_lower_case + list(
+            map(lambda x: x.lower(), self.input['data']['descriptions']['up_votes']))
+        tags_lower_case = tags_lower_case + list(
+            map(lambda x: x.lower(), self.input['data']['descriptions']['down_votes']))
+        banned_words_in_input = list(set(tags_lower_case) & set(banned_words))
+        if len(banned_words_in_input) > 0:
+            return True
         return False
 
     def has_valid_tag_length(self):
-        for index, row in enumerate(self.input['data']):
-            tags = row['tags']['up_votes'] + row['tags']['down_votes']
-            all_tags_in_limit = all(
-                [len(tag) <= VerifyImageCommand.MAX_TAG_LENGTH for tag in tags])
+        tags = self.input['data']['tags']['up_votes'] + self.input['data']['tags']['down_votes']
+        all_tags_in_limit = all(
+            [len(tag) <= VerifyImageCommand.MAX_TAG_LENGTH for tag in tags])
 
-            if not all_tags_in_limit:
-                self.messages.append(
-                    "Length of tag(s) exceeds limit of [{0}] characters.".format(VerifyImageCommand.MAX_TAG_LENGTH))
-                return False
+        if not all_tags_in_limit:
+            self.messages.append(
+                "Length of tag(s) exceeds limit of [{0}] characters.".format(VerifyImageCommand.MAX_TAG_LENGTH))
+            return False
 
-            descriptions = row['descriptions']['up_votes'] + row['descriptions']['down_votes']
-            all_descriptions_in_limit = all(
-                [len(description) <= VerifyImageCommand.MAX_DESCRIPTION_LENGTH for description in descriptions])
+        descriptions = self.input['data']['descriptions']['up_votes'] + self.input['data']['descriptions']['down_votes']
+        all_descriptions_in_limit = all(
+            [len(description) <= VerifyImageCommand.MAX_DESCRIPTION_LENGTH for description in descriptions])
 
-            if not all_descriptions_in_limit:
-                self.messages.append(
-                    "Length of description(s) exceeds limit of [{0}] characters.".format(
-                        VerifyImageCommand.MAX_DESCRIPTION_LENGTH))
-                return False
+        if not all_descriptions_in_limit:
+            self.messages.append(
+                "Length of description(s) exceeds limit of [{0}] characters.".format(
+                    VerifyImageCommand.MAX_DESCRIPTION_LENGTH))
+            return False
 
         return True
 

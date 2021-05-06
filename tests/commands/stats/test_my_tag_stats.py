@@ -1,6 +1,6 @@
 from helpers.load_dummy_data import DummyDataLoader
 from tests.test_base import TestBase
-from commands.metadata.my_tag_stats_command import MyTagStatsCommand
+from commands.stasts.my_tag_stats_command import MyTagStatsCommand
 from tests.metadata_helper import MetadataHelper
 
 

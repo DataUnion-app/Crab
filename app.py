@@ -9,6 +9,9 @@ from routes.authentication_routes import authentication_routes, sessions_dao
 from routes.metadata_routes import metadata_routes
 from routes.staticdata import staticdata_routes
 from routes.taxonomy import taxonomy_routes
+from routes.challenges import challenges_routes
+from routes.stats import stats_routes
+
 from config import config
 
 if not config['application'].getboolean('jwt_on'):
@@ -26,6 +29,8 @@ app.register_blueprint(authentication_routes)
 app.register_blueprint(metadata_routes)
 app.register_blueprint(staticdata_routes)
 app.register_blueprint(taxonomy_routes, url_prefix='/api/v1/taxonomy')
+app.register_blueprint(challenges_routes, url_prefix='/api/v1/challenges')
+app.register_blueprint(stats_routes, url_prefix='/api/v1/stats')
 
 app.secret_key = config['application']['secret_key']
 app.config['UPLOAD_FOLDER'] = config['application']['upload_folder']
@@ -59,7 +64,4 @@ def api():
 
 
 if __name__ == '__main__':
-    if config['application'].getboolean('use_https'):
-        app.run(host='0.0.0.0', port=config['application']['port'], ssl_context=('ssl/cert.pem', 'ssl/key.pem'))
-    else:
-        app.run(host='0.0.0.0', port=config['application']['port'])
+    app.run(host='0.0.0.0', port=config['application']['port'])

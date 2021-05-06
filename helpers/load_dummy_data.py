@@ -175,17 +175,19 @@ class DummyDataLoader:
 
     @staticmethod
     def mark_as_verified(image_ids, up_votes, down_votes, desc_up_votes, desc_down_votes):
-        acct = Account.create()
-        verify_image_command = VerifyImageCommand()
-        data = [{'image_id': image_id, 'tags': {'up_votes': up_votes, 'down_votes': down_votes},
-                 'descriptions': {'up_votes': desc_up_votes, 'down_votes': desc_down_votes}} for image_id in
-                image_ids]
-        verify_image_command.input = {
-            'public_address': acct.address,
-            'data': data
-        }
 
-        verify_image_command.execute()
+        for i in image_ids:
+            acct = Account.create()
+            verify_image_command = VerifyImageCommand()
+            data = {'tags': {'up_votes': up_votes, 'down_votes': down_votes},
+                    'descriptions': {'up_votes': desc_up_votes, 'down_votes': desc_down_votes}}
+
+            verify_image_command.input = {
+                'public_address': acct.address,
+                'data': data,
+                'image_id': i
+            }
+            verify_image_command.execute()
 
     @staticmethod
     def add_tags(image_id, tags, description):
@@ -226,7 +228,7 @@ class DummyDataLoader:
         n = random.randint(1, 10)
 
         rand_words = random.sample(words.words(), n)
-        return {"photo_id": image_id, "timestamp": "", "tags": rand_words}
+        return {"image_id": image_id, "tags": rand_words, "description": "text " * 30}
 
 
 if __name__ == '__main__':

@@ -43,6 +43,12 @@ class TestBase(unittest.TestCase):
 
         self.acct = Account.create()
         self.token = None
+
+        self.default_accounts: [Account] = []
+        self.default_tokens: [str] = []
+
+        self.read_default_accounts()
+
         super(TestBase, self).__init__(*args, **kwargs)
 
     def setUp(self):
@@ -105,6 +111,15 @@ class TestBase(unittest.TestCase):
         if not self.token:
             self.token = Helper.login(self.acct.address, self.acct.key)
         return self.token
+
+    def read_default_accounts(self):
+        path = os.path.join(get_project_root(), 'tests', 'account_keys.txt')
+        if os.path.isfile(path):
+            with open(path) as test_accounts_file:
+                for line in test_accounts_file:
+                    account = Account.from_key(line)
+                    self.default_accounts.append(account)
+                    self.default_tokens.append(Helper.login(account.address, account.key))
 
     if __name__ == '__main__':
         unittest.main()

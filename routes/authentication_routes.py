@@ -66,7 +66,7 @@ def login():
             'access_token': access_token,
             'refresh_token': refresh_token
         }), 200
-    except:
+    except Exception as e:
         return {'message': 'Something went wrong'}, 500
 
 
