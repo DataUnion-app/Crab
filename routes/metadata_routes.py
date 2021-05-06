@@ -37,7 +37,7 @@ def allowed_file(filename):
 @metadata_routes.route('/api/v1/upload', methods=["POST"])
 @jwt_required
 def upload_metadata():
-    required_params = ["timestamp", "photo_id", "tags"]
+    required_params = ["image_id"]
     data = json.loads(request.data)
     public_address = get_jwt_identity()
 
@@ -48,7 +48,7 @@ def upload_metadata():
     add_new_metadata_command = AddNewMetadataCommand()
     add_new_metadata_command.input = {
         "public_address": public_address,
-        "photo_id": data.get("photo_id"),
+        "image_id": data.get("image_id"),
         "tags": data.get("tags"),
         "description": data.get("description", None),
     }

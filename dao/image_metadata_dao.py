@@ -225,6 +225,7 @@ class ImageMetadataDao(BaseDao):
         selector = {
             "selector": {
                 "status": status,
+                "type": 'image',
                 "$and": [
                     {
                         "$not": {
@@ -233,7 +234,18 @@ class ImageMetadataDao(BaseDao):
                     },
                     {
                         "$not": {
-                            "tag_data": {
+                            "verified": {
+                                "$elemMatch": {
+                                    "by": {
+                                        "$eq": public_address
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "$not": {
+                            "tags_annotations": {
                                 "$elemMatch": {
                                     "uploaded_by": {
                                         "$eq": public_address
@@ -244,9 +256,9 @@ class ImageMetadataDao(BaseDao):
                     },
                     {
                         "$not": {
-                            "verified": {
+                            "text_annotations": {
                                 "$elemMatch": {
-                                    "by": {
+                                    "uploaded_by": {
                                         "$eq": public_address
                                     }
                                 }
@@ -262,8 +274,8 @@ class ImageMetadataDao(BaseDao):
             ],
             "fields": [
                 "_id",
-                "tag_data",
-                "verified"
+                "tags_annotations",
+                "text_annotations"
             ],
             "limit": self.page_size,
             "skip": skip
@@ -274,63 +286,20 @@ class ImageMetadataDao(BaseDao):
         for row in data:
 
             tag_data = []
-            descriptions = []
-            for tagged_data in row['tag_data']:
-                if tagged_data['description']:
-                    descriptions.append(tagged_data['description'])
+
+            for tagged_data in row['tags_annotations']:
                 tag_data = tag_data + tagged_data['tags']
 
-            for verified in row['verified']:
-                tag_data = tag_data + verified['tags']['up_votes']
-                tag_data = tag_data + verified['tags']['down_votes']
-                if verified.get('descriptions'):
-                    descriptions = descriptions + verified['descriptions'].get('up_votes', [])
-                    descriptions = descriptions + verified['descriptions'].get('down_votes', [])
+            descriptions = []
+            for text_data in row['text_annotations']:
+                descriptions.append(text_data['text'])
+
             result.append({
                 'image_id': row['_id'],
                 'tag_data': list(set(tag_data)),
                 'descriptions': list(set(descriptions))
             })
         return {"result": result, "page": page, "page_size": self.page_size}
-
-    def mark_as_verified(self, data, public_address: str):
-        image_ids = [row['image_id'] for row in data]
-        query = {"selector": {"_id": {"$in": image_ids}}, "limit": len(image_ids)}
-        url = "http://{0}:{1}@{2}/{3}/_find".format(self.user, self.password, self.db_host, self.db_name)
-        headers = {'Content-Type': 'application/json'}
-
-        response = requests.request("POST", url, headers=headers, data=json.dumps(query))
-        documents = json.loads(response.text)["docs"]
-        result = []
-        for document in documents:
-            if document['status'] not in [ImageStatus.VERIFIABLE.name, ImageStatus.VERIFIED.name]:
-                result.append({'image_id': document['_id'], 'success': False})
-                continue
-            verified = document.get("verified")
-
-            tag_up_votes = []
-            tag_down_votes = []
-            description_up_votes = []
-            description_down_votes = []
-            for row in data:
-                if row['image_id'] == document['_id']:
-                    tag_up_votes = row['tags']['up_votes']
-                    tag_down_votes = row['tags']['down_votes']
-                    description_up_votes = row['descriptions']['up_votes']
-                    description_down_votes = row['descriptions']['down_votes']
-                    break
-
-            verified_data = {"by": public_address, "time": datetime.timestamp(datetime.now()),
-                             'tags': {'up_votes': tag_up_votes, 'down_votes': tag_down_votes},
-                             'descriptions': {'up_votes': description_up_votes, 'down_votes': description_down_votes}}
-
-            if not verified:
-                document["verified"] = [verified_data]
-            elif len([report for report in verified if report["by"] == public_address]) == 0:
-                document["verified"].append(verified_data)
-            self.update_doc(document["_id"], document)
-            result.append({'image_id': document['_id'], 'success': True})
-        return result
 
     def mark_image_as_verified(self, image_id, data, public_address: str):
 
