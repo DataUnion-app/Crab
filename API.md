@@ -267,6 +267,56 @@ Supported HTTP REST apis
         }
         ```
 
+
+- **GET** `/api/v1/stats/overall-tags`
+    - Parameters:
+        - start_date: Date in 'dd-mm-yyyy' format
+        - end_date: Date in 'dd-mm-yyyy' format
+    - Example:
+      ```bash
+        curl --location --request GET 'http://localhost:8080/api/v1/stats/-tags?start_date=01-01-2018&end_date=06-06-2021''
+      ```
+    - Response:
+        - 200
+        ```JSON
+        {
+            "result": {
+                "bronchocele": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 1
+                    }
+                ],
+                "gallantize": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 1
+                    }
+                ],
+                "pennywinkle": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 1
+                    }
+                ],
+                "sicca": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 1
+                    }
+                ],
+                "venomer": [
+                    {
+                        "date": "6-5-2021",
+                        "value": 1
+                    }
+                ]
+            },
+            "status": "success"
+        }
+        ```
+
+
 ***
 
 ## Staticdata
