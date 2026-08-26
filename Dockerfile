@@ -14,10 +14,6 @@ COPY requirements/prod_linux.txt requirements/prod_linux.lock.txt ./requirements
 RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel \
   && python -m pip install --no-cache-dir -r requirements/prod_linux.lock.txt \
   && sed -i 's/^import pkg_resources$/from importlib.metadata import version as package_version/' \
-       /opt/venv/lib/python3.11/site-packages/web3/__init__.py \
-  && sed -i 's/^__version__ = pkg_resources.get_distribution("web3").version$/__version__ = package_version("web3")/' \
-       /opt/venv/lib/python3.11/site-packages/web3/__init__.py \
-  && sed -i 's/^import pkg_resources$/from importlib.metadata import version as package_version/' \
        /opt/venv/lib/python3.11/site-packages/zbarlight/__init__.py \
   && sed -i "s/^__version__ = pkg_resources.get_distribution('zbarlight').version$/__version__ = package_version('zbarlight')/" \
        /opt/venv/lib/python3.11/site-packages/zbarlight/__init__.py \

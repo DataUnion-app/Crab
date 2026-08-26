@@ -6,7 +6,7 @@ from eth_account import Account
 from eth_account.signers.local import LocalAccount
 from requests import HTTPError
 from web3.exceptions import ContractLogicError
-from web3.middleware import geth_poa_middleware
+from web3.middleware import ExtraDataToPOAMiddleware
 
 from commands.rewards.calculate_reward import (
     CalculateRewardCommand,
@@ -337,7 +337,7 @@ class ClaimRewardCommand(CalculateRewardCommand):
         web3 = Web3(HTTPProvider(json_rpc_url, request_kwargs={"timeout": rpc_timeout}))
         chain_id = int(config["rewards"]["chain_id"])
         if config["rewards"]["network"] == "mumbai":
-            web3.middleware_onion.inject(geth_poa_middleware, layer=0)
+            web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
             chain_id = 80001
         token_contract_address = Web3.to_checksum_address(config["rewards"]["token_contract_address"])
         sender_account_private_key = config["rewards"]["account_private_key"]
@@ -357,7 +357,7 @@ class ClaimRewardCommand(CalculateRewardCommand):
             )
             tx_hash = signed_txn.hash.hex()
             try:
-                web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                web3.eth.send_raw_transaction(signed_txn.raw_transaction)
             except ValueError as err:
                 # JSON-RPC validation failures are definite rejections. A known
                 # transaction is the exception: the same bytes were accepted by a
@@ -400,7 +400,7 @@ class ClaimRewardCommand(CalculateRewardCommand):
         web3 = Web3(HTTPProvider(json_rpc_url))
         chain_id = int(config["rewards"]["chain_id"])
         if config["rewards"]["network"] == "mumbai":
-            web3.middleware_onion.inject(geth_poa_middleware, layer=0)
+            web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
             chain_id = 80001
         sender_account_private_key = config["rewards"]["account_private_key"]
 
@@ -423,7 +423,7 @@ class ClaimRewardCommand(CalculateRewardCommand):
                 tx, private_key=sender_account_private_key
             )
             tx_hash = signed_tx.hash.hex()
-            web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            web3.eth.send_raw_transaction(signed_tx.raw_transaction)
         logging.info("Gas transfer: Getting transaction receipt for tx [%s]", tx_hash)
 
         tx_receipt = web3.eth.wait_for_transaction_receipt(signed_tx.hash.hex())
@@ -490,7 +490,7 @@ class ClaimRewardByQRCodeCommand(BaseCommand):
         web3 = Web3(HTTPProvider(json_rpc_url))
         chain_id = int(config["rewards"]["chain_id"])
         if config["rewards"]["network"] == "mumbai":
-            web3.middleware_onion.inject(geth_poa_middleware, layer=0)
+            web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
             chain_id = 80001
         token_contract_address = Web3.to_checksum_address(config["rewards"]["token_contract_address"])
         sender_account_private_key = config["rewards"]["account_private_key"]
@@ -508,7 +508,7 @@ class ClaimRewardByQRCodeCommand(BaseCommand):
             signed_txn = web3.eth.account.sign_transaction(
                 txn, private_key=sender_account_private_key
             )
-            web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            web3.eth.send_raw_transaction(signed_txn.raw_transaction)
             tx_hash = signed_txn.hash.hex()
         max_attempts = 3
         tx_receipt = None
@@ -539,7 +539,7 @@ class ClaimRewardByQRCodeCommand(BaseCommand):
         web3 = Web3(HTTPProvider(json_rpc_url))
         chain_id = int(config["rewards"]["chain_id"])
         if config["rewards"]["network"] == "mumbai":
-            web3.middleware_onion.inject(geth_poa_middleware, layer=0)
+            web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
             chain_id = 80001
         sender_account_private_key = config["rewards"]["account_private_key"]
 
@@ -562,7 +562,7 @@ class ClaimRewardByQRCodeCommand(BaseCommand):
                 tx, private_key=sender_account_private_key
             )
             tx_hash = signed_tx.hash.hex()
-            web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            web3.eth.send_raw_transaction(signed_tx.raw_transaction)
         logging.info("Gas transfer: Getting transaction receipt for tx [%s]", tx_hash)
 
         tx_receipt = web3.eth.wait_for_transaction_receipt(signed_tx.hash.hex())

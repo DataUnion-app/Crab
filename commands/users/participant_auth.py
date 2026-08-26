@@ -16,7 +16,7 @@ from dao.sessions_dao import ParticipantSessionStateError
 
 
 ADDRESS = re.compile(r"^0x[0-9a-fA-F]{40}$")
-SIGNATURE = re.compile(r"^0x[0-9a-fA-F]{130}$")
+SIGNATURE = re.compile(r"^(?:0x)?[0-9a-fA-F]{130}$")
 IDENTIFIER = re.compile(r"^[0-9a-f]{32}$")
 SESSION_SECRET = re.compile(r"^[A-Za-z0-9_-]{43}$")
 PURPOSE = "brainstem.participant.web-login"

@@ -1,10 +1,10 @@
 celery==5.6.3
 cryptography==50.0.0
-eciespy==0.4.1
+eciespy==0.4.6
 enforce-typing==1.0.0.post1
-eth-account==0.11.3
-eth-keys==0.4.0
-eth-utils==2.3.2
+eth-account==0.14.0
+eth-keys==0.8.0
+eth-utils==6.0.0
 Flask==3.1.3
 Flask-Caching==2.4.1
 Flask-Cors==6.0.5
@@ -22,9 +22,9 @@ python-dateutil==2.8.2
 qrcode==6.1
 reportlab==4.0.6
 requests==2.34.2
-pydantic==1.10.13
+pydantic==2.13.4
 uWSGI==2.0.31
-web3==6.11.4
+web3==7.16.0
 Werkzeug==3.1.8
 zbarlight==3.0
 aiohttp==3.14.3

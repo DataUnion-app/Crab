@@ -10,7 +10,7 @@ class Eth:
 
     def get_transaction_receipt(self, transaction_hash):
         if transaction_hash not in self.receipts:
-            raise TransactionNotFound
+            raise TransactionNotFound("transaction not found")
         return {"status": self.receipts[transaction_hash]}
 
 
