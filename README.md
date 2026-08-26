@@ -4,6 +4,8 @@ Crab is the DataUnion backend. It accepts wallet-authenticated contributions, ke
 
 This repository contains the DataUnion backend and its historical domain integrations. Separately maintained Brainstem Health client repositories are not part of this release.
 
+For an architectural walkthrough of the hardest engineering problems and their relevance to governed compute infrastructure, read the [case study](CASE_STUDY.md).
+
 The public history begins with a reviewed release cut because the private development repository also contained excluded operational material and third-party fixtures. The code predates that import and was developed by DataUnion contributors over multiple years.
 
 ## Design boundaries
