@@ -1,0 +1,31 @@
+{
+  "challenges":[
+    {
+      "id": "JJwZrAyquD",
+      "name": "Image upload challenge",
+      "status": "RUNNING",
+      "description": "Sample description",
+      "start_date": 1620295124.402209,
+      "end_date": 1620295125.438787,
+      "rules": "Sample Rules"
+    },
+    {
+      "id": "2",
+      "name": "Image upload challenge",
+      "status": "RUNNING",
+      "description": "Sample description",
+      "start_date": 1620314608.205096,
+      "end_date": 1620314609.538922,
+      "rules": "Sample Rules"
+    },
+    {
+      "id": "nPbWJzwRrs",
+      "name": "Image Upload Challenge",
+      "status": "RUNNING",
+      "description": "Sample Challenge Description",
+      "start_date": 1620295735.07899,
+      "end_date": 1620295735.421565,
+      "rules": "Sample Rules"
+    }
+  ]
+}

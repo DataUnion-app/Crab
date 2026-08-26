@@ -1,0 +1,48 @@
+{
+  "views": [
+    {
+      "_id": "_design/all-docs",
+      "views": {
+        "all-docs": {
+          "map": "function (doc) {\n  emit(doc._id, {\"rev\":doc._rev, \"id\": doc._id});\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/bounty-info",
+      "views": {
+        "user-bounty": {
+          "map": "function (doc) {\n  \n  const bounty_info = {\n    \"id\" : doc._id,\n    \"bounty_name\" : doc[\"bounty_name\"],\n    \"bounty_description\" : doc[\"bounty_description\"],\n    'company_name': doc['company_name'],\n    'company_description': doc['company_description'],\n    'company_image_url': doc['company_image'],\n    'bounty_image_url': doc['bounty_image'],\n    'start_date': doc['start_date'],\n    'end_date': doc['end_date'],\n    'tags': doc['tags'],\n    'sample_data_list': doc['sample_data_list'],\n    'image_requirements': doc['image_requirements'],\n    'image_format': doc['image_format'],\n    'image_count': doc['image_count'],\n    'number_of_verifications': doc['number_of_verifications'],\n    'number_of_annotations': doc['number_of_annotations'],\n    'status': doc['status'],\n    'bounty_type': doc['bounty_type'],\n    'entity_list_id': doc[\"entity_list_id\"],\n    'product_id': doc[\"product_id\"],\n    'sepcial_instructions': doc[\"sepcial_instructions\"],\n    'minimum_amount_stored': doc[\"minimum_amount_stored\"],\n    'minimum_amount_returned': doc[\"minimum_amount_returned\"],\n     'amount_of_items': doc[\"amount_of_items\"],\n     'amount_of_reward': doc[\"amount_of_reward\"],\n     'location': doc[\"location\"],\n    'entity_ids_in_bounty': doc[\"entity_ids\"]\n  }\n  \n  emit([doc[\"created_by\"], doc._id], bounty_info);\n}"
+        },
+        "bounty-id": {
+          "map": "function (doc) {\n  \n  const bounty_info = {\n    \"id\" : doc._id,\n    \"bounty_name\" : doc[\"bounty_name\"],\n    \"bounty_description\" : doc[\"bounty_description\"],\n    'company_name': doc['company_name'],\n    'company_description': doc['company_description'],\n    'company_image_url': doc['company_image'],\n    'bounty_image_url': doc['bounty_image'],\n    'start_date': doc['start_date'],\n    'end_date': doc['end_date'],\n    'tags': doc['tags'],\n    'sample_data_list': doc['sample_data_list'],\n    'image_requirements': doc['image_requirements'],\n    'image_format': doc['image_format'],\n    'image_count': doc['image_count'],\n    'number_of_verifications': doc['number_of_verifications'],\n    'number_of_annotations': doc['number_of_annotations'],\n    'status': doc['status'],\n    'bounty_type': doc['bounty_type'],\n    'entity_list_id': doc[\"entity_list_id\"]\n  }\n  \n  emit(doc._id, bounty_info);\n}"
+        },
+        "all": {
+          "map": "function (doc) {\n  emit(doc._id, {\n    \"id\" : doc._id,\n    \"company_name\": doc[\"company_name\"],\n  \"company_description\": doc[\"company_description\"],\n  \"document_type\": doc[\"document_type\"],\n  \"bounty_type\": doc[\"bounty_type\"],\n  \"bounty_name\": doc[\"bounty_name\"],\n  \"bounty_description\": doc[\"bounty_description\"],\n  \"start_date\": doc[\"start_date\"],\n  \"end_date\": doc[\"end_date\"],\n  \"created_by\": doc[\"created_by\"],\n  \"created_at\": doc[\"created_at\"],\n  });\n}"
+        }
+      },
+      "language": "javascript"
+    }
+  ],
+  "index": [
+    {
+      "index": {
+        "fields": [
+          "created_at"
+        ]
+      },
+      "name": "created_at-index",
+      "type": "json"
+    },
+    {
+      "index": {
+        "fields": [
+          "missions_count"
+        ]
+      },
+      "name": "missions_count-index",
+      "type": "json"
+    }
+  ]
+}

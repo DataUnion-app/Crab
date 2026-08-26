@@ -1,0 +1,58 @@
+name: hardened-candidate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  governed-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Build the locked test environment
+        run: docker build --target test -t crab-hardened-candidate .
+      - name: Run the governed release suite
+        run: |
+          docker run --rm \
+            --mount "type=bind,source=${GITHUB_WORKSPACE},target=/src,readonly" \
+            --workdir /src \
+            --env PYTHONPATH=/src \
+            --env CRAB_CONFIG_FILE=/src/sample.ini \
+            crab-hardened-candidate \
+            python -m pytest -p no:cacheprovider -q \
+              tests/commands/metadata/test_brainstem_study_activation.py \
+              tests/commands/metadata/test_brainstem_study_contract.py \
+              tests/commands/metadata/test_brainstem_study_data_authorization.py \
+              tests/commands/metadata/test_brainstem_study_eligibility.py \
+              tests/commands/metadata/test_brainstem_study_export.py \
+              tests/commands/metadata/test_brainstem_study_operations.py \
+              tests/commands/metadata/test_brainstem_study_registry.py \
+              tests/commands/metadata/test_brainstem_study_service.py \
+              tests/commands/metadata/test_brainstem_generic_study_service.py \
+              tests/commands/metadata/test_brainstem_c2d_export.py \
+              tests/commands/metadata/test_brainstem_consent.py \
+              tests/commands/metadata/test_brainstem_personal_insight.py \
+              tests/commands/metadata/test_brainstem_record_contract.py \
+              tests/commands/metadata/test_brainstem_recording_feasibility_enrollment.py \
+              tests/commands/metadata/test_brainstem_recording_feasibility_export.py \
+              tests/commands/metadata/test_brainstem_recording_feasibility_study.py \
+              tests/commands/rewards/test_brainstem_value_claim.py \
+              tests/commands/rewards/test_reconcile_reward_claims.py \
+              tests/commands/rewards/test_reward_failure_safety.py \
+              tests/commands/rewards/test_reward_preflight.py \
+              tests/commands/rewards/test_reward_sender_lock.py \
+              tests/routes/test_generic_study_routes.py \
+              tests/routes/test_study_routes.py \
+              tests/routes/test_brainstem_c2d_routes.py \
+              tests/routes/test_personal_insight_routes.py \
+              tests/routes/test_reward_preview_route.py \
+              tests/dao/test_study_activation_dao.py \
+              tests/dao/test_study_operations_dao.py \
+              tests/dao/test_study_dao.py \
+              tests/security/test_production_config.py \
+              tests/security/test_retired_public_routes.py

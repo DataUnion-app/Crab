@@ -1,0 +1,36 @@
+{
+  "views": [
+    {
+      "_id": "_design/all-docs",
+      "views": {
+        "all-docs": {
+          "map": "function (doc) { emit(doc._id, {\"rev\":doc._rev, \"id\": doc._id}); }"
+        }
+      },
+      "language": "javascript"
+    }
+  ],
+  "index": [
+    {
+      "index": {
+        "fields": ["type", "submitter_wallet", "updated_at"]
+      },
+      "name": "proposal-owner-updated-index",
+      "type": "json"
+    },
+    {
+      "index": {
+        "fields": ["type", "status", "updated_at"]
+      },
+      "name": "proposal-status-updated-index",
+      "type": "json"
+    },
+    {
+      "index": {
+        "fields": ["type", "updated_at"]
+      },
+      "name": "proposal-updated-index",
+      "type": "json"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "views": [
+    {
+      "_id": "_design/wedatanation",
+      "views": {
+        "apps": {
+          "map": "function (doc) {\n  if(doc._id === \"wedatanation_apps\") {\n     \n      emit(doc._id, doc[\"apps\"]);\n  }\n}"
+        },
+        "messages": {
+          "map": "function (doc) {\n  if(doc['dataunion'] === \"wedatanation\") {\n    emit(doc._id, doc[\"messages\"]);\n  }\n}"
+        }
+      },
+      "language": "javascript"
+    }
+  ],
+  "index": []
+}

@@ -1,0 +1,15 @@
+0 0.000  74
+1 0.810  74 810
+2 1.620  74 810
+
+ NoRRs=3
+ nEmpty=0
+ nRRs=3
+ nValidRRs=3
+ nBadRRs=0
+ nDrop-outs=0
+ dT by timestamps=1.620
+ Sum of RR intervals=1.620
+ Mean HBR=74.000
+ Mean HBR by 1/RR=74.074
+ Mean HBR by 1/OverallRRs=74.074

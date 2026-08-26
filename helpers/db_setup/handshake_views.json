@@ -1,0 +1,27 @@
+{
+  "views": [
+    {
+      "_id": "_design/stats",
+      "views": {
+        "hourly-count": {
+          "map": "function (doc) {\n  var date = new Date(doc[\"created_time\"]);\n  emit([doc[\"source\"], date.getFullYear(), date.getMonth()+1, date.getDate(), date.getHours()], 1);\n}",
+          "reduce": "_sum"
+        },
+        "all-handshakes": {
+          "map": "function (doc) {\n  const location = doc[\"location\"];\n  const date = new Date(doc[\"created_time\"]);\n  emit([doc[\"source\"], date.getFullYear(), date.getMonth()+1, date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()], {\"location\": location});\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/all-docs",
+      "views": {
+        "all-docs": {
+          "map": "function (doc) {\n  emit(doc._id, {\"rev\":doc._rev, \"id\": doc._id});\n}"
+        }
+      },
+      "language": "javascript"
+    }
+  ],
+  "index": []
+}

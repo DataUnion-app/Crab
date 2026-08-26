@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brainstem.dataunion.app/contracts/brainstem.personal-resting-rr.v1.schema.json",
+  "title": "Brainstem personal resting R-R v1",
+  "description": "The identifier-free input produced by Crab for one approved personal resting-heart Insight.",
+  "$comment": "Crab additionally enforces canonical JSON, a 1 MiB body limit, latest-16 selection, source hashes, current consent, deletion state, and one-use authorization.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "policy", "recordings"],
+  "properties": {
+    "schema": { "const": "brainstem.personal-resting-rr/v1" },
+    "policy": { "const": "brainstem.personal-resting-rr/latest-16/v1" },
+    "recordings": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/recording" }
+    }
+  },
+  "$defs": {
+    "recording": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recordingType", "durationSeconds", "rrIntervalsMs"],
+      "properties": {
+        "recordingType": { "const": "rest" },
+        "durationSeconds": {
+          "type": "integer",
+          "minimum": 300,
+          "maximum": 86400
+        },
+        "rrIntervalsMs": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 3600,
+          "items": {
+            "type": "number",
+            "minimum": 250,
+            "maximum": 2000
+          }
+        }
+      }
+    }
+  }
+}

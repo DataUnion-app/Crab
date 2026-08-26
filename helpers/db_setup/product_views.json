@@ -1,0 +1,15 @@
+{
+  "views": [
+    {
+      "_id": "_design/all-docs",
+      "views": {
+        "all-docs": {
+          "map": "function (doc) {\n  emit(doc._id, {\"rev\":doc._rev, \"id\": doc._id});\n}"
+        }
+      },
+      "language": "javascript"
+    }
+  ],
+  "index": [
+  ]
+}

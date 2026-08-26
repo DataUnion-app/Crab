@@ -1,0 +1,72 @@
+{
+  "views": [
+    {
+      "_id": "_design/all-docs",
+      "views": {
+        "all-docs": {
+          "map": "function (doc) {\n  emit(doc._id, {\"rev\":doc._rev, \"id\": doc._id});\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/counts",
+      "language": "javascript",
+      "views": {
+        "all": {
+          "map": "function(doc) { emit(null, 1); }",
+          "reduce": "function(keys, values, combine) { return sum(values); }"
+        },
+        "referrals": {
+          "map": "function (doc) {\n  if(doc[\"referral_id\"] !== undefined){\n     emit(doc[\"public_address\"], doc[\"referred_users\"].length);\n  } else {\n     emit(doc[\"public_address\"], 0);\n  }\n}"
+        }
+      }
+    },
+    {
+      "_id": "_design/user-info",
+      "views": {
+        "address-name-mapping": {
+          "map": "function (doc) {\n  if(doc[\"username\"]){\n      emit(doc[\"public_address\"], doc[\"username\"]);\n  }\n}"
+        },
+        "avatar": {
+          "map": "function (doc) {\n  if(doc[\"avatar\"] && (doc[\"avatar\"][\"staging\"] !== null)){\n    emit(doc[\"public_address\"], {\"status\": \"generating\"});\n    return;\n  }\n  emit(doc[\"public_address\"], doc[\"avatar\"][\"user_avatar\"]);\n}"
+        },
+        "generated-avatar": {
+          "map": "function (doc) {\n  let avatar_text_status, avatar_text, avatar_image_status, avatar_image_urls;\n  if (!doc['avatar']) {avatar_text_status = null}\n  else {avatar_text_status =  doc['avatar']['status']; avatar_text =  doc['avatar']['user_avatar'];}\n\n  if (!doc['avatar_result']) {avatar_image_status = null; avatar_image_urls = [];} \n  else {avatar_image_status = doc['avatar_result']['status']; avatar_image_urls = doc[\"avatar_result\"]['result'][\"images\"];}\n\n  if(doc[\"avatar\"] && (doc[\"avatar\"][\"staging\"] !== null)){\n    emit(doc[\"public_address\"], {\"status\": \"generating\"});\n    return;\n  }\n  emit(doc[\"public_address\"], {\n    'avatar_text_status': avatar_text_status,\n    'avatar_text': avatar_text,\n    'image_status': avatar_image_status,\n    'image_urls': avatar_image_urls,\n    'reserved_avatars': doc['reserved_avatars'] || []\n  });\n}"
+        }
+      },
+      "language": "javascript"
+    }
+  ],
+  "index": [
+    {
+      "index": {
+        "fields": [
+          "usage_flag",
+          "guidelines_acceptance_flag",
+          "metadata.year"
+        ]
+      },
+      "name": "brainstem-consented-recordings",
+      "type": "json"
+    },
+    {
+      "index": {
+        "fields": [
+          "rewards"
+        ]
+      },
+      "name": "rewards-index",
+      "type": "json"
+    },
+    {
+      "index": {
+        "fields": [
+          "created_at"
+        ]
+      },
+      "name": "created_at-index",
+      "type": "json"
+    }
+  ]
+}

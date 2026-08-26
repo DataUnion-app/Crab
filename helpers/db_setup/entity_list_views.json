@@ -1,0 +1,61 @@
+{
+  "views": [
+    {
+      "_id": "_design/all-docs",
+      "views": {
+        "all-docs": {
+          "map": "function (doc) {\n  emit(doc._id, {\"rev\":doc._rev, \"id\": doc._id});\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/bounty-entity-list",
+      "views": {
+        "bounty-progress-stats": {
+          "map": "function (doc) {\n  if(doc[\"entity_list_type\"] === \"bounty\") {\n    \n     const all_entities = new Set(doc[\"entity_ids\"] || []);\n     const accepted = new Set(doc[\"accepted_image_ids\"] || []);\n     const rejected = new Set(doc[\"rejected_image_ids\"] || []);\n\n      const entity_list_info = {\n       \n        \"entity_ids\" : all_entities.size\n      }\n      \n      const accpeted_intersection = new Set([...all_entities].filter(x => accepted.has(x)))\n      entity_list_info[\"accepted_entity_count\"] =  accpeted_intersection.size\n    \n      const rejected_intersection = new Set([...all_entities].filter(x => rejected.has(x)))\n      entity_list_info[\"rejected_entity_count\"] =  rejected_intersection.size\n           \n      emit([doc[\"public_address\"], doc._id], entity_list_info);\n  }\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/entity-search-stats",
+      "views": {
+        "entity-search-stats": {
+          "map": "function (doc) {\n  if(doc[\"entity_list_type\"] === \"bounty\") {\n    \n     const all_entities = new Set(doc[\"entity_ids\"] || []);\n     const accepted = new Set(doc[\"accepted_image_ids\"] || []);\n     const rejected = new Set(doc[\"rejected_image_ids\"] || []);\n\n      const entity_list_info = {\n       \n        \"scanned_count\" : all_entities.size\n      }\n      \n      const accpeted_intersection = new Set([...all_entities].filter(x => accepted.has(x)))\n      entity_list_info[\"stored_count\"] =  accpeted_intersection.size\n    \n      const rejected_intersection = new Set([...all_entities].filter(x => rejected.has(x)))\n      entity_list_info[\"returned_count\"] =  rejected_intersection.size\n           \n      emit([doc[\"public_address\"], doc._id], entity_list_info);\n  }\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+  "_id": "_design/user-created-lists",
+  "views": {
+    "count-by-user-and-type": {
+      "reduce": "_count",
+      "map": "function (doc) {\n  if (doc[\"entity_list_type\"] === \"bounty\")return;\n  emit([doc[\"public_address\"],doc[\"entity_type\"]], 1);\n}"
+    }
+  },
+  "language": "javascript"
+}
+  ],
+  "index": [
+    {
+      "index": {
+        "fields": [
+          "created_at"
+        ]
+      },
+      "name": "created_at-index",
+      "type": "json"
+    },
+    {
+      "index": {
+        "fields": [
+          "updated_at"
+        ]
+      },
+      "name": "created_at-index",
+      "type": "json"
+    }
+  ]
+}

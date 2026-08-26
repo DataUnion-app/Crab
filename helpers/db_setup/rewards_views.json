@@ -1,0 +1,67 @@
+{
+  "views": [
+    {
+      "_id": "_design/all-docs",
+      "views": {
+        "all-docs": {
+          "map": "function (doc) {\n  emit(doc._id, {\"rev\":doc._rev, \"id\": doc._id});\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/successful-claims-per-day",
+      "views": {
+        "successful-claims-per-day": {
+          "reduce": "_sum",
+          "map": "function (doc) {\n  \n  if(doc['status'] === 'transfer_succeeded'){\n      var created_at = new Date(doc['created_at']);\n      emit([doc['public_address'], doc[\"source\"], created_at.getFullYear(), created_at.getMonth() + 1,created_at.getDate()], 1);\n  }\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/payouts",
+      "views": {
+        "payouts": {
+          "reduce": "_sum",
+          "map": "function (doc) {\n  if(doc['status'] === 'transfer_succeeded'){\n      var created_at = new Date(doc['created_at']);\n      emit([doc['public_address'], created_at.getFullYear(), created_at.getMonth() + 1,created_at.getDate()], doc[\"amount\"]);\n  }\n}"
+        },
+        "get-earning": {
+          "reduce": "_sum",
+          "map": "function (doc) {\n  emit([doc[\"public_address\"], doc[\"updated_at\"]], doc[\"amount\"]);\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/brainstem",
+      "views": {
+        "claims": {
+          "reduce": "_sum",
+          "map": "function (doc) {\n  if (doc['status'] === 'created' && doc['source'] === 'brainstem') {\n    emit(doc['public_address'], doc['amount']);\n  }\n}"
+        }
+      },
+      "language": "javascript"
+    }
+  ],
+  "index": [
+    {
+      "index": {
+        "fields": [
+          "updated_at"
+        ]
+      },
+      "name": "updated_at-index",
+      "type": "json"
+    },
+    {
+      "index": {
+        "fields": [
+          "created_at"
+        ]
+      },
+      "name": "created_at-index",
+      "type": "json"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+DEFAULT_DATETIME_FORMAT_STRING = "%Y-%m-%dT%H:%M:%S.%f"

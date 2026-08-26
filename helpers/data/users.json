@@ -1,0 +1,28 @@
+{
+  "users": [
+    {
+      "user_id": 1,
+      "email": "admin@example.com",
+      "password": "1234qwer",
+      "claims": ["admin"]
+    },
+    {
+      "user_id": 1,
+      "email": "creator@example.com",
+      "password": "1234qwer",
+      "claims": ["creator"]
+    },
+    {
+      "user_id": 1,
+      "email": "storer@example.com",
+      "password": "1234qwer",
+      "claims": ["storer"]
+    },
+    {
+      "user_id": 1,
+      "email": "user@example.com",
+      "password": "1234qwer",
+      "claims": ["user"]
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brainstem.dataunion.app/contracts/brainstem.full-night-rr-cohort.v1.schema.json",
+  "title": "Brainstem full-night R-R cohort v1",
+  "description": "Identifier-minimized full-night detector R-R input for aggregate method-compatibility research only.",
+  "$comment": "Crab additionally enforces current consent, a purpose-bound active cohort release, one deterministic qualifying night per participant, job-scoped HMAC pseudonyms, canonical JSON, source revalidation, a 16 MiB body limit, and 20 to 100 distinct participants.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "policy", "participants"],
+  "properties": {
+    "schema": { "const": "brainstem.full-night-rr-cohort/v1" },
+    "policy": {
+      "enum": [
+        "brainstem.apdet-retrospective/v1",
+        "brainstem.full-night-rr-signal-compatibility/v1"
+      ]
+    },
+    "participants": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 100,
+      "items": { "$ref": "#/$defs/participant" }
+    }
+  },
+  "$defs": {
+    "participant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subjectId", "recordings"],
+      "properties": {
+        "subjectId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "recordings": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "$ref": "#/$defs/recording" }
+        }
+      }
+    },
+    "recording": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordingType",
+        "durationSeconds",
+        "intervalSemantics",
+        "allowedUse",
+        "quality",
+        "rrIntervalsMs"
+      ],
+      "properties": {
+        "recordingType": { "const": "sleep" },
+        "durationSeconds": {
+          "type": "integer",
+          "minimum": 18000,
+          "maximum": 43200
+        },
+        "intervalSemantics": { "const": "detector_rr_unclassified" },
+        "allowedUse": { "const": "aggregate_method_compatibility_only" },
+        "quality": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "observedIntervalCount",
+            "acceptedIntervalCount",
+            "acceptedFraction",
+            "durationCoverageRatio",
+            "normalToNormalProvenance",
+            "officialMethodInputCompatible"
+          ],
+          "properties": {
+            "observedIntervalCount": {
+              "type": "integer",
+              "minimum": 9000,
+              "maximum": 172800
+            },
+            "acceptedIntervalCount": {
+              "type": "integer",
+              "minimum": 9000,
+              "maximum": 172800
+            },
+            "acceptedFraction": {
+              "type": "number",
+              "minimum": 0.95,
+              "maximum": 1
+            },
+            "durationCoverageRatio": {
+              "type": "number",
+              "minimum": 0.9,
+              "maximum": 1.1
+            },
+            "normalToNormalProvenance": { "const": "unverified" },
+            "officialMethodInputCompatible": { "const": false }
+          }
+        },
+        "rrIntervalsMs": {
+          "type": "array",
+          "minItems": 9000,
+          "maxItems": 172800,
+          "items": {
+            "type": "number",
+            "minimum": 250,
+            "maximum": 2000
+          }
+        }
+      }
+    }
+  }
+}

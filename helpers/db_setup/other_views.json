@@ -1,0 +1,14 @@
+{
+  "views": [
+    {
+      "_id": "_design/ncight",
+      "views": {
+        "user-ranks": {
+          "map": "function (doc) {\n  if(doc._id == \"ncight-user-ranks\"){\n      emit(doc._id, doc[\"result\"]);\n  }\n}"
+        }
+      },
+      "language": "javascript"
+    }
+  ],
+  "index": []
+}

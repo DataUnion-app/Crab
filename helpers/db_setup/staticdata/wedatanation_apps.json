@@ -1,0 +1,52 @@
+{
+  "apps": [
+    {
+      "category": "social media",
+      "type": "facebook",
+      "title": "Facebook",
+      "status": "active"
+    },
+    {
+      "category": "social media",
+      "type": "twitter",
+      "title": "Twitter",
+      "status": "active"
+    },
+    {
+      "category": "social media",
+      "type": "instagram",
+      "title": "Instagram",
+      "status": "active"
+    },
+    {
+      "category": "social media",
+      "type": "linkedin",
+      "title": "Linkedin",
+      "status": "active"
+    },
+    {
+      "category": "e-commerce",
+      "type": "amazon",
+      "title": "Amazon",
+      "status": "active"
+    },
+    {
+      "category": "e-commerce",
+      "type": "zalando",
+      "title": "Zalando",
+      "status": "active"
+    },
+    {
+      "category": "streaming",
+      "type": "spotify",
+      "title": "Spotify",
+      "status": "active"
+    },
+    {
+      "category": "streaming",
+      "type": "netflix",
+      "title": "Netflix",
+      "status": "active"
+    }
+  ]
+}

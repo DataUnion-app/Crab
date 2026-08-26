@@ -1,0 +1,48 @@
+{
+  "views": [
+    {
+      "_id": "_design/stats",
+      "views": {
+        "user-stats-view": {
+          "map": "function (doc) {\n\n  if(doc['type'] != 'CROP') return;\n  \n  var verifications = doc['verified']\n\n  if(!verifications) return;\n \n \n  verifications.forEach((element)=> {\n    var v_time = new Date(element['created_at'] * 1000);\n    \n    emit([element['public_address'], v_time.getFullYear(), v_time.getMonth() + 1, v_time.getDate(), element['response']], 1);\n  })\n}",
+          "reduce": "_count"
+        },
+        "overall-stats-view": {
+          "reduce": "_count",
+          "map": "function (doc) {\n\n  if(doc['type'] != 'CROP') return;\n  var verifications = doc['verified']\n\n  if(!verifications) return;\n  let count_yes = 0;\n  let count_no = 0;\n  \n  verifications.forEach((element)=> {\n    var v_time = new Date(element['created_at'] * 1000);\n    emit([v_time.getFullYear(), v_time.getMonth() + 1, v_time.getDate(), element[\"response\"]], 1);\n  })\n  \n\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/all-docs",
+      "views": {
+        "all-docs": {
+          "map": "function (doc) {\n  emit(doc._id, {\"rev\":doc._rev, \"id\": doc._id});\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/counts",
+      "language": "javascript",
+      "views": {
+        "all": {
+          "map": "function(doc) { emit(null, 1); }",
+          "reduce": "function(keys, values, combine) { return sum(values); }"
+        }
+      }
+    }
+  ],
+  "index": [
+    {
+      "index": {
+        "fields": [
+          "created_at"
+        ]
+      },
+      "name": "created_at-index",
+      "type": "json"
+    }
+  ]
+}

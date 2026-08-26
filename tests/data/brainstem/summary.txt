@@ -1,0 +1,2 @@
+   Date    StartTime StopTime Duration MeanHR(bpm) N_RRs AVNN(ms) SDNN(ms) RMSSD(ms) NN50  pNN50 VLFpower(ms^2)  LFpower(ms^2) HFpower(ms^2)  LF/HF
+2000-01-01  00:00:00 00:09:59 00:09:59    73.00      728   821.50  41.00    31.00      22   3.02   1050.000         510.000       255.000    2.00000

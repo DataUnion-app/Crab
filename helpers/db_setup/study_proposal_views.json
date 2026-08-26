@@ -1,0 +1,14 @@
+{
+  "views": [],
+  "index": [
+    {
+      "index": {
+        "fields": [
+          "updatedAt"
+        ]
+      },
+      "name": "study-proposal-updated-at-index",
+      "type": "json"
+    }
+  ]
+}

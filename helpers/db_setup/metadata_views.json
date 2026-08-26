@@ -1,0 +1,725 @@
+{
+  "views": [
+    {
+      "_id": "_design/stats-verification",
+      "views": {
+        "stats-verification": {
+          "map": "function (doc) {\n      if(!(doc['verified']))return;\n      up_vote_tag_count = {};\n      down_vote_tag_count = {};\n      up_vote_desc_count = {};\n      down_vote_desc_count = {};\n\n      doc['verified'].forEach((element) => {\n        if(element['tags']){\n          element['tags'][\"up_votes\"].forEach((upvoted_tag) => {\n          up_vote_tag_count[upvoted_tag] = (up_vote_tag_count[upvoted_tag] + 1) || 1;\n          });\n          element['tags'][\"down_votes\"].forEach((downvoted_tag) => {\n          down_vote_tag_count[downvoted_tag] = (down_vote_tag_count[downvoted_tag] + 1) || 1;\n          });\n        }\n       \n        if(element['descriptions']){\n          element['descriptions'][\"down_votes\"].forEach((downvoted_desc)=>{\n          down_vote_desc_count[downvoted_desc] = (down_vote_desc_count[downvoted_desc] + 1) || 1;\n          });\n          \n          element['descriptions'][\"up_votes\"].forEach((up_voted_desc)=>{\n          up_vote_desc_count[up_voted_desc] = (up_vote_desc_count[up_voted_desc] + 1) || 1;\n          });\n        }\n      });\n      \n      let tag_sum_up_votes = 0;\n      let tag_sum_down_votes = 0;\n      let desc_sum_up_votes = 0;\n      let desc_sum_down_votes = 0;\n\n      Object.keys(up_vote_tag_count).forEach((element)=>{\n        tag_sum_up_votes +=  up_vote_tag_count[element]\n      })\n      \n      Object.keys(down_vote_tag_count).forEach((element)=>{\n        tag_sum_down_votes +=  down_vote_tag_count[element]\n      })\n      \n      Object.keys(up_vote_desc_count).forEach((element)=>{\n        desc_sum_up_votes +=  up_vote_desc_count[element]\n      })\n      \n      Object.keys(down_vote_desc_count).forEach((element)=>{\n        desc_sum_down_votes +=  down_vote_desc_count[element]\n      })\n\n\n      key = doc._id\n      emit(key, {'tags_up_votes':tag_sum_up_votes, 'tags_down_votes': tag_sum_down_votes, 'desc_down_votes': desc_sum_down_votes, 'desc_up_votes':desc_sum_up_votes });\n}",
+          "reduce": "function (keys, values, rereduce) {\n // if (rereduce) {\n    tags_up_votes = 0;\n    tags_down_votes = 0;\n    desc_down_votes = 0;\n    desc_up_votes = 0;\n    values.forEach((element) => {\n      tags_up_votes += element['tags_up_votes'];\n      tags_down_votes += element['tags_down_votes'];\n      desc_down_votes += element['desc_down_votes'];\n      desc_up_votes += element['desc_up_votes'];\n\n    })\n    return {tags_up_votes, tags_down_votes, desc_down_votes, desc_up_votes};\n  // } else {\n  //   return values.length;\n  // }\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/query-metadata",
+      "views": {
+        "search-by-status": {
+          "map": "function (doc) {\n      emit([doc[\"type\"], doc['status']], doc._id)\n}"
+        },
+        "search-by-tag": {
+          "map": "function (doc) {\n  if(doc['type']!== 'image') return;\n  \n  if(!doc['annotations']) return;\n  const tagSet = new Set()\n  \n  doc['annotations'].filter(({type}) => type === \"TextTag\" ).forEach(({tags})=>{\n     tags.forEach((tag)=>{tagSet.add(tag)})\n  })\n  for (let tag of tagSet) emit([doc['status'],tag], doc._id)\n}",
+          "reduce": "_count"
+        },
+        "votes-for-tags": {
+          "map": "function (doc) {\n  if(doc['type'] !='image') return;\n  if(!doc['annotations']) return;\n  \n  var user_tags = {}\n  \n  doc['annotations'].filter(({type}) => type === \"TextTag\" ).forEach(({tags}) => {\n      tags.forEach((tag) => {\n        user_tags[tag] = {\n          \"tag\" : tag,\n          \"up_votes\": 0,\n          \"down_votes\": 0,\n          \"bounding_boxes\": 0\n        };\n      });\n  });\n  \n  if(doc['verified']) {\n    doc['verified'].forEach(({tags}) => {\n    \n    if (!tags) return;\n    \n    tags[\"up_votes\"].forEach((tag) => {\n        if(user_tags[tag]){\n          user_tags[tag][\"up_votes\"] = user_tags[tag][\"up_votes\"] + 1; \n        }\n    });\n    \n    tags[\"down_votes\"].forEach((tag) => {\n        if(user_tags[tag]){\n          user_tags[tag][\"down_votes\"] = user_tags[tag][\"down_votes\"] + 1; \n        }\n      });\n    });\n  }\n  \n  doc['annotations'].filter(({type}) => type === \"BoundingBox\" ).forEach(({tag}) => {\n      if(user_tags[tag]) {\n        user_tags[tag][\"bounding_boxes\"] = user_tags[tag][\"bounding_boxes\"] + 1;\n      } else {\n        user_tags[tag] = {\n          \"tag\" : tag,\n          \"up_votes\": 0,\n          \"down_votes\": 0,\n          \"bounding_boxes\": 1\n        };\n      }\n  });\n  \n  emit(doc._id, Object.values(user_tags));\n}"
+        },
+        "annotations": {
+          "map": "function (doc) {\n  \n  if(doc[\"type\"] != \"image\")return;\n  \n  if(!doc[\"annotations\"])return;\n  \n  doc[\"annotations\"].forEach((element)=>{\n    var data = {};\n    if(element[\"type\"] === \"BoundingBox\"){\n      data[\"x\"] = element[\"x\"];\n      data[\"y\"] = element[\"y\"];\n      data[\"tag\"] = element[\"tag\"];\n      data[\"width\"] = element[\"width\"];\n      data[\"height\"] = element[\"height\"];\n    } else if(element[\"type\"] === \"GeoLocation\"){\n      data[\"latitude\"] = element[\"coordinates\"][\"latitude\"];\n      data[\"longitude\"] = element[\"coordinates\"][\"longitude\"];\n    } else if(element[\"type\"] === \"ExifInformation\"){\n      data= element[\"data\"];\n    }else if(element[\"type\"] === \"Anonymization\"){\n      data[\"age\"] = element[\"age\"];\n      data[\"gender\"] = element[\"gender\"];\n      data[\"skin_color\"] = element[\"skin_color\"];\n\n    } else if(element[\"type\"] === \"cvat_id\") {\n      data[\"cvat_image_id\"] = element[\"cvat_image_id\"];\n    }  else if(element[\"type\"] === \"ncight_user_metadata\") {\n      data[\"data\"] = element[\"data\"];\n    }\n    emit([doc._id, element[\"type\"]], data);\n  })\n  \n}"
+        },
+        "downloadable-docs-for-zip": {
+          "map": "function (doc) {\n  if(doc[\"available_for_download\"] !== true) return;\n  \n  let source = doc[\"source\"];\n  let doc_type = doc[\"type\"];\n  let doc_sub_type = doc[\"sub_type\"];\n  let file_location = \"server\";\n\n  if(!source) return;\n\n  if(source === \"brainstem\"){\n    doc_sub_type = doc[\"file_type\"];\n  }\n\n  emit([doc[\"source\"], doc_type, doc_sub_type, file_location], {\n    \"file_path\": doc[\"file_path\"],\n    \"data\" : {\n      // This will go into json file \n      \"id\" : doc._id,\n      \"original_file_name\" : doc[\"original_file_name\"]\n    }\n  });\n}"
+        },
+        "downloadable-user-docs-for-zip": {
+          "map": "function (doc) {\n  // if(doc[\"available_for_download\"] !== true) return;\n  \n  let source = doc[\"source\"];\n  let file_location = \"server\";\n  let created_by = doc[\"created_by\"];\n\n  if(!source) return;\n\n  if(source === \"brainstem\"){\n    doc_sub_type = doc[\"file_type\"];\n  }\n\n  emit([doc[\"source\"], created_by, file_location], {\n    \"file_path\": doc[\"file_path\"],\n    \"data\" : {\n      // This will go into json file \n      \"id\" : doc._id,\n      \"original_file_name\" : doc[\"original_file_name\"]\n    }\n  });\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/verification",
+      "views": {
+        "verification-view": {
+          "map": "function (doc) {\n  if(doc['status'] == \"VERIFIABLE\"){\n      if(!doc['verified'])return;\n      verified_tag_count = {};\n      doc['verified'].forEach((element)=>{\n        element['tags'][\"up_votes\"].forEach((upvoted_tag)=>{\n          verified_tag_count[upvoted_tag] =  (verified_tag_count[upvoted_tag] + 1) || 1;\n        });\n      });\n      \n      tags = Object.keys(verified_tag_count);\n      \n      \n      var can_be_marked_as_verified = true;\n      if(tags.length === 0) {\n        can_be_marked_as_verified = false;\n      } else {\n        for(var i = 0; i < tags.length; i++) {\n          let verified_tag = tags[i];\n          if(verified_tag_count[verified_tag] < 10) {\n            can_be_marked_as_verified = false;\n            break;\n          }\n        }\n      }\n      key = doc._id;\n      emit(key, {'status':doc['status'], can_be_marked_as_verified, verified_tag_count});\n  }\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/stats",
+      "views": {
+        "user-stats-view": {
+          "map": "function (doc) {\n  var supportedTypes = [\"image\", \"video\"];\n  var n = supportedTypes.includes(doc['type']);\n  if (!n) return;\n \n var type = doc['type'];\n  \n  var a = new Date(doc['uploaded_at'] * 1000);\n  emit([type, doc['uploaded_by'], a.getFullYear(), a.getMonth() + 1,a.getDate(), 'uploads'], 1);\n  \n  if(doc['verified']) {\n    var verifications = doc['verified']\n    verifications.forEach((element)=> {\n      var v_time = new Date(element['time'] * 1000);\n      count = 0;\n      if(element[\"tags\"]){\n        count += element[\"tags\"][\"up_votes\"].length\n        count += element[\"tags\"][\"down_votes\"].length\n      }\n      if(element[\"descriptions\"]){\n        count += element[\"descriptions\"][\"up_votes\"].length\n        count += element[\"descriptions\"][\"down_votes\"].length\n      }\n      emit([type, element['by'], v_time.getFullYear(), v_time.getMonth() + 1, v_time.getDate(), 'verifications'], count);\n    })\n  }\n \n  doc['annotations'].filter(({type}) => type === \"TextDescription\" ).forEach(({created_time, public_address})=>{\n      var tag_time = new Date(created_time * 1000);\n      emit([type, public_address, tag_time.getFullYear(), tag_time.getMonth() + 1, tag_time.getDate(), 'text_annotations'], 1);\n  })\n  \n  doc['annotations'].filter(({type}) => type === \"TextTag\" ).forEach(({created_time, public_address, tags})=>{\n    var tag_time = new Date(created_time * 1000);\n    emit([type, public_address, tag_time.getFullYear(), tag_time.getMonth() + 1, tag_time.getDate(), 'tag_annotations'], tags.length);\n  })\n  \n    doc['annotations'].filter(({type}) => type === \"Pixel\" ).forEach(({created_time, public_address})=>{\n    var tag_time = new Date(created_time * 1000);\n    emit([type, public_address, tag_time.getFullYear(), tag_time.getMonth() + 1, tag_time.getDate(), 'pixel_annotations'], 1);\n  })\n}",
+          "reduce": "_sum"
+        },
+        "overall-stats-view": {
+          "reduce": "_sum",
+          "map": "function (doc) {\n  var supportedTypes = [\"image\", \"video\", \"audio\"];\n  var n = supportedTypes.includes(doc['type']);\n  if (!n) return;\n \n  var a = new Date(doc['uploaded_at'] * 1000);\n  emit([doc['type'], a.getFullYear(), a.getMonth() + 1,a.getDate(), 'uploads'], 1);\n  \n  if(doc['verified']) {\n    var verifications = doc['verified']\n    verifications.forEach((element)=> {\n      var v_time = new Date(element['time'] * 1000);\n      count = 0;\n      if(element[\"tags\"]){\n        count += element[\"tags\"][\"up_votes\"].length\n        count += element[\"tags\"][\"down_votes\"].length\n      }\n      if(element[\"descriptions\"]){\n        count += element[\"descriptions\"][\"up_votes\"].length\n        count += element[\"descriptions\"][\"down_votes\"].length\n      }\n      emit([doc['type'], v_time.getFullYear(), v_time.getMonth() + 1, v_time.getDate(), 'verifications'], count);\n    })\n  }\n\n  \n  doc['annotations'].filter(({type}) => type === \"TextTag\" ).forEach((element) => {\n      var text_time = new Date(element['created_time'] * 1000);\n      emit([doc['type'], text_time.getFullYear(), text_time.getMonth() + 1, text_time.getDate(), 'tag_annotations'], element['tags'].length);\n  })\n  \n  doc['annotations'].filter(({type}) => type === \"TextDescription\" ).forEach((element) => {\n      var text_time = new Date(element['created_time'] * 1000);\n      emit([doc['type'], text_time.getFullYear(), text_time.getMonth() + 1, text_time.getDate(), 'text_annotations'], 1);\n  })\n  \n    \n  doc['annotations'].filter(({type}) => type === \"Pixel\" ).forEach(({created_time})=>{\n    var tag_time = new Date(created_time * 1000);\n    emit([doc['type'], tag_time.getFullYear(), tag_time.getMonth() + 1, tag_time.getDate(), 'pixel_annotations'], 1);\n  })\n\n}"
+        },
+        "tags-stats-view": {
+          "map": "function (doc) {\n  var supportedTypes = [\"image\", \"video\"];\n  var n = supportedTypes.includes(doc['type']);\n  if (!n) return;\n \n  var type = doc['type'];\n  \n  doc['annotations'].filter(({type}) => type === \"TextTag\" ).forEach(({created_time, tags})=>{\n      var a = new Date(created_time * 1000);\n      var key = [type, a.getFullYear(), a.getMonth() + 1,a.getDate()]\n      tags.forEach((tag)=>{\n          emit(key.concat(tag), 1);\n      })\n    })\n}",
+          "reduce": "_sum"
+        },
+        "tags-by-bounty": {
+          "map": "function (doc) {\n  \n  if(doc[\"type\"] != \"image\")\n    return;\n    \n  if(!doc[\"bounty\"])\n    return;\n  \n  if(!doc['annotations']) return;\n  \n  const tagSet = new Set()\n  \n  doc['annotations'].filter(({type}) => type === \"TextTag\" ).forEach(({tags})=>{\n     tags.forEach((tag)=>{tagSet.add(tag)})\n  })\n\ndoc[\"bounty\"].forEach((bounty) => {\n    tagSet.forEach((tag)=>{\n    emit([bounty, tag], 1)\n  });\n})\n\n\n}",
+          "reduce": "_count"
+        },
+        "images-per-tag": {
+          "reduce": "_count",
+          "map": "function (doc) {\n  var supportedTypes = [\"image\"];\n  var n = supportedTypes.includes(doc[\"type\"]);\n  if (!n) return;\n \n  var type = doc[\"type\"];\n  \n  doc[\"annotations\"].filter(({type}) => type === \"TextTag\" ).forEach(({created_time, tags})=>{\n      tags.forEach((tag)=>{\n          emit(tag, 1);\n      })\n    })\n}"
+        },
+        "latitude_count": {
+          "reduce": "_count",
+          "map": "function (doc) {\n  if(doc[\"annotations\"].length>0) { \n for( var i in doc[\"annotations\"]) { \n if(doc[\"bounty_id\"] && doc[\"annotations\"][i][\"latitude\"] && doc[\"annotations\"][i][\"longitude\"]) { \n emit([doc[\"bounty_id\"], doc[\"annotations\"][i][\"latitude\"], doc[\"annotations\"][i][\"longitude\"]], 1) \n } \n} \n} \n} "
+        },
+        "entity_count": {
+          "reduce": "_count",
+          "map": "function (doc) {\n  var timestamp = doc[\"uploaded_at\"]\n  var date = new Date(timestamp * 1000);\n\n  emit([doc[\"source\"], doc[\"type\"], date.getFullYear(), date.getMonth()+1, date.getDate(), date.getHours()], 1);\n}"
+        },
+        "all-entities": {
+          "map": "function (doc) {\n  var timestamp = doc[\"uploaded_at\"];\n  var date = new Date(timestamp * 1000);\n  annotations = doc[\"annotations\"];\n  \n  var latitude = null;\n  var longitude = null;\n  \n  if(annotations){\n    const found = annotations.find(e=> e[\"type\"] === \"Location\");\n    \n    if(found){\n      latitude = found[\"latitude\"];\n      longitude = found[\"longitude\"];\n    }\n    \n  }\n  emit([doc[\"source\"], date.getFullYear(), date.getMonth()+1, date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()], {\"type\": doc[\"type\"], \"location\": {\n    \"latitude\": latitude,\n    \"longitude\": longitude\n  }});\n}"
+        },
+        "success-rate": {
+          "map": "function (doc) {\n  let trueTag = doc[\"annotations\"].find(e=> e[\"type\"] === \"TrueTag\");\n  if(trueTag) {\n    let textTags = doc[\"annotations\"].filter(e => e[\"type\"] === \"TextTag\");\n    \n    // A map to store if user has already provided a TextTag for each image. This is required to avoid enforce only 1 user response per image\n    let done = {};\n    \n    for(let i=0; i< textTags.length; i++) {  \n        if (!done[textTags[i][\"public_address\"]]) {\n            emit(textTags[i][\"public_address\"], {\"trueTag\":trueTag[\"tags\"][0], \"userTag\": textTags[i][\"tags\"][0]});\n            done[textTags[i][\"public_address\"]] = true;\n        }\n    }\n  }\n}"
+        },
+        "true-tags": {
+          "map": "function (doc) {\n  let trueTag = doc[\"annotations\"].find(e=> e[\"type\"] === \"TrueTag\");\n  if(!trueTag) return;\n  emit(trueTag[\"tags\"][0], 1);\n}",
+          "reduce": "_count"
+        },
+        "all-user-stats-view": {
+          "map": "function (doc) {\n  var supportedTypes = [\"image\", \"video\"];\n  var n = supportedTypes.includes(doc['type']);\n  if (!n) return;\n \n var type = doc['type'];\n  \n  var a = new Date(doc['uploaded_at'] * 1000);\n  emit([type, doc['uploaded_by'],'uploads', a.getFullYear(), a.getMonth() + 1,a.getDate()], 1);\n  \n  if(doc['verified']) {\n    var verifications = doc['verified']\n    verifications.forEach((element)=> {\n      var v_time = new Date(element['time'] * 1000);\n      count = 0;\n      if(element[\"tags\"]){\n        count += element[\"tags\"][\"up_votes\"].length\n        count += element[\"tags\"][\"down_votes\"].length\n      }\n      if(element[\"descriptions\"]){\n        count += element[\"descriptions\"][\"up_votes\"].length\n        count += element[\"descriptions\"][\"down_votes\"].length\n      }\n      emit([type, element['by'], 'verifications', v_time.getFullYear(), v_time.getMonth() + 1, v_time.getDate()], count);\n    })\n  }\n \n  doc['annotations'].filter(({type}) => type === \"TextDescription\" ).forEach(({created_time, public_address})=>{\n      var tag_time = new Date(created_time * 1000);\n      emit([type, public_address,'text_annotations', tag_time.getFullYear(), tag_time.getMonth() + 1, tag_time.getDate()], 1);\n  })\n  \n  doc['annotations'].filter(({type}) => type === \"TextTag\" ).forEach(({created_time, public_address, tags})=>{\n    var tag_time = new Date(created_time * 1000);\n    emit([type, public_address, 'tag_annotations', tag_time.getFullYear(), tag_time.getMonth() + 1, tag_time.getDate()], tags.length);\n  })\n  \n    doc['annotations'].filter(({type}) => type === \"Pixel\" ).forEach(({created_time, public_address})=>{\n    var tag_time = new Date(created_time * 1000);\n    emit([type, public_address,  'pixel_annotations', tag_time.getFullYear(), tag_time.getMonth() + 1, tag_time.getDate()], 1);\n  })\n}",
+          "reduce": "_sum"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/counts",
+      "language": "javascript",
+      "views": {
+        "all": {
+          "map": "function(doc) { emit(null, 1); }",
+          "reduce": "function(keys, values, combine) { return sum(values); }"
+        }
+      }
+    },
+    {
+      "_id": "_design/all-docs",
+      "views": {
+        "all-docs": {
+          "map": "function (doc) {\n  emit(doc._id, {\"rev\":doc._rev, \"id\": doc._id});\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/wedatanation",
+      "views": {
+        "user-contributions": {
+          "map": "function (doc) {\n  if(doc[\"type\"] == \"json\"){\n    var timestamp = doc[\"uploaded_at\"];\n    var date = new Date(timestamp * 1000);\n    \n    if (doc[\"parent\"]!== true) return;\n    \n    var result = {\n        \"id\": doc._id,\n        \"monetization_status\": doc[\"monetization_status\"],\n        \"created_date\": date.toISOString(),\n        \"last_updated_date\":  date.toISOString(),\n        \"type\": doc[\"json_entity_type\"]\n      }\n      if (doc[\"json_entity_type\"] === \"web3\") {\n        result[\"wallet_address\"] = doc[\"raw\"][\"wallet_address\"],\n        result[\"network\"] = doc[\"raw\"][\"network\"]\n      }\n      emit(doc[\"uploaded_by\"], result);\n  }\n}"
+        },
+        "user-metadata": {
+          "map": "function (doc) {\n  if(doc[\"type\"] == \"json\" && doc[\"json_entity_type\"] === \"user_metadata\"){\n\n    if (doc[\"parent\"] === true) return;\n    \n    emit(doc[\"uploaded_by\"], doc[\"raw\"]);\n  }\n}"
+        },
+        "survey_responses": {
+          "map": "function (doc) {\n  if(doc['json_entity_type'] !== 'survey') return;\n\n  // Only child docs have annotations\n  if(doc['parent'] !== true) return;\n  if (doc['child_docs'].length > 0) {\n    for (var i in doc['child_docs']) {\n      var id = doc['child_docs'][i];\n      emit(doc[\"_id\"], {_id: id})\n    }\n  } else {\n    emit(doc[\"_id\"], {})\n  }\n}",
+          "reduce": "_count"
+        },
+        "my-surveys": {
+          "map": "function (doc) {\n  if(doc['json_entity_type'] !== 'survey') return;\n\n  if(doc['parent'] !== true) return;\n\n  emit(doc['uploaded_by'], {\n    id: doc['_id'],\n    name: doc['raw']['name'],\n    end_date: doc['raw']['end_date'],\n    created_at: doc['created_at'],\n    questions_count: doc['raw']['questions'].length,\n    cover_image: doc['raw']['cover_image'],\n    child_docs: doc['child_docs'],\n    users_count: doc['user_submissions']['survey_response'].length\n  })\n  \n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/wedatanation_2",
+      "views": {
+        "user-contributions": {
+          "map": "function (doc) {\n  if(doc[\"type\"] == \"json\"){\n    var timestamp = doc[\"uploaded_at\"];\n    var date = new Date(timestamp * 1000);\n    \n    if (doc[\"parent\"]!== true) return;\n    \n    var result = {\n        \"id\": doc._id,\n        \"monetization_status\": doc[\"monetization_status\"],\n        \"created_date\": date.toISOString(),\n        \"last_updated_date\":  date.toISOString(),\n        \"type\": doc[\"json_entity_type\"]\n      }\n      if (doc[\"json_entity_type\"] === \"web3\") {\n        result[\"wallet_address\"] = doc[\"raw\"][\"wallet_address\"],\n        result[\"network\"] = doc[\"raw\"][\"network\"]\n      }\n      emit(doc[\"uploaded_by\"], result);\n  }\n}"
+        },
+        "003_friends_removed": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let friends_removed = doc[\"raw\"][\"friends_and_followers\"][\"removed_friends\"][\"deleted_friends_v2\"];\n      let names = friends_removed.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names);\n  }\n}"
+        },
+        "006_pages_and_profiles_recommended": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let pages_recommended = doc[\"raw\"][\"pages_and_profiles\"][\"pages_and_profiles_you've_recommended\"][\"recommended_pages_v2\"];\n      let names = pages_recommended.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names);\n  }\n}"
+        },
+        "007_your_pages_and_profiles": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let your_pages = doc[\"raw\"][\"pages_and_profiles\"][\"your_pages_and_profiles\"][\"pages_v2\"];\n      let names = your_pages.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names);\n  }\n}"
+        },
+        "009_advertisers": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let advertisers = doc[\"raw\"][\"ads_information\"][\"advertisers_using_your_activity_or_information\"][\"custom_audiences_all_types_v2\"];\n      let names = advertisers.map((e)=> e[\"advertiser_name\"]);\n      emit(doc[\"uploaded_by\"], names);\n  }\n}"
+        },
+        "001_following": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let following = doc[\"raw\"][\"friends_and_followers\"][\"who_you_follow\"][\"following_v2\"];\n      let names = following.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names);\n  }\n}"
+        },
+        "002_friends": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let friends = doc[\"raw\"][\"friends_and_followers\"][\"friends\"][\"friends_v2\"];\n      let names = friends.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names);\n  }\n}"
+        },
+        "012_interactions_events(help!)": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let interactions_pages = doc[\"raw\"][\"your_interactions_on_facebook\"][\"recently_visited\"][\"visited_things_v2\"];\n      let names = interactions_pages.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names);\n  }\n}"
+        },
+        "005_pages_followed": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let pages_followed = doc[\"raw\"][\"pages_and_profiles\"][\"pages_and_profiles_you_follow\"][\"pages_followed_v2\"];\n      let names = pages_followed.map((e)=> e[\"title\"]);\n      emit(doc[\"uploaded_by\"], names);\n  }\n}"
+        },
+        "008_account_center": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let acc_center = doc[\"raw\"][\"facebook_accounts_center\"][\"accounts_center\"][\"accounts_center_v2\"];\n      let names = acc_center.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names);\n  }\n}"
+        },
+        "013_apps_installed": {
+          "map": "function (doc) {\n   if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let apps_and_websites = doc[\"raw\"][\"apps_and_websites_off_of_facebook\"][\"apps_and_websites\"][\"installed_apps_v2\"];\n      let names = apps_and_websites.map((e) => e[\"name\"]);\n      emit(doc['uploaded_by'], names);\n   }\n}"
+        },
+        "014_off_facebook_activity": {
+          "map": "function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let websites = doc[\"raw\"][\"apps_and_websites_off_of_facebook\"][\"your_off-facebook_activity\"][\"off_facebook_activity_v2\"];\n      let names = websites.map((e) => e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names);\n  }\n}"
+        },
+        "015_events_invited": {
+          "map": "function (doc) {\r\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\r\n      let events = doc[\"raw\"][\"events\"][\"event_invitations\"][\"events_invited_v2\"];\r\n      let names = events.map((e) => e[\"name\"]);\r\n      emit(doc[\"uploaded_by\"], names);\r\n  }\r\n}"
+        },
+        "016_events_interested": {
+          "map": "function (doc) {\r\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\r\n      let events = doc[\"raw\"][\"events\"][\"your_event_responses\"][\"event_responses_v2\"][\"events_interested\"];\r\n      let names = events.map((e) => e[\"name\"]);\r\n      emit(doc[\"uploaded_by\"], names);\r\n  }\r\n}"
+        },
+        "017_events_joined": {
+          "map": "function (doc) {\r\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\r\n      let events = doc[\"raw\"][\"events\"][\"your_event_responses\"][\"event_responses_v2\"][\"events_joined\"];\r\n      let names = events.map((e) => e[\"name\"]);\r\n      emit(doc[\"uploaded_by\"], names);\r\n  }\r\n}"
+        },
+        "000_profile_information": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let profile_info = doc[\"raw\"][\"profile_information\"][\"profile_information\"][\"profile_v2\"];\n      \n      let result = {\n        \"fname\" : profile_info[\"name\"][\"full_name\"]\n      \n      };\n   \n      \n      emit(doc[\"uploaded_by\"], result);\n  }\n}"
+        },
+        "004_pages_liked": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let pages_liked = doc[\"raw\"][\"pages_and_profiles\"][\"pages_you've_liked\"][\"page_likes_v2\"];\n      let names = pages_liked.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names);\n  }\n}"
+        },
+        "033_amz|prime_video": {
+          "map": "// 034_amz/prime_video/seconds_watched is related to these titles\nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_prime_video = doc[\"raw\"][\"Amazon\"][\"PrimeVideo.WatchEvent.2.1\"][\"1\"][\"TitleName\"];\n      emit(doc[\"uploaded_by\"], [... new Set(Object.values(amz_prime_video))]);\n  }\n}"
+        },
+        "032_amz|advertisers": {
+          "map": "// Advertisers who brought audiences in which you are included\nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_advertisers = doc[\"raw\"][\"Amazon\"][\"Advertising.1\"][\"AdvertiserAudiences\"][\"Advertisers who brought audiences in which you are included\"];\n      emit(doc[\"uploaded_by\"], [... new Set(Object.values(amz_advertisers))]);\n  }\n}"
+        },
+        "036_amz|amazon_music-title": {
+          "map": "// needs to be a list with dublicates to get it in the same row like the artists and the purchasedate\nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_music = doc[\"raw\"][\"Amazon\"][\"Amazon-Music\"][\"library\"][\"title\"];\n      emit(doc[\"uploaded_by\"], Object.values(amz_music));\n  }\n}"
+        },
+        "036_amz|amazon_music-purchasedate": {
+          "map": "// here needs to be listed also dublicated to get them in one view combined with the titles purchased\nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_music_purchasedate = doc[\"raw\"][\"Amazon\"][\"Amazon-Music\"][\"library\"][\"purchaseDate\"];\n      emit(doc[\"uploaded_by\"], Object.values(amz_music_purchasedate));\n  }\n}"
+        },
+        "036_amz|amazon_music-genre": {
+          "map": "// needs to be a list with dublicates to get it in the same row like the artists and the purchasedate\nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_music_genre = doc[\"raw\"][\"Amazon\"][\"Amazon-Music\"][\"library\"][\"primaryGenre\"];\n      emit(doc[\"uploaded_by\"], Object.values(amz_music_genre));\n  }\n}"
+        },
+        "034_amz|bankname": {
+          "map": "// Info here\nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_bankname = doc[\"raw\"][\"Amazon\"][\"PaymentOptions.PaymentInstruments\"][\"PaymentInstruments\"][\"BankName\"];\n      emit(doc[\"uploaded_by\"], [... new Set(Object.values(amz_bankname))]);\n  }\n}"
+        },
+        "002_friends|count": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let friends_count = doc[\"raw\"][\"friends_and_followers\"][\"friends\"][\"friends_v2\"].length;\n      emit(doc[\"uploaded_by\"], friends_count);\n  }\n}"
+        },
+        "005_pages_followed|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let pages_followed = doc[\"raw\"][\"pages_and_profiles\"][\"pages_and_profiles_you_follow\"][\"pages_followed_v2\"];\n      \n      const categories = {\n \"Schlachthof Krefeld\" : \"Party\", \"Ahearn Chiropractic\" : \"Health\", \"Fitness TÃ¶nisvorst\" : \"Fitness\", \"RAF Camora\" : \"Music\", \"BlackRock\" : \"Finance\", \"DKMS Deutschland\" : \"Health\", \"Wedatanation\" : \"Technology\", \"LS Exchange\" : \"Trading\", \"Stelarik\" : \"Music\", \"K.Piller Urban Hairstyling\" : \"Styling\", \"102\" : \"Party\", \"Ahearn Chiropractic\" : \"Health\", \"Hostel Tribu Holbox\" : \"other\", \"Halfmoonparty Koh Phangan\" : \"other\", \"Sonne Boat & Sterne Festival\" : \"other\", \"Tomorrowland\" : \"other\", \"Flow Traders\" : \"other\", \"Kieler Woche\" : \"other\", \"Brillenhouse GbR Simone & Daniel Toerschen\" : \"other\", \"All Day Long\" : \"other\", \"Woodstock Bloemendaal\" : \"other\", \"Schlachthof Krefeld\" : \"Party\", \"CASA GALIFI\" : \"other\", \"Intelligent Recommendations\" : \"other\", \"Fitness TÃ¶nisvorst\" : \"Fitness\", \"BTC-ECHO\" : \"other\", \"RAF Camora\" : \"Music\", \"NowThis Earth\" : \"other\", \"SOTRAWO\" : \"other\", \"Harry Klein\" : \"other\", \"Mercedes-Benz\" : \"other\", \"BlackRock\" : \"Finance\", \"Black Mirror\" : \"other\", \"Sneaky Pete\" : \"other\", \"Better Call Saul\" : \"other\", \"Breaking Bad\" : \"other\", \"DKMS Deutschland\" : \"Health\", \"Lang & Schwarz\" : \"other\", \"wikifolio.com\" : \"other\", \"DKMS Deutschland\" : \"Health\", \"BlackRock\" : \"Finance\", \"RAF Camora\" : \"Music\", \"Fitness TÃ¶nisvorst\" : \"Fitness\", \"Ahearn Chiropractic\" : \"Health\", \"Hotel Kloster Holzen\" : \"other\", \"wikifolio.com\" : \"other\", \"Wheeelz\" : \"other\",                                                                                                                                                                                         \n        \"key\" : \"val\"\n      }\n      \n      let keyVals = {}\n      \n      let names = pages_followed.map((e) => {\n        if(categories[e[\"title\"]]) {\n          return categories[e[\"title\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "006_pages_and_profiles_recommended|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let pages_recommended = doc[\"raw\"][\"pages_and_profiles\"][\"pages_and_profiles_you've_recommended\"][\"recommended_pages_v2\"];\n      \n      const categories = {\n        \"DKMS Deutschland\" : \"Sports\",\n        \"BlackRock\" : \"Finance\",\n        \"key\" : \"val\"\n      }\n      \n      let keyVals = {}\n      \n      let names = pages_recommended.map((e) => {\n        if(categories[e[\"title\"]]) {\n          return categories[e[\"title\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "009_advertisers|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let advertisers = doc[\"raw\"][\"ads_information\"][\"advertisers_using_your_activity_or_information\"][\"custom_audiences_all_types_v2\"];\n      \n      const categories = {\n        \"Amazon.de\" : \"Shopping\",\n        \"BlackRock\" : \"Finance\",\n        \"key\" : \"val\"\n      }\n      \n      let keyVals = {}\n      \n      let names = advertisers.map((e) => {\n        if(categories[e[\"advertiser_name\"]]) {\n          return categories[e[\"advertiser_name\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "001_following|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let following = doc[\"raw\"][\"friends_and_followers\"][\"who_you_follow\"][\"following_v2\"];\n      \n      const categories = {\n        \"Schlachthof Krefeld\" : \"Sports\",\n        \"BlackRock\" : \"Finance\",\n        \"key\" : \"val\"\n        }\n      \n      let keyVals = {}\n      \n      let names = following.map((e) => {\n        if(categories[e[\"name\"]]) {\n          return categories[e[\"name\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "003_friends_removed|count": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let friends_removed_count = doc[\"raw\"][\"friends_and_followers\"][\"removed_friends\"][\"deleted_friends_v2\"].length;\n      emit(doc[\"uploaded_by\"], friends_removed_count);\n      \n  }\n}"
+        },
+        "033_amz|prime_video|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_prime_video = doc[\"raw\"][\"Amazon\"][\"PrimeVideo.WatchEvent.2.1\"][\"1\"][\"TitleName\"];\n      \n      const categories = {\n        \"John Wick [dt./OV]\" : \"Action\",\n        \"BlackRock\" : \"Drama\",\n        \"key\" : \"val\"\n      }\n      \n      let keyVals = {}\n      \n      let names = Object.values(amz_prime_video).map((e) => {\n        if(categories[e]) {\n          return categories[e]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "017_events_joined|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let events = doc[\"raw\"][\"events\"][\"your_event_responses\"][\"event_responses_v2\"][\"events_joined\"];\n      \n      const categories = {\n        \"DKMS Deutschland\" : \"Sports\",\n        \"BlackRock\" : \"Finance\",\n        \"key\" : \"val\"\n      }\n      \n      let keyVals = {}\n      \n      let names = events.map((e) => {\n        if(categories[e[\"name\"]]) {\n          return categories[e[\"name\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "016_events_interested|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let events = doc[\"raw\"][\"events\"][\"your_event_responses\"][\"event_responses_v2\"][\"events_interested\"];\n      \n      const categories = {\n        \"DKMS Deutschland\" : \"Sports\",\n        \"BlackRock\" : \"Finance\",\n        \"key\" : \"val\"\n      }\n      \n      let keyVals = {}\n      \n      let names = events.map((e) => {\n        if(categories[e[\"name\"]]) {\n          return categories[e[\"name\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "015_events_invited|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let events = doc[\"raw\"][\"events\"][\"your_event_responses\"][\"event_responses_v2\"][\"events_interested\"];\n      \n      const categories = {\n        \"DKMS Deutschland\" : \"Health\",\n        \"BlackRock\" : \"Finance\",\n        \"key\" : \"val\"\n      }\n      \n      let keyVals = {}\n      \n      let names = events.map((e) => {\n        if(categories[e[\"name\"]]) {\n          return categories[e[\"name\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "014_off_facebook_activity|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let websites = doc[\"raw\"][\"apps_and_websites_off_of_facebook\"][\"your_off-facebook_activity\"][\"off_facebook_activity_v2\"];\n      \n      const categories = {\n        \"saborestaurant.de\" : \"Food\",\n        \"BlackRock\" : \"Finance\",\n        \"key\" : \"val\"\n      }\n      \n      let keyVals = {}\n      \n      let names = websites.map((e) => {\n        if(categories[e[\"name\"]]) {\n          return categories[e[\"name\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "013_apps_installed|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let apps_and_websites = doc[\"raw\"][\"apps_and_websites_off_of_facebook\"][\"apps_and_websites\"][\"installed_apps_v2\"];\n      \n      const categories = {\n        \"BlaBlaCar\" : \"Travel\",\n        \"BlackRock\" : \"Finance\",\n        \"key\" : \"val\"\n      }\n      \n      let keyVals = {}\n      \n      let names = apps_and_websites.map((e) => {\n        if(categories[e[\"name\"]]) {\n          return categories[e[\"name\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "010_groups|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let groups = doc[\"raw\"][\"groups\"][\"your_group_membership_activity\"][\"groups_joined_v2\"];\n      \n      const categories = {\n        \"DKMS Deutschland\" : \"Sports\",\n        \"BlackRock\" : \"Finance\",\n        \"key\" : \"val\"\n      }\n      \n      let keyVals = {}\n      \n      let names = groups.map((e) => {\n        if(categories[e[\"title\"]]) {\n          return categories[e[\"title\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "004_pages_liked|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let pages_liked = doc[\"raw\"][\"pages_and_profiles\"][\"pages_you've_liked\"][\"page_likes_v2\"];\n      \n      const categories = {\n        \"Wedatanation\" : \"Technology\",\n        \"LS Exchange\" : \"Finance\",\n        \"Stelarik\" : \"Music\",\n        \"102\" : \"Party\"\n      }\n      \n      let keyVals = {}\n      \n      let names = pages_liked.map((e) => {\n        if(categories[e[\"name\"]]) {\n          return categories[e[\"name\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "010_groups(help!)": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n    let groups = doc[\"raw\"][\"groups\"][\"your_group_membership_activity\"][\"groups_joined_v2\"][\"data\"][\"name\"];\n    let names = interactions_pages.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names);\n  }\n}"
+        },
+        "011_interactions_pages(help!)": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let interactions_pages = doc[\"raw\"][\"your_interactions_on_facebook\"][\"recently_visited\"][\"visited_things_v2\"][\"entries\"][\"data\"];\n      let name = interactions_pages.map((e) => e[\"name\"]);\n      emit(doc[\"uploaded_by\"], name);\n  }\n}"
+        },
+        "035_amz|region_info": {
+          "map": " // The \"0 :\" needs to be deleted out of the result \nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_region_info = doc[\"raw\"][\"Amazon\"][\"Retail.RegionAuthority.1\"][\"1\"];\n      \n      let result = {\n        \"Postal Code\" : amz_region_info[\"Postal Code\"][\"0\"], \"City\" : amz_region_info[\"City\"][\"0\"], \"State or Province\": amz_region_info[\"State or Province\"][\"0\"], \"Country Code\": amz_region_info[\"Country Code\"][\"0\"]\n      \n      };\n   \n      \n      emit(doc[\"uploaded_by\"], result);\n  }\n}"
+        },
+        "054_amz|engagement-paid_purchase": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\");\n  let cus_engagement = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Paid Purchase (Y/N)\"];\n  emit(doc[\"uploaded_by\"], Object.values(cus_engagement))\n}"
+        },
+        "055_amz|searches": {
+          "map": "// Info here\nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n     let amz_searches = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Keywords\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_searches))\n}\n}"
+        },
+        "055_amz|searches|time_GMT": {
+          "map": "  function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n    let amz_searches_time_GMT = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Last search Time (GMT)\"];\n    emit(doc[\"uploaded_by\"], Object.values(amz_searches_time_GMT))\n  }\n}"
+        },
+        "055_amz|searches|device": {
+          "map": "// Info here\nfunction (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_searches_devices = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Application / Browser Name\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_searches_devices))\n}\n}"
+        },
+        "055_amz|searches|extern_intern|categorized": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_searches_extern_intern_categorized = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Search From External Site (Y/N)\"];\n      \n      const categories = {\n        \"No\" : \"Amazon intern\",\n        \"Yes\" : \"Amazon extern\",\n        }\n      \n     let keyVals = {}\n      \n      let names = Object.values(amz_searches_extern_intern_categorized).map((e) => {\n        if(categories[e]) {\n          return categories[e]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "055_amz|searches|extern_intern": {
+          "map": "// Info here\nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_searches_extern_intern = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Search From External Site (Y/N)\"];\n      emit(doc[\"uploaded_by\"], Object.values(amz_searches_extern_intern));\n  }\n}"
+        },
+        "055_amz|searches|item_added": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_searches_item_added = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Number of Items Added to Cart\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_searches_item_added))\n}\n}"
+        },
+        "055_amz|searches|item_ordered": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_searches_item_ordered = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Number of Items Ordered\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_searches_item_ordered))\n}\n}"
+        },
+        "055_amz|searches|item_price": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_searches_item_price = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Maximum Purchase Price\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_searches_item_price))\n}\n}"
+        },
+        "056_amz|product": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_product = doc[\"raw\"][\"Amazon\"][\"Retail.OrderHistory.2\"][\"2\"][\"Product Name\"];\n  let amz_product_date = doc[\"raw\"][\"Amazon\"][\"Retail.OrderHistory.2\"][\"2\"][\"Order Date\"];\n  emit(doc[\"uploaded_by\"], Object.values({\"Name\" : amz_product, \"Date\": amz_product_date}))\n}\n}"
+        },
+        "056_amz|product|date": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_product_date = doc[\"raw\"][\"Amazon\"][\"Retail.OrderHistory.2\"][\"2\"][\"Order Date\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_product_date))\n}\n}"
+        },
+        "056_amz|product|price": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_product_price = doc[\"raw\"][\"Amazon\"][\"Retail.OrderHistory.2\"][\"2\"][\"Unit Price\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_product_price))\n}\n}"
+        },
+        "056_amz|product|tax": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_product_price_tax = doc[\"raw\"][\"Amazon\"][\"Retail.OrderHistory.2\"][\"2\"][\"Unit Price Tax\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_product_price_tax))\n}\n}"
+        },
+        "056_amz|product|shipping_cost": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_product_shipping_charge = doc[\"raw\"][\"Amazon\"][\"Retail.OrderHistory.2\"][\"2\"][\"Shipping Charge\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_product_shipping_charge))\n}\n}"
+        },
+        "056_amz|product|total_costs": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_product_total_costs = doc[\"raw\"][\"Amazon\"][\"Retail.OrderHistory.2\"][\"2\"][\"Total Owed\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_product_total_costs))\n}\n}"
+        },
+        "056-amz|product|quantity": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_product_quantity = doc[\"raw\"][\"Amazon\"][\"Retail.OrderHistory.2\"][\"2\"][\"Quantity\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_product_quantity))\n}\n}"
+        },
+        "057_amz|prime_video_watchlist": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_prime_video_watchlist = doc[\"raw\"][\"Amazon\"][\"Digital.PrimeVideo.Watchlist\"][ \"Digital.PrimeVideo.Watchlist\"][\"Watchlist\"][\"catalogTitle\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_prime_video_watchlist))\n}\n}"
+        },
+        "057_amz|prime_video_watchlist|date": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_prime_video_watchlist_date = doc[\"raw\"][\"Amazon\"][\"Digital.PrimeVideo.Watchlist\"][ \"Digital.PrimeVideo.Watchlist\"][\"Watchlist\"][\"itemAddedDate\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_prime_video_watchlist_date))\n}\n}"
+        },
+        "058_amz|prime_video_watchlist_history": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_prime_video_watchlist_history = doc[\"raw\"][\"Amazon\"][\"Digital.PrimeVideo.Watchlist\"][ \"Digital.PrimeVideo.Watchlist\"][\"WatchlistHistory\"][\"catalogTitle\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_prime_video_watchlist_history))\n}\n}"
+        },
+        "058_amz|prime_video_watchlist_history|date": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_prime_video_watchlist_history_date = doc[\"raw\"][\"Amazon\"][\"Digital.PrimeVideo.Watchlist\"][ \"Digital.PrimeVideo.Watchlist\"][\"Watchlist\"][\"itemAddedDate\"];\n  emit(doc[\"uploaded_by\"], Object.values(amz_prime_video_watchlist_history_date))\n}\n}"
+        },
+        "059_amz|audience_category": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_audience_category = doc[\"raw\"][\"Amazon\"][\"Advertising.2\"][\"AmazonAudiences\"][\"Amazon Audiences in which you are included\"];\n  emit(doc[\"uploaded_by\"], [... new Set(Object.values(amz_audience_category))]);\n}\n}"
+        },
+        "060_amz|3p_audience_category": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_3p_audience_category = doc[\"raw\"][\"Amazon\"][\"Advertising.2\"][\"3PAudiences\"][\"Audiences in which you are included via 3rd Parties\"];\n  emit(doc[\"uploaded_by\"], [... new Set(Object.values(amz_3p_audience_category))]);\n}\n}"
+        },
+        "062_amz|ads_clicked": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_ads_clicked = doc[\"raw\"][\"Amazon\"][\"Advertising.2\"][\"AdvertiserClicks\"][\"Advertisers whose ads you clicked\"];\n  emit(doc[\"uploaded_by\"], [... new Set(Object.values(amz_ads_clicked))]);\n}\n}"
+        },
+        "061_amz|advertisers_audiences": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_advertisers_audiences = doc[\"raw\"][\"Amazon\"][\"Advertising.2\"][\"AdvertiserAudiences\"][\"Advertisers who brought audiences in which you are included\"];\n  emit(doc[\"uploaded_by\"], [... new Set(Object.values(amz_advertisers_audiences))]);\n}\n}"
+        },
+        "063_amz|returns|reason": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_returns_reason = doc[\"raw\"][\"Retail.Orders.ManageYourReturns.2\"][\"2\"][\"Return Reason Code\"];\n  emit(doc[\"uploaded_by\"], [Object.values(amz_returns_reason)]);\n}\n}"
+        },
+        "063_amz|returns|amount": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_returns_amount = doc[\"raw\"][\"Amazon\"][\"Retail.CustomerReturns.1\"][\"1\"][\"ReturnAmount\"];\n  emit(doc[\"uploaded_by\"], [Object.values(amz_returns_amount)]);\n}\n}"
+        },
+        "063_amz|returns|date": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_returns_date = doc[\"raw\"][\"Amazon\"][\"Retail.CustomerReturns.1\"][\"1\"][\"DateOfReturn\"];\n  emit(doc[\"uploaded_by\"], [Object.values(amz_returns_date)]);\n}\n}"
+        },
+        "064_amz|software": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_software = doc[\"raw\"][\"Amazon\"][\"Retail.DigitalSoftwareAndVideogames.Entitlements.2\"][\"2\"][\"AsinTitle\"];\n  emit(doc[\"uploaded_by\"], [Object.values(amz_software)]);\n}\n}"
+        },
+        "064_amz|software|status": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_software_status = doc[\"raw\"][\"Amazon\"][\"Retail.DigitalSoftwareAndVideogames.Entitlements.2\"][\"2\"][\"Status\"];\n  emit(doc[\"uploaded_by\"], [Object.values(amz_software_status)]);\n}\n}"
+        },
+        "064_amz|software|date": {
+          "map": "  function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_software_date = doc[\"raw\"][\"Amazon\"][\"Retail.DigitalSoftwareAndVideogames.Entitlements.2\"][\"2\"][\"CreationDate\"];\n  emit(doc[\"uploaded_by\"], [Object.values(amz_software_date)]);\n}\n}"
+        },
+        "033_amz|prime_video|seconds_watched": {
+          "map": "// Info here\nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_prime_video_watchlength = doc[\"raw\"][\"Amazon\"][\"PrimeVideo.WatchEvent.2.1\"][\"1\"][\"SecondsWatched\"];\n      const result = Object.values(amz_prime_video_watchlength).map( e => Math.floor(e/60) );\n      emit(doc[\"uploaded_by\"], result);\n  }\n}"
+        },
+        "033_amz|prime_video|watchdate": {
+          "map": "// Info here\nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_prime_video_watchdate = doc[\"raw\"][\"Amazon\"][\"PrimeVideo.WatchEvent.2.1\"][\"1\"][\"MostRecentWatchDate\"];\n      emit(doc[\"uploaded_by\"], Object.values(amz_prime_video_watchdate));\n  }\n}"
+        },
+        "036_amz|amazon_music|artist": {
+          "map": "// \nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_music_artist = doc[\"raw\"][\"Amazon\"][\"Amazon-Music\"][\"library\"][\"artistName\"];\n      emit(doc[\"uploaded_by\"], Object.values(amz_music_artist));\n  }\n}"
+        },
+        "040_amz|engagement|department": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\");\n  let cus_engagement = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"All Department (APS) or Category\"];\n  emit(doc[\"uploaded_by\"], Object.values(cus_engagement));\n}\n"
+        },
+        "042_amz|engagement|prime_customer": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\");\n  let cus_engagement = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Prime Customer (Y/N)\"];\n  emit(doc[\"uploaded_by\"], Object.values(cus_engagement));\n}"
+        },
+        "043_amz|engagement|application": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\");\n  let cus_engagement = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Application Name\"];\n  emit(doc[\"uploaded_by\"], Object.values(cus_engagement));\n  \n}"
+        },
+        "044_amz|engagement|OS": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\");\n  let cus_engagement = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Operating System Name\"];\n  emit(doc[\"uploaded_by\"], Object.values(cus_engagement))\n}"
+        },
+        "045_amz|engagement|keywords": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\");\n  let cus_engagement = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Keywords\"];\n  emit(doc[\"uploaded_by\"], Object.values(cus_engagement))\n}"
+        },
+        "046_amz|engagement|business_customer": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\");\n  let cus_engagement = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Amazon Business Customer (Y/N)\"];\n  emit(doc[\"uploaded_by\"], Object.values(cus_engagement))\n}"
+        },
+        "047_amz|engagement|fresh_customer": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\");\n   let cus_engagement = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Amazon Fresh Customer (Y/N)\"];\n  emit(doc[\"uploaded_by\"], Object.values(cus_engagement))\n}"
+        },
+        "048_amz|engagement|music_subscriber": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\");\n  let cus_engagement = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Music Subscriber (Y/N)\"];\n  emit(doc[\"uploaded_by\"], Object.values(cus_engagement))\n}"
+        },
+        "080_zal|customer_data|address": {
+          "map": "function (doc) {\n   if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let customer_data = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_address\"][\"Additional addresses\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(customer_data));\n}"
+        },
+        "081_zal|wishlist|brand": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let brand = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_wishlist\"][\"Brand\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(brand));\n}"
+        },
+        "081_zal|wishlist|item": {
+          "map": "function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let item = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_wishlist\"][\"Item name\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(item));\n}"
+        },
+        "081_zal|wishlist|size": {
+          "map": "function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let size = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_wishlist\"][\"Size\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(size));\n}"
+        },
+        "082_zal|order|purchase_date": {
+          "map": "function (doc) {\n   if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let date = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_order\"][\"Purchased on\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(date));\n}"
+        },
+        "082_zal|order|invoice_amount": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let invoice = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_order\"][\"Invoice amount\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(invoice));\n}"
+        },
+        "082_zal|order|billing_address": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let address = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_order\"][\"Billing address\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(address));\n}"
+        },
+        "082_zal|order|pay_method": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let pay = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_order\"][\"Payment method\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(pay));\n}"
+        },
+        "082_zal|order|credit_score": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let credit = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_order\"][\"Credit score\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(credit));\n}"
+        },
+        "083_zal|customer|customer_info": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let customer_info = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_customer\"];\n   let result = {\n     number: customer_info[\"Customer number\"][0], surname: customer_info[\"Surname\"][0], first_name: customer_info[\"First name\"][0],\n     gender: customer_info[\"Gender\"][0], birthday: customer_info[\"Date of birth\"][0],\n     category: customer_info[\"Customer category\"][0], plus_member: customer_info[\"Plus Member\"][0]\n\n   }\n\n   \n  emit(doc[\"uploaded_by\"], result)\n  \n}"
+        },
+        "combined": {
+          "map": "function (doc) {\n  \n // let keyVals = {}\n  let keyVals = {}\n\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let following = doc[\"raw\"][\"friends_and_followers\"][\"who_you_follow\"][\"following_v2\"];\n      \n      const categories = {\n        \"Schlachthof Krefeld\" : \"Sports\",\n        \"BlackRock\" : \"Finance\",\n        \"key\" : \"val\"\n        }\n      \n      let names = following.map((e) => {\n        if(categories[e[\"name\"]]) {\n          return categories[e[\"name\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n     // emit([doc[\"uploaded_by\"], \"following\"], keyVals);\n\n  \n  \n  // part 2\n \n      let pages_followed = doc[\"raw\"][\"pages_and_profiles\"][\"pages_and_profiles_you_follow\"][\"pages_followed_v2\"];\n      \n//       const categories = {\n// \"Schlachthof Krefeld\" : \"Party\", \"Ahearn Chiropractic\" : \"Health\", \"Fitness TÃ¶nisvorst\" : \"Fitness\", \"RAF Camora\" : \"Music\", \"BlackRock\" : \"Finance\", \"DKMS Deutschland\" : \"Health\", \"Wedatanation\" : \"Technology\", \"LS Exchange\" : \"Trading\", \"Stelarik\" : \"Music\", \"K.Piller Urban Hairstyling\" : \"Styling\", \"102\" : \"Party\", \"Ahearn Chiropractic\" : \"Health\", \"Hostel Tribu Holbox\" : \"other\", \"Halfmoonparty Koh Phangan\" : \"other\", \"Sonne Boat & Sterne Festival\" : \"other\", \"Tomorrowland\" : \"other\", \"Flow Traders\" : \"other\", \"Kieler Woche\" : \"other\", \"Brillenhouse GbR Simone & Daniel Toerschen\" : \"other\", \"All Day Long\" : \"other\", \"Woodstock Bloemendaal\" : \"other\", \"Schlachthof Krefeld\" : \"Party\", \"CASA GALIFI\" : \"other\", \"Intelligent Recommendations\" : \"other\", \"Fitness TÃ¶nisvorst\" : \"Fitness\", \"BTC-ECHO\" : \"other\", \"RAF Camora\" : \"Music\", \"NowThis Earth\" : \"other\", \"SOTRAWO\" : \"other\", \"Harry Klein\" : \"other\", \"Mercedes-Benz\" : \"other\", \"BlackRock\" : \"Finance\", \"Black Mirror\" : \"other\", \"Sneaky Pete\" : \"other\", \"Better Call Saul\" : \"other\", \"Breaking Bad\" : \"other\", \"DKMS Deutschland\" : \"Health\", \"Lang & Schwarz\" : \"other\", \"wikifolio.com\" : \"other\", \"DKMS Deutschland\" : \"Health\", \"BlackRock\" : \"Finance\", \"RAF Camora\" : \"Music\", \"Fitness TÃ¶nisvorst\" : \"Fitness\", \"Ahearn Chiropractic\" : \"Health\", \"Hotel Kloster Holzen\" : \"other\", \"wikifolio.com\" : \"other\", \"Wheeelz\" : \"other\",                                                                                                                                                                                         \n//         \"key\" : \"val\"\n//       }\n      \n      // let keyVals = {}\n      \n      let names2 = pages_followed.map((e) => {\n        if(categories[e[\"title\"]]) {\n          return categories[e[\"title\"]]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names2.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n       emit(doc[\"uploaded_by\"], keyVals);\n  }\n    \n\n}"
+        },
+        "082_zal|order|reminders": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let address = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_order\"][\"Reminders\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(address));\n}"
+        },
+        "084_zal|article|brand": {
+          "map": "//069_zal|article|\n\nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let address = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_article\"][\"Brand\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(address));\n}"
+        },
+        "084_zal|article|item_name": {
+          "map": "//069_zal|article|\n\nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let address = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_article\"][\"Item name\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(address));\n}"
+        },
+        "084_zal|article|status": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let address = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_article\"][\"Status\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(address));\n}"
+        },
+        "082_zal|order|status": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let invoice = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_order\"][\"Order status\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(invoice));\n}"
+        },
+        "102_spot|tracks|album": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let tracks = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"YourLibrary\"][\"tracks\"]\n   let album = tracks.map((e)=> e[\"album\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(album));\n}"
+        },
+        "101_spot|tracks|track": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let tracks = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"YourLibrary\"][\"tracks\"]\n   let track = tracks.map((e)=> e[\"track\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(track));\n}"
+        },
+        "100_spot|tracks|artist": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let tracks = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"YourLibrary\"][\"tracks\"]\n   let artist = tracks.map((e)=> e[\"artist\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(artist));\n}"
+        },
+        "103_spot|albums|artist": {
+          "map": "function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let albums = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"YourLibrary\"][\"albums\"]\n   let artist = albums.map((e)=> e[\"artist\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(artist));\n}"
+        },
+        "104_spot|albums|album": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let albums = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"YourLibrary\"][\"albums\"]\n   let album = albums.map((e)=> e[\"album\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(album));\n}"
+        },
+        "105_spot|shows|name": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let shows = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"YourLibrary\"][\"shows\"]\n   let name = shows.map((e)=> e[\"name\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(name));\n}"
+        },
+        "106_spot|shows|publisher": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let shows = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"YourLibrary\"][\"shows\"]\n   let publisher = shows.map((e)=> e[\"publisher\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(publisher));\n}"
+        },
+        "107_spot|episodes|name": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let episodes = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"YourLibrary\"][\"episodes\"]\n   let name = episodes.map((e)=> e[\"name\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(name));\n}"
+        },
+        "108_spot|episodes|show": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let episodes = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"YourLibrary\"][\"episodes\"]\n   let show = episodes.map((e)=> e[\"show\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(show));\n}"
+        },
+        "109_spot|artists|name": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let artists = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"YourLibrary\"][\"artists\"]\n   let name = artists.map((e)=> e[\"name\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(name));\n}"
+        },
+        "110_spot|searchQueries|searchQuery": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let SearchQueries = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"SearchQueries\"]\n   let searchQuery = SearchQueries.map((e)=> e[\"searchQuery\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(searchQuery));\n}"
+        },
+        "111_spot|searchQueries|platform": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let SearchQueries = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"SearchQueries\"]\n   let platform = SearchQueries.map((e)=> e[\"platform\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(platform));\n}"
+        },
+        "112_spot|searchQueries|searchTime": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let SearchQueries = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"SearchQueries\"]\n   let searchTime = SearchQueries.map((e)=> e[\"searchTime\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(searchTime));\n}"
+        },
+        "113_spot|Inferences|inferences": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let inferences = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"Inferences\"][\"inferences\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(inferences));\n}"
+        },
+        "114_spot|Identifiers|identifierValue": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let Identifiers = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"Identifiers\"][\"identifierValue\"]\n   \n   \n  emit(doc[\"uploaded_by\"], Identifiers);\n}"
+        },
+        "115_spot|playlists|name": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let playlist = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"Playlist1\"][\"playlists\"]\n   let name = playlist.map((e)=> e[\"name\"]);\n   \n  emit(doc[\"uploaded_by\"], Object.values(name));\n}"
+        },
+        "118_spot|payments|country": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let country = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"Payments\"][\"country\"]\n   \n  emit(doc[\"uploaded_by\"], country);\n}"
+        },
+        "116_spot|payments|payment_method": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let payment_method = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"Payments\"][\"payment_method\"]\n   \n  emit(doc[\"uploaded_by\"], payment_method);\n}"
+        },
+        "119_spot|ratedShows|showName": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let rated = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"PodcastInteractivityRatedShow\"][\"ratedShows\"]\n   let show = rated.map((e) => e[\"showName\"])\n   \n  emit(doc[\"uploaded_by\"], show);\n}"
+        },
+        "055_amz|searches|category|category": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n  let amz_searches_extern_intern = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Search From External Site (Y/N)\"];\n      \n      const categories = {\n        \"No\" : \"Amazon intern\",\n        \"Yes\" : \"Amazon extern\",\n        }\n      \n     let keyVals = {}\n      \n      let names = Object.values(amz_searches_extern_intern).map((e) => {\n        if(categories[e]) {\n          return categories[e]\n        } else {\n          // Default\n          return \"other\"\n        }\n      });\n      \n      for (let i =0; i< names.length;i++){\n        if(keyVals[names[i]]){\n          keyVals[names[i]] = keyVals[names[i]] + 1;\n        } else {\n          keyVals[names[i]] = 1\n        }\n      }\n      // ... \n      emit(doc[\"uploaded_by\"], keyVals);\n  }\n}"
+        },
+        "120_spot|ms-played|sum": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let rated = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"StreamingHistory0\"]\n   let show = rated.map((e) => e[\"msPlayed\"])\n   \n  emit(doc[\"uploaded_by\"], show);\n}",
+          "reduce": "_sum"
+        },
+        "122_spot|follow|followers": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let follow = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"Follow\"]\n   let result = {followers: follow['followerCount'], following: follow['followingUsersCount']}\n\n  emit(doc['uploaded_by'], result);\n}"
+        },
+        "121_spot|userdata|userdata": {
+          "map": "function (doc) {\n      if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let data = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"Userdata\"];\n   let result = {username: data['username'], gender: data['gender'], country: data['country'],\n    email: data['email'], fromFacebook: data['createdFromFacebook'], created: data['creationTime']\n   }\n\n  emit(doc['uploaded_by'], result);\n}"
+        },
+        "117_spot|payments|creation_date": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"spotify\");\n   let creation_date = doc[\"raw\"][\"Spotify\"][\"MyData\"][\"Payments\"][\"creation_date\"]\n   \n  emit(doc[\"uploaded_by\"], creation_date);\n}"
+        },
+        "084_zal|article|order_size": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let address = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_article\"][\"Size\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(address));\n}"
+        },
+        "084_zal|article|order_number": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"zalando\");\n   let address = doc[\"raw\"][\"Zalando\"][\"Customer_Data_Extract_article\"][\"Order Number\"]\n   \n  emit(doc[\"uploaded_by\"], Object.values(address));\n}"
+        },
+        "123_nflx|profiles|profile_name": {
+          "map": "function (doc) {\n   if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let profiles = doc[\"raw\"][\"PROFILES\"][\"Profiles\"];\n    let profile_name = profiles[\"Profile Name\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(profile_name));\n}"
+        },
+        "123_nflx|profiles|email": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let profiles = doc[\"raw\"][\"PROFILES\"][\"Profiles\"];\n    let email = profiles[\"Email Address\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(email))\n}"
+        },
+        "123_nflx|profiles|creation_time": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let profiles = doc[\"raw\"][\"PROFILES\"][\"Profiles\"];\n    let creation_time = profiles[\"Profile Creation Time\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(creation_time))\n}"
+        },
+        "123_nflx|profiles|maturity_level": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let profiles = doc[\"raw\"][\"PROFILES\"][\"Profiles\"];\n    let maturity_level = profiles[\"Maturity Level\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(maturity_level))\n}"
+        },
+        "123_nflx|profiles|primary_language": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let profiles = doc[\"raw\"][\"PROFILES\"][\"Profiles\"];\n    let primary_lang = profiles[\"Primary Lang\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(primary_lang))\n}"
+        },
+        "123_nflx|profiles|auto_playback": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let profiles = doc[\"raw\"][\"PROFILES\"][\"Profiles\"];\n    let auto_play = profiles[\"Has Auto Playback\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(auto_play))\n}"
+        },
+        "123_nflx|profiles|max_stream_quality": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let profiles = doc[\"raw\"][\"PROFILES\"][\"Profiles\"];\n    let stream_qual = profiles[\"Max Stream Quality\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(stream_qual))\n}"
+        },
+        "123_nflx|profiles|profile_lock": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let profiles = doc[\"raw\"][\"PROFILES\"][\"Profiles\"];\n    let profile_lock = profiles[\"Profile Lock Enabled\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(profile_lock))\n}"
+        },
+        "124_nflx|msgs_by_nflx|sent_time": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let messages_by_nflx = doc[\"raw\"][\"MESSAGES\"][\"MessagesSentByNetflix\"];\n    let sent_time = messages_by_nflx[\"Sent Utc Ts\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(sent_time))\n}"
+        },
+        "124_nflx|msgs_by_nflx|profile_name": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let messages_by_nflx = doc[\"raw\"][\"MESSAGES\"][\"MessagesSentByNetflix\"];\n    let profile_name = messages_by_nflx[\"Profile Name\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(profile_name))\n}"
+        },
+        "124_nflx|msgs_by_nflx|msg_name": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let messages_by_nflx = doc[\"raw\"][\"MESSAGES\"][\"MessagesSentByNetflix\"];\n    let msg_name = messages_by_nflx[\"Message Name\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(msg_name))\n}"
+        },
+        "124_nflx|msgs_by_nflx|channel": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let messages_by_nflx = doc[\"raw\"][\"MESSAGES\"][\"MessagesSentByNetflix\"];\n    let channel = messages_by_nflx[\"Channel\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(channel))\n}"
+        },
+        "124_nflx|msgs_by_nflx|country_iso_code": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let messages_by_nflx = doc[\"raw\"][\"MESSAGES\"][\"MessagesSentByNetflix\"];\n    let country_iso = messages_by_nflx[\"Country Iso Code\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(country_iso))\n}"
+        },
+        "124_nflx|msgs_by_nflx|acc_locale": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let messages_by_nflx = doc[\"raw\"][\"MESSAGES\"][\"MessagesSentByNetflix\"];\n    let acc_locale = messages_by_nflx[\"Account Locale\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(acc_locale))\n}"
+        },
+        "124_nflx|msgs_by_nflx|email_locale": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let messages_by_nflx = doc[\"raw\"][\"MESSAGES\"][\"MessagesSentByNetflix\"];\n    let email_locale = messages_by_nflx[\"Email Locale\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(email_locale))\n}"
+        },
+        "124_nflx|msgs_by_nflx|title_name": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let messages_by_nflx = doc[\"raw\"][\"MESSAGES\"][\"MessagesSentByNetflix\"];\n    let title_name = messages_by_nflx[\"Title Name\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(title_name))\n}"
+        },
+        "124_nflx|msgs_by_nflx|email_domain_name": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let messages_by_nflx = doc[\"raw\"][\"MESSAGES\"][\"MessagesSentByNetflix\"];\n    let email_domain = messages_by_nflx[\"Email Domain Name\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(email_domain))\n}"
+        },
+        "124_nflx|msgs_by_nflx|device_model": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let messages_by_nflx = doc[\"raw\"][\"MESSAGES\"][\"MessagesSentByNetflix\"];\n    let device_mod = messages_by_nflx[\"Device Model\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(device_mod))\n}"
+        },
+        "124_nflx|msgs_by_nflx|link_click_count": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"netflix\");\n    let messages_by_nflx = doc[\"raw\"][\"MESSAGES\"][\"MessagesSentByNetflix\"];\n    let click_cnt = messages_by_nflx[\"Click Cnt\"]\n  \n  emit(doc[\"uploaded_by\"], Object.values(click_cnt))\n}"
+        },
+        "013_apps_installed_sum": {
+          "map": "function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let apps_and_websites = doc[\"raw\"][\"apps_and_websites_off_of_facebook\"][\"apps_and_websites\"][\"installed_apps_v2\"];\n      let names = apps_and_websites.map((e) => e[\"name\"]);\n      emit(doc['uploaded_by'], names.length);\n\n    }\n  }"
+        },
+        "001_following_sum": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let following = doc[\"raw\"][\"friends_and_followers\"][\"who_you_follow\"][\"following_v2\"];\n      let names = following.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names.length);\n  }\n}"
+        },
+        "005_page_followed_sum": {
+          "map": "function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let pages_followed = doc[\"raw\"][\"pages_and_profiles\"][\"pages_and_profiles_you_follow\"][\"pages_followed_v2\"];\n      let names = pages_followed.map((e)=> e[\"title\"]);\n      emit(doc[\"uploaded_by\"], names.length);\n  }\n}"
+        },
+        "004_pages_liked_sum": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let pages_liked = doc[\"raw\"][\"pages_and_profiles\"][\"pages_you've_liked\"][\"page_likes_v2\"];\n      let names = pages_liked.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names.length);\n  }\n}"
+        },
+        "007_your_pages_and_profiles_sum": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let your_pages = doc[\"raw\"][\"pages_and_profiles\"][\"your_pages_and_profiles\"][\"pages_v2\"];\n      let names = your_pages.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names.length);\n  }\n}"
+        },
+        "007_pages_and_profiles_recommended_sum": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"facebook\") {\n      let pages_recommended = doc[\"raw\"][\"pages_and_profiles\"][\"pages_and_profiles_you've_recommended\"][\"recommended_pages_v2\"];\n      let names = pages_recommended.map((e)=> e[\"name\"]);\n      emit(doc[\"uploaded_by\"], names.length);\n  }\n}"
+        },
+        "055_amz|searches|time_GMT_sum": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n    let amz_searches_time_GMT = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Customer-Engagement\"][\"Last search Time (GMT)\"];\n    emit(doc[\"uploaded_by\"], Object.values(amz_searches_time_GMT).length)\n  }\n}"
+        },
+        "031_amz|digital_items|base_currency_code": {
+          "map": "function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let base_currency = doc[\"raw\"][\"Amazon\"][\"Digital-Ordering.2\"][\"Digital Items\"][\"BaseCurrencyCode\"];\n      emit(doc[\"uploaded_by\"], [... new Set(Object.values(base_currency))]);\n    }\n}"
+        },
+        "031_amz|digital_items|title": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_digital_items = doc[\"raw\"][\"Amazon\"][\"Digital-Ordering.2\"][\"Digital Items\"][\"Title\"];\n      emit(doc[\"uploaded_by\"], [... new Set(Object.values(amz_digital_items))]);\n  }\n}"
+        },
+        "031_amz|digital_items|original_quantity": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let original_quantity = doc[\"raw\"][\"Amazon\"][\"Digital-Ordering.2\"][\"Digital Items\"][\"OriginalQuantity\"];\n      emit(doc[\"uploaded_by\"], Object.values(original_quantity));\n  }\n}"
+        },
+        "031_amz|digital_items|our_price": {
+          "map": "function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let our_price = doc[\"raw\"][\"Amazon\"][\"Digital-Ordering.2\"][\"Digital Items\"][\"OurPrice\"];\n      emit(doc[\"uploaded_by\"], Object.values(our_price));\n    }\n}"
+        },
+        "": {
+          "map": "function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let order_place_date = doc[\"raw\"][\"Amazon\"][\"Audible.PurchaseHistory\"][\"PurchaseHistory\"][\"OrderPlaceDate\"];\n      emit(doc[\"uploaded_by\"], Object.values(order_place_date));\n  }\n}"
+        },
+        "030_amz|audible|title": {
+          "map": "//row 74054 contains audible.library -> maybe adding this makes sense, if the content is different ? \nfunction (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let amz_audible_title = doc[\"raw\"][\"Amazon\"][\"Audible.Listening\"][\"Listening\"][\"Title\"];\n      emit(doc[\"uploaded_by\"], [... new Set(Object.values(amz_audible_title))]);\n  }\n}"
+        },
+        "030_amz|audible|purchase_history": {
+          "map": "function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let hist = doc[\"raw\"][\"Amazon\"][\"Audible.PurchaseHistory\"][\"PurchaseHistory\"];\n      let result = { order_place_date: Object.values(hist[\"OrderPlaceDate\"]), order_settle_date: Object.values(hist[\"OrderSettleDate\"]), order_fulfill_date: Object.values(hist[\"OrderFulfillDate\"])\n      };\n      \n      emit(doc[\"uploaded_by\"], result);\n  }\n}"
+        },
+        "032_amz|advertisers|optout_per_marketplace": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let optouts = doc[\"raw\"][\"Amazon\"][\"Advertising.1\"][\"OptOut\"][\"Interest based ads opt out setting per marketplace\"];\n      emit(doc[\"uploaded_by\"], [... new Set(Object.values(optouts))]);\n  }\n}"
+        },
+        "055_amz|searches|clicked_items": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n    let clicked_items = doc[\"raw\"][\"Amazon\"][\"Retail.Search-Data\"][\"Product-Metrics\"][\"Clicked Items\"];\n    emit(doc[\"uploaded_by\"], Object.values(clicked_items))\n  }\n}"
+        },
+        "031_amz|digital_items|marketplace": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n    let marketplace = doc[\"raw\"][\"Amazon\"][\"Digital-Ordering.2\"][\"Digital Orders\"][\"Marketplace\"];\n    emit(doc[\"uploaded_by\"], Object.values(marketplace))\n  }\n}"
+        },
+        "_amz|retail_history|unit_price": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let unit_price = doc[\"raw\"][\"Amazon\"][\"Retail.OrderHistory.1\"][\"1\"][\"Unit Price\"];\n      emit(doc[\"uploaded_by\"], Object.values(unit_price));\n  }\n}"
+        },
+        "_amz|retail_history|quantity": {
+          "map": "function (doc) {\n  if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let quantity = doc[\"raw\"][\"Amazon\"][\"Retail.OrderHistory.1\"][\"1\"][\"Quantity\"];\n      emit(doc[\"uploaded_by\"], Object.values(quantity));\n  }\n}"
+        },
+        "_amz|retail_history|shipping_charge": {
+          "map": "function (doc) {\n    if(doc[\"type\"] === \"json\" && doc[\"json_entity_type\"] === \"amazon\") {\n      let shipping_charge = doc[\"raw\"][\"Amazon\"][\"Retail.OrderHistory.1\"][\"1\"][\"Shipping Charge\"];\n      emit(doc[\"uploaded_by\"], Object.values(shipping_charge));\n  }\n}"
+        },
+        "user-metadata": {
+          "map": "function (doc) {\n  if(doc[\"type\"] == \"json\" && doc[\"json_entity_type\"] === \"user_metadata\"){\n\n    if (doc[\"parent\"] === true) return;\n    \n    emit(doc[\"uploaded_by\"], doc[\"raw\"]);\n  }\n}"
+        },
+        "survey_responses": {
+          "map": "function (doc) {\n  if (doc['json_entity_type'] == 'survey') {\n    emit(doc['uploaded_by'], {a: 'test'})\n  }\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/ncight",
+      "views": {
+        "classification-stats": {
+          "map": "function (doc) {\n  let trueTag = doc[\"annotations\"].find(e=> e[\"type\"] === \"TrueTag\");\n  if(trueTag) {\n    let textTags = doc[\"annotations\"].filter(e => e[\"type\"] === \"TextTag\");\n    \n    // A map to store if user has already provided a TextTag for each image. This is required to avoid enforce only 1 user response per image\n    let done = {};\n    \n    for(let i=0; i< textTags.length; i++) {  \n        if (!done[textTags[i][\"public_address\"]]) {\n            emit(textTags[i][\"public_address\"], {\"trueTag\":trueTag[\"tags\"][0], \"userTag\": textTags[i][\"tags\"][0]});\n            done[textTags[i][\"public_address\"]] = true;\n        }\n    }\n  }\n}",
+          "reduce": "function (keys, values, rereduce) {\n  let result = {incorrect_classifications: 0, correct_classifications:0, total_classifications:0};\n  for(i=0; i < values.length; i++) {\n    if(rereduce) {\n        result.total_classifications = result.total_classifications + values[i].total_classifications;\n        result.incorrect_classifications = result.incorrect_classifications + values[i].incorrect_classifications;\n        result.correct_classifications = result.correct_classifications + values[i].correct_classifications;\n    } else {\n        result.total_classifications = values.length;\n        if(values[i].trueTag === values[i].userTag){\n          result.correct_classifications = result.correct_classifications + 1;\n        } else {\n         result.incorrect_classifications = result.incorrect_classifications + 1;\n        }\n    }\n  }\n  return result;\n}"
+        },
+        "upload-count": {
+          "reduce": "_count",
+          "map": "function (doc) {\n  if(doc[\"uploaded_by\"] !== undefined) {\n      emit([doc[\"uploaded_by\"], \"upload\"], 1);\n  } else if (doc[\"created__by\"]  !== undefined) {\n    emit([doc[\"created__by\"], \"upload\"], 1);\n  }\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/brainstem",
+      "views": {
+        "recording-durations": {
+          "map": "function (doc) {\n  \n  // Consider only brainstem and hbr_|rr files\n  if(doc[\"source\"] !== \"brainstem\") return;\n  if(doc[\"file_type\"] !== \"hbr_rr\") return;\n\n  first_reading = doc[\"first_reading\"];\n  last_reading = doc[\"last_reading\"];\n  emit([doc[\"created_by\"]], {\n    \"count\": last_reading[0] - first_reading[0],\n    \"duration\": last_reading[1] - first_reading[1]\n  });\n}",
+          "reduce": "function (keys, values, rereduce) {\n  let result = {count: 0, duration:0};\n  for(i=0; i < values.length; i++) {\n    if(rereduce) {\n        result.duration = result.duration + values[i].duration;\n        result.count = result.count + values[i].count;\n    } else {\n        result.count =  result.count + values[i].count;\n        result.duration = result.duration + values[i].duration;\n    }\n  }\n  return result;\n}"
+        },
+        "per-user-contribution": {
+          "map": "function (doc) {\n  \n  // Consider only brainstem and hbr_|rr files\n  if(doc[\"source\"] !== \"brainstem\") return;\n  if(doc[\"file_type\"] !== \"hbr_rr\") return;\n\n  first_reading = doc[\"first_reading\"];\n  last_reading = doc[\"last_reading\"];\n  emit(doc[\"created_by\"], {\n    \"id\": doc._id,\n    \"count\": last_reading[0] - first_reading[0],\n    \"duration\": last_reading[1] - first_reading[1]\n  });\n}"
+        },
+        "compute-data": {
+          "map": "function (doc) {\n  if(doc[\"file_type\"] !== \"hbr_rr\") return;\n  if(doc[\"raw\"] === undefined) return;\n\n  let data = {\n    \"file_type\": doc[\"file_type\"],\n    \"raw\" : doc[\"raw\"]\n  }\n  \n      emit(doc._id, data);\n  \n}"
+        },
+        "downloadables": {
+          "map": "function (doc) {\n  if(doc[\"source\"] !== \"brainstem\") return;\n  if(doc[\"available_for_download\"] === true){\n      emit(doc._id, {\"id\": doc._id, \"type\": doc[\"type\"], \"file_type\": doc[\"file_type\"], \"file_name\": doc[\"original_file_name\"]});\n  }\n}"
+        },
+        "c2d": {
+          "map": "function (doc) {\n  if(doc[\"file_type\"] !== \"hbr_rr\") return;\n  if(doc[\"raw\"] === undefined) return;\n\n  let data = {\n    \"file_type\": doc[\"file_type\"],\n    \"raw\" : doc[\"raw\"]\n  }\n  if(doc._id === \"ABjRWGuxTyZFqxc\") {\n      emit(doc._id, data);\n  }\n}"
+        },
+        "compute-data-zip": {
+          "map": "function (doc) {\n  if(doc[\"file_type\"] !== \"hbr_rr\") return;\n  if(doc[\"raw\"] === undefined) return;\n  \n  let source = doc[\"source\"];\n  let doc_type = doc[\"type\"];\n  let doc_sub_type = doc[\"sub_type\"];\n  let file_location = \"database_file\";\n  \n  let data = {\n    \"file_type\": doc[\"file_type\"],\n    \"raw\" : doc[\"raw\"]\n  }\n  \n  if(source === \"brainstem\"){\n    doc_sub_type = doc[\"file_type\"];\n  }\n  \n  emit([doc[\"source\"], doc_type, doc_sub_type, file_location], {\n    \"data\": data\n  });\n  \n}"
+        },
+        "recording-statistics": {
+          "map": "function (doc) {\n  if (doc.file_type === 'record' && doc.duration && doc.record_type) {\n    const metadata = doc.metadata || {};\n    emit([\n      doc.record_type,\n      metadata.gender,\n      metadata.year,\n      metadata.birth_ethncity\n    ], {\n      'duration': parseInt(doc.duration, 10),\n      't0': doc.t0,\n      'created_by': doc.created_by,\n      'record_type': doc.record_type\n    });\n  }\n}",
+          "reduce": "function (keys, values, rereduce) {\n  var last_24h_timestamp = (new Date().getTime() - (24 * 60 * 60 * 1000)) / 1000;\n  if (!rereduce) {\n    var total_length = 0;\n    var type_counts = {};\n    var user_counts = {};\n    var last_24h_count = 0;\n    values.forEach(function(value) {\n      total_length += value.duration;\n      type_counts[value.record_type] = (type_counts[value.record_type] || 0) + 1;\n      user_counts[value.created_by] = (user_counts[value.created_by] || 0) + 1;\n      if (value.t0 > last_24h_timestamp) {\n        last_24h_count += 1;\n      }\n    });\n    return {\n      total_count: values.length,\n      total_length: total_length,\n      type_counts: type_counts,\n      user_counts: user_counts,\n      last_24h_count: last_24h_count\n    };\n  } else {\n    var total_length = 0;\n    var type_counts = {};\n    var user_counts = {};\n    var total_count = 0;\n    var last_24h_count = 0;\n    values.forEach(function(value) {\n      total_length += value.total_length;\n      total_count += value.total_count;\n      last_24h_count += value.last_24h_count;\n      for (var key in value.type_counts) {\n        type_counts[key] = (type_counts[key] || 0) + value.type_counts[key];\n      }\n      for (var key in value.user_counts) {\n        user_counts[key] = (user_counts[key] || 0) + value.user_counts[key];\n      }\n    });\n    return {\n      total_count: total_count,\n      total_length: total_length,\n      type_counts: type_counts,\n      user_counts: user_counts,\n      last_24h_count: last_24h_count\n    };\n  }\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/reward-status",
+      "views": {
+        "wedatanation": {
+          "map": "function (doc) {\n  if(doc[\"parent\"] !== true) return;\n  if(doc.type !== \"json\") return;\n  if(!doc[\"reward_information\"]) return;\n  if(doc[\"reward_information\"][\"can_be_rewarded\"] !== true) return;\n  if(doc[\"reward_information\"][\"reward_status\"] !== \"unpaid\") return;\n\n  const allowedJsonEntityTypes = [\"amazon\", \"netflix\",\"facebook\", \"zalando\", \"spotify\", \"linkedin\", \n  \"twitter\", \"linkedin_part_1\", \"linkedin_part_2\"];\n  \n  if(!(allowedJsonEntityTypes.includes(doc.json_entity_type))) return;\n\n  \n  var a = new Date(doc['uploaded_at'] * 1000);\n  emit([doc[\"uploaded_by\"], \"upload\"], {id: doc._id, json_entity_type: doc.json_entity_type,\n    count: 0,\n    type: \"upload\"\n  });\n}"
+        },
+        "brainstem": {
+          "map": "function (doc) { if(doc[\"source\"]===\"brainstem\"){ var a = new Date(doc['created_at']); const value = { id: doc._id, type: doc.file_type, t0: doc.t0 || null, duration: doc.duration || null, record_type: doc.record_type || null }; emit([doc[\"created_by\"], a.getFullYear(), a.getMonth() + 1, a.getDate(), doc[\"file_type\"], doc[\"reward_status\"] || 'unpaid'], value); } \n}"
+        },
+        "brainstem_seq": {
+          "map": "function (doc) { \n if (doc[\"source\"] === \"brainstem\" && doc[\"t0\"]) { \n var a = new Date(doc['t0'] * 1000); \n var duration = doc.duration || 0; \n if (doc.record_type === 'rest' && duration <= 5 * 60) { \n return; \n } \n if (doc.record_type === 'sleep' && duration <= 5 * 60 * 60) { \n return; \n } \n if (doc.record_type === 'posture' && duration <= 5 * 60) { \n return; \n } \n const value = { \n id: doc._id, \n type: doc.file_type, \n t0: doc.t0 || null, \n duration: duration, \n record_type: doc.record_type === 'posture' ? (duration >= 10 * 60 ? 'breath_l' : 'breath') : doc.record_type, \n date: a.getDate() \n }; \n emit([doc[\"created_by\"], a.getFullYear(), a.getMonth() + 1, a.getDate(), doc[\"record_type\"]], value); \n } \n }",
+          "reduce": "function (keys, values, rereduce) { \n const result = {}; \n if (!rereduce) { \n values.forEach(function (value) { \n const recordType = value.record_type || 'unknown'; \n const date = value.date; \n if (!result[recordType]) { \n result[recordType] = []; \n } \n result[recordType].push(date); \n }); \n } else { \n values.forEach(function (groupedValues) { \n for (const recordType in groupedValues) { \n if (!result[recordType]) { \n result[recordType] = []; \n } \n result[recordType] = [...new Set(result[recordType].concat(groupedValues[recordType]))]; \n } \n }); \n } \n return result; \n }"
+        },
+        "daily-rewards": {
+          "map": "function (doc) {\n  if (doc.file_type === 'record' && doc.record_type && doc.created_at && doc.duration) {\n    var record_type = doc.record_type;\n    var public_address = doc.created_by;\n  \n    // Extract the date for daily grouping\n    var date = doc.created_at.split('T')[0];\n  \n    if (record_type === 'rest') {\n      // Emit 1 for each rest record\n      emit([public_address, date, 'rest'], 1);\n    } else if (record_type === 'sleep' && doc.duration >= 5 * 60 * 60) {\n      // Emit 1 for each valid sleep record\n      emit([public_address, date, 'sleep'], 1);\n    } else if (record_type === 'exercise' && doc.duration >= 5 * 60) {\n      // Emit the duration for exercise records\n      emit([public_address, date, 'exercise'], doc.duration);\n    }\n  }\n}",
+          "reduce": "function (keys, values, rereduce) {\n  if (rereduce) {\n    return values.reduce(function (acc, curr) {\n      acc.rest = Math.min(acc.rest + curr.rest, 1); // Cap rest rewards at 1 per day\n      acc.sleep = Math.min(acc.sleep + curr.sleep, 1); // Cap sleep rewards at 1 per day\n      acc.exercise = acc.exercise.concat(curr.exercise); // Combine exercise durations\n      return acc;\n    }, { rest: 0, sleep: 0, exercise: [] });\n  } else {\n    return values.reduce(function (acc, val, idx) {\n      var type = keys[idx][0][2];\n      if (type === 'rest') {\n        acc.rest = Math.min(acc.rest + val, 1); // Cap rest rewards at 1 per day\n      } else if (type === 'sleep') {\n        acc.sleep = Math.min(acc.sleep + val, 1); // Cap sleep rewards at 1 per day\n      } else if (type === 'exercise') {\n        acc.exercise.push(val); // Collect exercise durations\n      }\n      return acc;\n    }, { rest: 0, sleep: 0, exercise: [] });\n  }\n}"
+        }
+      },
+      "language": "javascript"
+    }
+  ],
+  "index": [
+    {
+      "index": {
+        "fields": [
+          "uploaded_by"
+        ]
+      },
+      "name": "uploaded_by-index",
+      "type": "json"
+    },
+    {
+      "index": {
+        "fields": [
+          "uploaded_at"
+        ]
+      },
+      "name": "uploaded_at-index",
+      "type": "json"
+    },
+    {
+      "index": {
+        "fields": [
+          "parent"
+        ]
+      },
+      "name": "parent-index",
+      "type": "json"
+    }
+  ]
+}

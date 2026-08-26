@@ -1,0 +1,42 @@
+{
+  "views": [
+    {
+      "_id": "_design/all-docs",
+      "views": {
+        "all-docs": {
+          "map": "function (doc) {\n  emit(doc._id, {\"rev\":doc._rev, \"id\": doc._id});\n}"
+        }
+      },
+      "language": "javascript"
+    },
+    {
+      "_id": "_design/hmt_reward",
+      "views": {
+        "ready_to_pay_missions": {
+          "map": "function (doc) {\n  \n  if(doc[\"status\"] !== \"completed\") return;\n  if(doc[\"reward_status\"] !== \"ready_to_pay\") return;\n  \n  emit(doc._id, {\n    \"public_address\" : doc[\"public_address\"],\n    \"mission_id\" : doc._id\n  });\n}"
+        }
+      },
+      "language": "javascript"
+    }
+  ],
+  "index": [
+    {
+      "index": {
+        "fields": [
+          "updated_at"
+        ]
+      },
+      "name": "updated_at-index",
+      "type": "json"
+    },
+    {
+      "index": {
+        "fields": [
+          "created_at"
+        ]
+      },
+      "name": "created_at-index",
+      "type": "json"
+    }
+  ]
+}
