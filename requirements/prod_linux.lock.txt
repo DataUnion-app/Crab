@@ -22,7 +22,7 @@ click-repl==0.3.0
 coincurve==21.0.0
 cryptography==50.0.0
 cytoolz==1.1.0
-dnspython==2.8.0
+dnspython==2.9.0
 eciespy==0.4.6
 enforce-typing==1.0.0.post1
 eth-abi==6.0.0
